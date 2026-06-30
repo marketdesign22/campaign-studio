@@ -40,10 +40,9 @@
   .topbar{background:var(--orange-deep);color:#fff;font-size:.84rem;font-weight:700;text-align:center;padding:9px 12px;letter-spacing:.02em}
   .topbar b{color:var(--yellow)}
 
-  .hei-mark{width:48px;height:auto;flex:none}
-  .logo-lock{display:flex;align-items:center;gap:12px}
-  .logo-lock .wm{font-weight:900;line-height:1.05;letter-spacing:.01em;font-size:.98rem;text-transform:uppercase}
-  .logo-lock .wm small{display:block;font-weight:700;font-size:.58rem;letter-spacing:.16em;opacity:.85;margin-top:4px}
+  .hero-logo{height:60px;width:auto}
+  .footer-logo{height:54px;width:auto;margin:0 auto 16px}
+  @media(max-width:880px){.hero-logo{height:46px}}
 
   .hero{background:var(--orange);position:relative;overflow:hidden;padding:22px 0 0}
   .hero-top{display:flex;justify-content:space-between;align-items:center;color:#fff;gap:12px}
@@ -227,10 +226,7 @@
 
   <div class="wrap rel">
     <div class="hero-top">
-      <div class="logo-lock" style="color:#fff">
-        <svg class="hei-mark" viewBox="0 0 120 92" fill="currentColor" aria-label="Hollywood Education Institute"><polygon points="60,4 116,32 60,60 4,32"/><rect x="103" y="33" width="8" height="40" rx="1.5"/><rect x="100" y="67" width="15" height="8" rx="1.5"/><polygon points="20,43 60,62 60,81 20,60"/><polygon points="100,43 60,62 60,81 100,60"/></svg>
-        <span class="wm">HOLLYWOOD EDUCATION<br>INSTITUTE<small>LOS ANGELES</small></span>
-      </div>
+      <img class="hero-logo" src="images/logo-white.png" alt="Hollywood Education Institute ・ Los Angeles">
       <div class="hero-actions">
         <button id="langtoggle" class="minilink" type="button" aria-label="Switch language">EN</button>
         <a class="minilink" href="#cta" data-en="Chat on LINE →">LINEで相談 →</a>
@@ -382,11 +378,14 @@
       <p data-en="Field trips are part of class. Learn English from the city of LA itself, with friends.">授業の一環で校外学習を実施。仲間と一緒に、LAの街そのものから英語を学びます。</p>
     </div>
     <div class="gallery">
-      <div class="frame" data-slideshow data-interval="4500">
+      <div class="frame" data-slideshow data-interval="4200">
         <div class="slide active"><img src="images/04.jpg" alt="The Broad" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap" data-en="At The Broad contemporary art museum">現代アートの殿堂「The Broad」へ</div></div>
-        <div class="slide"><img src="images/03.jpg" alt="Science Center" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap" data-en="Visiting the California Science Center">California Science Center を見学</div></div>
-        <div class="slide"><img src="images/02.jpg" alt="Field trip" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap" data-en="Out exploring the streets of LA">校外学習で、LAの街へ繰り出す</div></div>
+        <div class="slide"><img src="images/03.jpg" alt="California Science Center" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap" data-en="Visiting the California Science Center">California Science Center を見学</div></div>
+        <div class="slide"><img src="images/06.jpg" alt="LA City Hall" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap" data-en="At LA City Hall (Tom Bradley Room)">LA市庁舎（Tom Bradley Room）を見学</div></div>
+        <div class="slide"><img src="images/02.jpg" alt="Field trip" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap" data-en="Field trips around the city of LA">校外学習で、LAの街へ</div></div>
+        <div class="slide"><img src="images/08.jpg" alt="Weekend outing" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap" data-en="Weekend outings with classmates">週末は、みんなでおでかけ</div></div>
         <div class="slide"><img src="images/05.jpg" alt="Class" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap" data-en="Small-class lessons">少人数クラスの授業風景</div></div>
+        <div class="slide"><img src="images/07.jpg" alt="Between classes" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap" data-en="A fun snap between classes">授業の合間に、みんなでパチリ</div></div>
         <div class="slide"><img src="images/01.jpg" alt="Campus" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap" data-en="Friendly and close-knit">アットホームで、みんな仲良し</div></div>
         <button class="gnav prev" aria-label="prev">‹</button>
         <button class="gnav next" aria-label="next">›</button>
@@ -470,10 +469,7 @@
 
 <!-- FOOTER -->
 <footer>
-  <div class="logo-lock" style="justify-content:center;margin-bottom:16px">
-    <svg class="hei-mark" viewBox="0 0 120 92" fill="currentColor" style="color:var(--orange)" aria-label="Hollywood Education Institute"><polygon points="60,4 116,32 60,60 4,32"/><rect x="103" y="33" width="8" height="40" rx="1.5"/><rect x="100" y="67" width="15" height="8" rx="1.5"/><polygon points="20,43 60,62 60,81 20,60"/><polygon points="100,43 60,62 60,81 100,60"/></svg>
-    <span class="wm" style="color:#fff">HOLLYWOOD EDUCATION<br>INSTITUTE</span>
-  </div>
+  <img class="footer-logo" src="images/logo-orange.png" alt="Hollywood Education Institute">
   3470 Wilshire Blvd #350, Los Angeles, CA 90010 ・ Tel: +1 (213) 386-3800<br>
   <a class="ig" href="https://www.instagram.com/hollywood_edu/?hl=ja" target="_blank" rel="noopener">📷 Instagram @hollywood_edu</a><br>
   <span style="opacity:.6;display:inline-block;margin-top:10px">© Hollywood Education Institute. 20th Anniversary Campaign.</span>
