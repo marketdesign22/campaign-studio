@@ -43,6 +43,12 @@
   /* ===== Top bar ===== */
   .topbar{background:var(--orange-deep);color:#fff;font-size:.85rem;font-weight:700;text-align:center;padding:9px 12px;letter-spacing:.02em}
 
+  /* ===== Logo lockup ===== */
+  .hei-mark{width:52px;height:auto;flex:none}
+  .logo-lock{display:flex;align-items:center;gap:13px}
+  .logo-lock .wm{font-weight:900;line-height:1.04;letter-spacing:.01em;font-size:1.02rem;text-transform:uppercase}
+  .logo-lock .wm small{display:block;font-weight:700;font-size:.6rem;letter-spacing:.16em;opacity:.85;margin-top:5px}
+
   /* ===== Hero ===== */
   .hero{background:var(--orange);color:#fff;position:relative;overflow:hidden}
   .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 80% 10%,rgba(255,255,255,.18),transparent 45%)}
@@ -201,7 +207,16 @@
 <header class="hero">
   <div class="wrap">
     <div>
-      <div class="eyebrow">HOLLYWOOD EDUCATION INSTITUTE ・ LOS ANGELES</div>
+      <div class="logo-lock" style="color:#fff;margin-bottom:22px">
+        <svg class="hei-mark" viewBox="0 0 120 92" fill="currentColor" aria-label="Hollywood Education Institute">
+          <polygon points="60,4 116,32 60,60 4,32"/>
+          <rect x="103" y="33" width="8" height="40" rx="1.5"/>
+          <rect x="100" y="67" width="15" height="8" rx="1.5"/>
+          <polygon points="20,43 60,62 60,81 20,60"/>
+          <polygon points="100,43 60,62 60,81 100,60"/>
+        </svg>
+        <span class="wm">HOLLYWOOD EDUCATION<br>INSTITUTE<small>LOS ANGELES, CALIFORNIA</small></span>
+      </div>
       <span class="badge">ACCET認定校 ・ 日本語スタッフ在籍</span>
       <h1>アメリカ語学留学、<br>最安値クラスではじめよう。</h1>
       <p class="sub">HEI 20周年を記念した、特別期間限定キャンペーン。日本語スタッフが、ビザ・手続き・生活まで、全部おとなりでサポートします。</p>
@@ -396,7 +411,16 @@
 
 <!-- FOOTER -->
 <footer>
-  <div class="name">Hollywood Education Institute (HEI)</div>
+  <div class="logo-lock" style="justify-content:center;margin-bottom:16px">
+    <svg class="hei-mark" viewBox="0 0 120 92" fill="currentColor" style="color:var(--orange)" aria-label="Hollywood Education Institute">
+      <polygon points="60,4 116,32 60,60 4,32"/>
+      <rect x="103" y="33" width="8" height="40" rx="1.5"/>
+      <rect x="100" y="67" width="15" height="8" rx="1.5"/>
+      <polygon points="20,43 60,62 60,81 20,60"/>
+      <polygon points="100,43 60,62 60,81 100,60"/>
+    </svg>
+    <span class="wm" style="color:#fff">HOLLYWOOD EDUCATION<br>INSTITUTE</span>
+  </div>
   3470 Wilshire Blvd #350, Los Angeles, CA 90010 ・ Tel: +1 (213) 386-3800<br>
   <a class="ig" href="https://www.instagram.com/hollywood_edu/?hl=ja" target="_blank" rel="noopener">📷 Instagram @hollywood_edu</a><br>
   <span style="opacity:.6;display:inline-block;margin-top:10px">© Hollywood Education Institute. 20th Anniversary Campaign.</span>
