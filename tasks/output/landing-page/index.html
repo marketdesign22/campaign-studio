@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HEI 20周年記念キャンペーン｜アメリカ語学留学 最安値クラス 11週 $900</title>
-<meta name="description" content="ロサンゼルスのACCET認定語学学校 HEI。20周年記念で授業料40%OFF、スタンダードESL 11週が$900。日本語スタッフ・ビザ/転校サポート・LINE相談。2026年限定・先着20名。">
+<title>HEI 20周年記念 特別期間限定キャンペーン｜アメリカ語学留学 11週 $900</title>
+<meta name="description" content="ロサンゼルスのACCET認定語学学校 HEI。20周年記念の特別期間限定キャンペーンで、スタンダードESL 11週が特別価格$900。日本語スタッフ・ビザ/転校サポート・LINE相談。今年いっぱいのお申し込み限定。">
 <style>
   :root{
     --orange:#EA4E0C;
@@ -54,9 +54,8 @@
   .hero h1{font-size:clamp(2rem,5.5vw,3.4rem);line-height:1.2;font-weight:900;margin-bottom:18px;letter-spacing:.01em}
   .hero p.sub{font-size:clamp(1rem,2.3vw,1.2rem);max-width:660px;opacity:.97;margin-bottom:26px}
   .price-hero{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin:26px 0 30px}
-  .price-hero .was{font-size:1.4rem;text-decoration:line-through;opacity:.7}
+  .price-hero .tag{background:#fff;color:var(--orange-dark);font-weight:900;padding:8px 16px;border-radius:14px;font-size:.95rem;align-self:center}
   .price-hero .now{font-size:clamp(3rem,10vw,5.5rem);font-weight:900;line-height:1}
-  .price-hero .off{background:#fff;color:var(--orange-dark);font-weight:900;padding:8px 16px;border-radius:14px;font-size:1.1rem;align-self:center}
   .price-hero .unit{font-size:1rem;opacity:.9}
   .cta-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
 
@@ -73,18 +72,21 @@
   .section-head p{color:var(--muted);margin-top:12px}
 
   /* price table */
-  .ptable{max-width:760px;margin:0 auto;border-radius:18px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.08);border:1px solid #f0e3da}
+  .ptable{max-width:680px;margin:0 auto;border-radius:18px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.08);border:1px solid #f0e3da}
   .ptable table{width:100%;border-collapse:collapse;font-size:1.02rem}
   .ptable th{background:var(--ink);color:#fff;padding:16px;font-weight:700;text-align:left}
   .ptable td{padding:18px 16px;border-bottom:1px solid #f1ece8}
   .ptable tr:last-child td{border-bottom:none}
   .ptable tr:nth-child(even) td{background:var(--cream)}
-  .ptable .was{color:var(--muted);text-decoration:line-through;font-size:.92rem}
-  .ptable .now{color:var(--orange-dark);font-weight:900;font-size:1.3rem}
-  .ptable .tag{display:inline-block;background:#fde7dc;color:var(--orange-dark);font-weight:800;font-size:.72rem;padding:3px 9px;border-radius:8px;margin-left:6px;vertical-align:middle}
+  .ptable .now{color:var(--orange-dark);font-weight:900;font-size:1.45rem}
+  .ptable td .stay{display:block;color:var(--muted);font-size:.8rem;font-weight:700;margin-top:2px}
   .pnote{text-align:center;color:var(--muted);font-size:.85rem;margin-top:16px}
   .compare{text-align:center;margin-top:22px;font-size:1.05rem}
   .compare b{color:var(--orange-dark)}
+  .why-price{max-width:680px;margin:30px auto 0;background:var(--cream);border:1px dashed var(--orange);border-radius:16px;padding:22px 26px;text-align:center}
+  .why-price b{color:var(--orange-dark)}
+  .deadline{max-width:680px;margin:18px auto 0;background:#fff4ee;border-left:5px solid var(--orange);border-radius:10px;padding:16px 20px}
+  .deadline b{color:var(--orange-dark)}
 
   /* reasons */
   .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
@@ -100,6 +102,17 @@
   .persona .tag{color:var(--orange);font-weight:800;font-size:.85rem;letter-spacing:.04em}
   .persona h3{font-size:1.35rem;font-weight:900;margin:8px 0 14px}
   .persona p{color:#444}
+
+  /* voices */
+  .voices{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .voice{background:#fff;border:1px solid #f0e3da;border-radius:18px;padding:28px 26px;box-shadow:0 6px 24px rgba(0,0,0,.04);position:relative}
+  .voice .quote{font-size:3rem;line-height:1;color:#f1c3ac;font-weight:900;margin-bottom:6px}
+  .voice p{color:#333;font-size:.97rem;margin-bottom:18px}
+  .voice .who{display:flex;align-items:center;gap:12px;border-top:1px solid #f1ece8;padding-top:14px}
+  .voice .ava{width:42px;height:42px;border-radius:50%;background:var(--orange);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;flex:none}
+  .voice .who b{display:block;font-size:.95rem}
+  .voice .who span{color:var(--muted);font-size:.82rem}
+  .stars{color:#f5a623;margin-bottom:10px;font-size:.95rem}
 
   /* school info */
   .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:start}
@@ -117,11 +130,17 @@
   .final h2{font-size:clamp(1.7rem,4.5vw,2.6rem);font-weight:900;margin-bottom:14px}
   .final p{opacity:.97;max-width:560px;margin:0 auto 28px;font-size:1.08rem}
   .final .small{font-size:.9rem;opacity:.85;margin-top:22px}
-  .final .small a{color:#fff;font-weight:700}
+
+  /* line banner */
+  .linebar{background:var(--cream);text-align:center;padding:46px 20px;border-top:1px solid #f0e3da}
+  .linebar h3{font-size:1.3rem;font-weight:900;margin-bottom:8px}
+  .linebar p{color:var(--muted);margin-bottom:20px}
+  .linebar img{height:52px;margin:0 auto;display:inline-block}
 
   /* footer */
   footer{background:var(--ink);color:#cfcfcf;text-align:center;padding:30px 20px;font-size:.85rem}
   footer .name{color:#fff;font-weight:800;margin-bottom:6px}
+  footer a.ig{color:#fff;font-weight:700;text-decoration:none;display:inline-flex;gap:6px;align-items:center;margin-top:10px}
 
   /* sticky mobile cta */
   .sticky{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #eee;padding:10px 16px;display:none;z-index:50;box-shadow:0 -4px 16px rgba(0,0,0,.08)}
@@ -130,6 +149,7 @@
   @media(max-width:860px){
     .cards{grid-template-columns:1fr}
     .personas{grid-template-columns:1fr}
+    .voices{grid-template-columns:1fr}
     .info-grid{grid-template-columns:1fr}
     .sticky{display:block}
     body{padding-bottom:78px}
@@ -139,7 +159,7 @@
 <body>
 
 <!-- TOP BAR -->
-<div class="topbar">🎉 20周年記念キャンペーン｜2026年限定・先着20名・学校史上最大のキャンペーン</div>
+<div class="topbar">🎉 20周年記念 特別期間限定キャンペーン｜今年いっぱいのお申し込み限定・学校史上最大のキャンペーン</div>
 
 <!-- HERO -->
 <header class="hero">
@@ -147,12 +167,11 @@
     <div class="eyebrow">HOLLYWOOD EDUCATION INSTITUTE ・ LOS ANGELES</div>
     <span class="badge">ACCET認定校 ・ 日本語スタッフ在籍</span>
     <h1>アメリカ語学留学、<br>最安値クラスではじめよう。</h1>
-    <p class="sub">HEI 20周年記念キャンペーン。スタンダードESL 11週間が、通常$1,500 → <strong>$900（40%OFF）</strong>。日本語スタッフが、ビザ・手続き・生活まで、全部おとなりでサポートします。</p>
+    <p class="sub">HEI 20周年を記念した、特別期間限定キャンペーン。スタンダードESL 11週間が<strong>特別価格 $900</strong>。日本語スタッフが、ビザ・手続き・生活まで、全部おとなりでサポートします。</p>
 
     <div class="price-hero">
-      <span class="was">$1,500</span>
+      <span class="tag">20周年 特別価格</span>
       <span class="now">$900</span>
-      <span class="off">40% OFF</span>
       <span class="unit">／ 11週間（1クォーター）</span>
     </div>
 
@@ -161,7 +180,7 @@
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 5.69 2 10.23c0 4.07 3.58 7.48 8.42 8.12.33.07.78.22.89.5.1.26.07.66.03.92l-.14.86c-.04.26-.2 1.02.89.56 1.1-.46 5.9-3.48 8.05-5.95C21.4 13.6 22 11.99 22 10.23 22 5.69 17.52 2 12 2Z"/></svg>
         LINEで気軽に相談する
       </a>
-      <a class="btn-ghost" href="#price">料金プランを見る</a>
+      <a class="btn-ghost" href="#price">特別価格を見る</a>
     </div>
   </div>
 </header>
@@ -180,35 +199,41 @@
 <section id="price">
   <div class="wrap">
     <div class="section-head">
-      <span class="kicker">PRICE</span>
-      <h2>ACCET認定校の、20周年プライス。</h2>
-      <p>一般的なアメリカの語学学校は、月$1,000超が当たり前。長く通うほど、月あたりはさらにおトクに。</p>
+      <span class="kicker">20TH ANNIVERSARY PRICE</span>
+      <h2>20周年記念・特別期間限定価格。</h2>
+      <p>一般的なアメリカの語学学校は、月$1,000超が当たり前。その負担を、特別価格でぐっと軽くします。</p>
     </div>
     <div class="ptable">
       <table>
         <thead>
-          <tr><th>期間</th><th>通常料金</th><th>キャンペーン価格</th></tr>
+          <tr><th>期間</th><th>特別価格</th></tr>
         </thead>
         <tbody>
           <tr>
-            <td><b>11週間</b><br><span class="was" style="text-decoration:none;color:#888;font-size:.85rem">1クォーター</span></td>
-            <td><span class="was">$1,500</span></td>
-            <td><span class="now">$900</span><span class="tag">40% OFF</span></td>
+            <td><b>11週間</b><br><span style="color:#888;font-size:.85rem">1クォーター</span></td>
+            <td><span class="now">$900</span><span class="stay">短期・お試し留学に</span></td>
           </tr>
           <tr>
             <td><b>22週間</b><br><span style="color:#888;font-size:.85rem">2クォーター</span></td>
-            <td><span class="was">$3,000</span></td>
-            <td><span class="now">$1,800</span><span class="tag">40% OFF</span></td>
+            <td><span class="now">$1,800</span><span class="stay">じっくり半年留学に</span></td>
           </tr>
           <tr>
             <td><b>44週間</b><br><span style="color:#888;font-size:.85rem">4クォーター</span></td>
-            <td><span class="was">$6,000</span></td>
-            <td><span class="now">$3,600</span><span class="tag">40% OFF</span></td>
+            <td><span class="now">$3,600</span><span class="stay">中長期・編入を目指す方に</span></td>
           </tr>
         </tbody>
       </table>
     </div>
-    <p class="compare">11週間なら、<b>月あたり約$360</b>。相場の約1/3で、アメリカ留学が始められます。</p>
+
+    <div class="deadline">
+      ⏳ <b>今年いっぱいのお申し込み限定。</b>だから、中長期で滞在を予定している方は、この特別価格のまま<b>チョーお得に長く滞在</b>できます。長く通うほど、この差は大きくなります。
+    </div>
+
+    <div class="why-price">
+      <b>「安いと、質が心配…」という方へ。</b><br>
+      これは ACCET認定校 が<b>20周年を記念して実施する特別期間限定キャンペーン</b>。授業の質はそのまま、価格だけが特別です。安かろう悪かろうではありません。
+    </div>
+
     <p class="pnote">※別途、入学申請料・事務手数料等がかかります。詳しくはLINEでご案内します。</p>
   </div>
 </section>
@@ -250,20 +275,60 @@
     <div class="personas">
       <div class="persona">
         <div class="tag">▶ 転校を考えているあなたへ</div>
-        <h3>学費、もっと安くできます。</h3>
-        <p>いま別の学校に通っていて「学費が高い」と感じているなら、転校という選択肢があります。ビザ（I-20）を維持したままの転校手続きも、日本語スタッフが丸ごとサポート。英語での面倒なやりとりは必要ありません。</p>
+        <h3>円安の今こそ、学費を見直す。</h3>
+        <p>円安が進む今の厳しい状況でも、学費はもっと安くできます。いま別の学校に通っていて「学費が高い」と感じているなら、転校という選択肢を。ビザ（I-20）を維持したままの転校手続きも、日本語スタッフが丸ごとサポート。英語での面倒なやりとりは必要ありません。</p>
       </div>
       <div class="persona">
         <div class="tag">▶ これから挑戦するあなたへ</div>
         <h3>お試し価格で、はじめる。</h3>
-        <p>お試し価格で、アメリカ暮らしをスタート。授業は月・火・水の週3日制だから、オンラインの仕事や趣味（ダンスなど）とも両立できます。寮の案内・空港送迎もご相談ください。</p>
+        <p>特別価格で、アメリカ暮らしをスタート。授業は月・火・水の週3日制だから、オンラインの仕事や趣味（ダンスなど）とも両立できます。寮の案内・空港送迎もご相談ください。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STUDENT VOICES -->
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">STUDENT VOICES</span>
+      <h2>在校生の声。</h2>
+      <p>HEIで過ごす毎日を、先輩たちに聞いてみました。</p>
+    </div>
+    <div class="voices">
+      <div class="voice">
+        <div class="quote">”</div>
+        <div class="stars">★★★★★</div>
+        <p>少人数クラスだから、わからない部分も気軽に先生に聞けます。クラスのみんなとも自然と仲良くなって、昼休みはみんなでランチに行くのが毎日の楽しみでした。</p>
+        <div class="who">
+          <div class="ava">A</div>
+          <div><b>Aさん</b><span>初めての留学・20代</span></div>
+        </div>
+      </div>
+      <div class="voice">
+        <div class="quote">”</div>
+        <div class="stars">★★★★★</div>
+        <p>週3日制なので、学校以外の時間はダンススクールに通って、ダンスにも集中できました。憧れだった有名観光地に週末出かけるのが、いつのまにか日課に。やりたいことと両立できました。</p>
+        <div class="who">
+          <div class="ava">M</div>
+          <div><b>Mさん</b><span>社会人・両立留学</span></div>
+        </div>
+      </div>
+      <div class="voice">
+        <div class="quote">”</div>
+        <div class="stars">★★★★★</div>
+        <p>別の語学学校より節約できたので転校しましたが、授業の質は変わらないどころか、先生がとてもフレンドリーで大満足。手続きも日本語スタッフが対応してくれて、不安なく移れました。</p>
+        <div class="who">
+          <div class="ava">Y</div>
+          <div><b>Yさん</b><span>転校生・20代</span></div>
+        </div>
       </div>
     </div>
   </div>
 </section>
 
 <!-- SCHOOL INFO -->
-<section>
+<section class="persona-wrap">
   <div class="wrap">
     <div class="section-head">
       <span class="kicker">SCHOOL</span>
@@ -291,21 +356,31 @@
 <!-- FINAL CTA -->
 <section class="final">
   <div class="wrap">
-    <h2>20周年の特別価格は、今だけ。先着20名。</h2>
-    <p>迷っている時間も、もったいない。まずはLINEで「ちょっと聞いてみる」から始めましょう。申し込みではなく、相談からで大丈夫です。</p>
+    <h2>20周年の特別価格は、今年いっぱいのお申し込み限定。</h2>
+    <p>円安が進む今こそ、学費を見直すチャンス。まずはLINEで「ちょっと聞いてみる」から始めましょう。申し込みではなく、相談からで大丈夫です。</p>
     <a class="btn-line" href="#" data-line>
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 5.69 2 10.23c0 4.07 3.58 7.48 8.42 8.12.33.07.78.22.89.5.1.26.07.66.03.92l-.14.86c-.04.26-.2 1.02.89.56 1.1-.46 5.9-3.48 8.05-5.95C21.4 13.6 22 11.99 22 10.23 22 5.69 17.52 2 12 2Z"/></svg>
       LINEで相談する（無料）
     </a>
-    <p class="small">🌐 <a href="https://www.hollywoodeducation.org" target="_blank" rel="noopener">www.hollywoodeducation.org</a> ／ 📞 +1 (213) 386-3800</p>
+    <p class="small">📞 +1 (213) 386-3800</p>
   </div>
 </section>
+
+<!-- LINE ADD-FRIEND BANNER -->
+<div class="linebar">
+  <h3>まずは、友だち追加から。</h3>
+  <p>ビザ・転校・お試し留学、どんな小さな疑問でも日本語でお答えします。</p>
+  <a href="https://lin.ee/nA6pMP8n" target="_blank" rel="noopener">
+    <img src="https://scdn.line-apps.com/n/line_add_friends/btn/ja.png" alt="友だち追加">
+  </a>
+</div>
 
 <!-- FOOTER -->
 <footer>
   <div class="name">Hollywood Education Institute (HEI)</div>
   3470 Wilshire Blvd #350, Los Angeles, CA 90010 ・ Tel: +1 (213) 386-3800<br>
-  <span style="opacity:.6">© Hollywood Education Institute. 20th Anniversary Campaign.</span>
+  <a class="ig" href="https://www.instagram.com/hollywood_edu/?hl=ja" target="_blank" rel="noopener">📷 Instagram @hollywood_edu</a><br>
+  <span style="opacity:.6;display:inline-block;margin-top:10px">© Hollywood Education Institute. 20th Anniversary Campaign.</span>
 </footer>
 
 <!-- STICKY MOBILE CTA -->
