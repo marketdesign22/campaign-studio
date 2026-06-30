@@ -126,6 +126,12 @@
   .dots button{width:11px;height:11px;border-radius:50%;border:none;background:var(--peach);cursor:pointer;padding:0}
   .dots button.active{background:var(--orange)}
 
+  /* pains (empathy) */
+  .pains{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:840px;margin:0 auto}
+  .pain{background:#fff;border-radius:14px;padding:18px 22px;font-weight:700;color:#5a4a38;border-left:5px solid var(--orange);box-shadow:0 4px 14px rgba(0,0,0,.04)}
+  .lead{text-align:center;margin-top:26px;font-weight:800;font-size:1.12rem;line-height:1.6}
+  .lead .hl{color:var(--orange-deep)}
+
   /* personas */
   .personas{display:grid;grid-template-columns:1fr 1fr;gap:24px}
   .persona{background:#fff;border-radius:20px;padding:34px 30px;border-top:6px solid var(--orange);box-shadow:0 8px 26px rgba(0,0,0,.05)}
@@ -249,13 +255,49 @@
   </div>
 </div>
 
-<!-- PRICE -->
+<!-- (1) EMPATHY -->
+<section class="peachbg" id="empathy">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">こんなお悩み、ありませんか？</span>
+      <h2>その不安、よく分かります。</h2>
+    </div>
+    <div class="pains">
+      <div class="pain">💸 今の語学学校、学費が高くて続けるのがつらい…</div>
+      <div class="pain">📉 円安で、留学費用がどんどん膨らむのが不安…</div>
+      <div class="pain">🤔 初めての留学、何から準備すればいいか分からない…</div>
+      <div class="pain">📝 ビザや転校の手続きが、英語で難しそう…</div>
+      <div class="pain">⚖️ 仕事や趣味と、留学を両立できるか心配…</div>
+      <div class="pain">🌎 でも、アメリカで暮らす夢はあきらめたくない…</div>
+    </div>
+    <p class="lead">——どれかひとつでも当てはまったら、<span class="hl">あと30秒だけ</span>読んでみてください。</p>
+  </div>
+</section>
+
+<!-- (2) PROBLEM STRUCTURE -->
+<section id="problem">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">WHY SO EXPENSIVE?</span>
+      <h2>なぜ、アメリカの語学留学は高いのか？</h2>
+      <p>あなたのせいではありません。理由は、3つが重なっているからです。</p>
+    </div>
+    <div class="cards">
+      <div class="card"><div class="ico">🏫</div><h3>① 授業料の相場が高い</h3><p>一般的なアメリカの語学学校は、授業料だけで<b>月$1,000超</b>が当たり前。長く通うほど負担が重くなります。</p></div>
+      <div class="card"><div class="ico">📉</div><h3>② 円安が追い打ち</h3><p>同じ授業料でも、<b>円で払う負担は年々増加</b>。為替が動くだけで、コストはどんどん膨らみます。</p></div>
+      <div class="card"><div class="ico">🧾</div><h3>③ 仲介手数料の上乗せ</h3><p>エージェント経由だと、<b>仲介手数料が学費にプラス</b>されがち。気づけば総額が大きくふくらみます。</p></div>
+    </div>
+    <p class="lead">つまり「<span class="hl">相場の高さ × 円安 × 手数料</span>」で、留学費用は膨らむ構造。<br>この3つを、HEIはまとめて解決します。</p>
+  </div>
+</section>
+
+<!-- (3) SOLUTION / PRICE -->
 <section id="price">
   <div class="wrap">
     <div class="section-head">
-      <span class="kicker">20TH ANNIVERSARY PRICE</span>
-      <h2>20周年記念・特別期間限定価格。</h2>
-      <p>一般的なアメリカの語学学校は、月$1,000超が当たり前。その負担を、特別価格でぐっと軽くします。</p>
+      <span class="kicker">SOLUTION ｜ 解決策</span>
+      <h2>だから、20周年記念の特別価格。</h2>
+      <p>「相場の高さ・円安・手数料」の負担を、特別価格でまとめて軽くします。</p>
     </div>
     <div class="ptable">
       <table>
@@ -311,33 +353,11 @@
   </div>
 </section>
 
-<!-- PERSONAS -->
+<!-- (5) TRUST PROOF / STUDENT VOICES -->
 <section class="peachbg">
   <div class="wrap">
     <div class="section-head">
-      <span class="kicker">FOR YOU</span>
-      <h2>2つの “あなた” へ。</h2>
-    </div>
-    <div class="personas">
-      <div class="persona">
-        <div class="tag">▶ 転校を考えているあなたへ</div>
-        <h3>円安の今こそ、学費を見直す。</h3>
-        <p>円安が進む今の厳しい状況でも、学費はもっと安くできます。いま別の学校に通っていて「学費が高い」と感じているなら、転校という選択肢を。ビザ（I-20）を維持したままの転校手続きも、日本語スタッフが丸ごとサポート。英語での面倒なやりとりは必要ありません。</p>
-      </div>
-      <div class="persona">
-        <div class="tag">▶ これから挑戦するあなたへ</div>
-        <h3>お試し価格で、はじめる。</h3>
-        <p>特別価格で、アメリカ暮らしをスタート。授業は月・火・水の週3日制だから、オンラインの仕事や趣味（ダンスなど）とも両立できます。寮の案内・空港送迎もご相談ください。</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- STUDENT VOICES -->
-<section>
-  <div class="wrap">
-    <div class="section-head">
-      <span class="kicker">STUDENT VOICES</span>
+      <span class="kicker">STUDENT VOICES ｜ 信頼の証</span>
       <h2>在校生の声。</h2>
       <p>HEIで過ごす毎日を、先輩たちに聞いてみました。</p>
     </div>
@@ -356,6 +376,28 @@
         <div class="stars">★★★★★</div>
         <p>別の語学学校より節約できたので転校しましたが、授業の質は変わらないどころか、先生がとてもフレンドリーで大満足。手続きも日本語スタッフが対応してくれて、不安なく移れました。</p>
         <div class="who"><div class="ava">Y</div><div><b>Yさん</b><span>転校生・20代</span></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- (5b) FOR YOU / PERSONAS -->
+<section>
+  <div class="wrap">
+    <div class="section-head">
+      <span class="kicker">FOR YOU</span>
+      <h2>2つの “あなた” へ。</h2>
+    </div>
+    <div class="personas">
+      <div class="persona">
+        <div class="tag">▶ 転校を考えているあなたへ</div>
+        <h3>円安の今こそ、学費を見直す。</h3>
+        <p>円安が進む今の厳しい状況でも、学費はもっと安くできます。いま別の学校に通っていて「学費が高い」と感じているなら、転校という選択肢を。ビザ（I-20）を維持したままの転校手続きも、日本語スタッフが丸ごとサポート。英語での面倒なやりとりは必要ありません。</p>
+      </div>
+      <div class="persona">
+        <div class="tag">▶ これから挑戦するあなたへ</div>
+        <h3>お試し価格で、はじめる。</h3>
+        <p>特別価格で、アメリカ暮らしをスタート。授業は月・火・水の週3日制だから、オンラインの仕事や趣味（ダンスなど）とも両立できます。寮の案内・空港送迎もご相談ください。</p>
       </div>
     </div>
   </div>
