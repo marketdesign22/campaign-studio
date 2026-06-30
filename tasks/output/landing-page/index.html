@@ -82,7 +82,7 @@
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
 
   .pains{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:860px;margin:0 auto}
-  .pain{background:#fff;border:var(--bd);border-radius:16px;padding:16px 20px 16px 50px;font-weight:800;position:relative;box-shadow:4px 4px 0 var(--ink)}
+  .pain{background:#fff;border:var(--bd);border-radius:16px;padding:16px 20px 16px 50px;font-weight:800;position:relative;box-shadow:4px 4px 0 var(--ink);display:flex;align-items:center;min-height:62px}
   .pain::before{content:"";position:absolute;left:16px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;background:var(--yellow);border:2.5px solid var(--ink)}
   .lead{text-align:center;margin-top:30px;font-weight:900;font-size:1.18rem;line-height:1.7}
   .lead .hl{background:linear-gradient(transparent 60%, var(--yellow) 60%)}
@@ -196,7 +196,7 @@
   .float-line{position:fixed;right:20px;top:50%;transform:translateY(-50%);z-index:60;display:flex;flex-direction:column;align-items:center;gap:8px;background:var(--line);color:#fff;text-decoration:none;padding:18px 14px;border-radius:18px;border:var(--bd);box-shadow:4px 4px 0 var(--ink)}
   .float-line:hover{transform:translateY(-50%) translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
   .float-line svg{width:32px;height:32px}
-  .float-line .label{writing-mode:vertical-rl;font-weight:900;font-size:.9rem;letter-spacing:.1em}
+  .float-line .flabel{writing-mode:vertical-rl;font-weight:900;font-size:.82rem;letter-spacing:.06em;color:#fff}
 
   @media(max-width:880px){
     .grid3,.grid2,.plans,.steps,.voices,.reasons,.pains,.info-grid{grid-template-columns:1fr}
@@ -205,7 +205,7 @@
     .reasons{max-width:520px}
     .float-line{top:auto;bottom:16px;right:14px;transform:none;flex-direction:row;width:60px;height:60px;padding:0;border-radius:50%;justify-content:center}
     .float-line:hover{transform:translate(2px,2px)}
-    .float-line .label{display:none}
+    .float-line .flabel{display:none}
   }
 </style>
 </head>
@@ -257,7 +257,7 @@
 <section>
   <div class="watermark">HOLLYWOOD</div>
   <div class="wrap rel" style="text-align:center">
-    <span class="label" data-en="Perfect for budget-minded students &amp; working pros">節約したい留学生・社会留学にピッタリ</span>
+    <span class="label" data-en="Perfect for budget-minded students &amp; working pros">節約したい留学生・社会人にピッタリ</span>
     <h2 style="font-size:clamp(1.8rem,5vw,2.6rem);font-weight:900;line-height:1.4;margin:14px 0 18px" data-en="Study English in the U.S.<br>at a <span class='mk'>top-value price.</span>">最安値クラスで、<br><span class="mk">アメリカ語学留学。</span></h2>
     <p style="max-width:620px;margin:0 auto;color:#7c6648;font-weight:600" data-en="HEI is an ACCET-accredited school in Los Angeles. Our Japanese-speaking staff support you with admissions, visas, transfers and daily life. Start your journey with confidence at our 20th-anniversary special price.">ロサンゼルスの ACCET認定校 HEI。日本語スタッフが、入学・ビザ・転校・生活まで全部おとなりでサポート。20周年だけの特別価格で、安心して “はじめの一歩” を踏み出せます。</p>
     <div class="round-badges">
@@ -334,7 +334,6 @@
     </div>
     <div class="deadline" data-en="⏳ <b>Apply by December 31, 2026 only.</b> The longer you plan to stay, the more you save at this special price.">⏳ <b>2026年12月31日まで のお申し込み限定。</b> 中長期で滞在予定の方ほど、この特別価格で超お得に長く滞在できます。</div>
     <div class="why-price" data-en="<b>Worried that cheap means low quality?</b> This is a limited 20th-anniversary campaign from an ACCET-accredited school. The quality stays the same — only the price is special.">「安いと、質が心配…」という方へ。 これは ACCET認定校 が20周年を記念して実施する特別期間限定キャンペーン。授業の質はそのまま、価格だけが特別です。</div>
-    <p class="pnote" data-en="*Application and processing fees apply separately. We'll guide you on LINE.">
   </div>
 </section>
 
@@ -460,12 +459,6 @@
   </div>
 </section>
 
-<!-- LINE BANNER -->
-<div class="linebar">
-  <h3 data-en="Start by adding us on LINE.">まずは、友だち追加から。</h3>
-  <p data-en="Visa, transfers, trial study abroad — we answer even the smallest questions in Japanese.">ビザ・転校・初めての留学、どんな小さな疑問でも日本語でお答えします。</p>
-  <a href="https://lin.ee/nA6pMP8n" target="_blank" rel="noopener"><img src="https://scdn.line-apps.com/n/line_add_friends/btn/ja.png" alt="友だち追加"></a>
-</div>
 
 <!-- FOOTER -->
 <footer>
@@ -478,7 +471,7 @@
 <!-- FLOATING LINE -->
 <a class="float-line" href="#" data-line aria-label="LINE">
   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 5.69 2 10.23c0 4.07 3.58 7.48 8.42 8.12.33.07.78.22.89.5.1.26.07.66.03.92l-.14.86c-.04.26-.2 1.02.89.56 1.1-.46 5.9-3.48 8.05-5.95C21.4 13.6 22 11.99 22 10.23 22 5.69 17.52 2 12 2Z"/></svg>
-  <span class="label" data-en="Chat on LINE">LINEで相談</span>
+  <span class="flabel" data-en="Chat on LINE">LINEで相談</span>
 </a>
 
 <script>
