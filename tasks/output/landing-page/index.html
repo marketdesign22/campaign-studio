@@ -317,9 +317,11 @@
 </div>
 
 <script>
-  // LINE公式アカウントのURLをここに設定してください（友だち追加URL）
-  var LINE_URL = "https://line.me/R/ti/p/@YOUR_LINE_ID";
-  document.querySelectorAll('[data-line]').forEach(function(a){ a.href = LINE_URL; });
+  // LINE公式アカウントの友だち追加URL
+  var LINE_URL = "https://lin.ee/nA6pMP8n";
+  document.querySelectorAll('[data-line]').forEach(function(a){
+    a.href = LINE_URL; a.target = "_blank"; a.rel = "noopener";
+  });
 </script>
 
 </body>
