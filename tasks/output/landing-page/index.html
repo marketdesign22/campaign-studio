@@ -95,8 +95,8 @@
   .label::before,.label::after{content:"";width:26px;height:3px;background:var(--orange);border-radius:2px}
   .head{text-align:center;margin-bottom:40px}
   .head h2{font-size:clamp(1.7rem,4.4vw,2.5rem);font-weight:900;line-height:1.32;margin-top:12px}
-  .head h2 .mk,.mk{background-image:linear-gradient(transparent 62%, var(--yellow) 62%);background-repeat:no-repeat;background-position:0 0;background-size:0% 100%;transition:background-size .85s cubic-bezier(.45,0,.2,1)}
-  .mk.drawn{background-size:100% 100%}
+  .head h2 .mk,.mk{background-image:linear-gradient(transparent 56%, var(--yellow) 56%);background-repeat:no-repeat;background-position:0 0;background-size:0% 100%;transition:background-size .85s cubic-bezier(.45,0,.2,1)}
+  .head h2 .mk.drawn,.mk.drawn{background-size:100% 100%}
   .head p{color:#8a7558;margin-top:14px;font-weight:600}
   .watermark{position:absolute;font-weight:900;font-size:clamp(5rem,20vw,16rem);color:#fff;opacity:.6;letter-spacing:-.03em;top:50%;left:50%;transform:translate(-50%,-50%);white-space:nowrap;z-index:0;pointer-events:none}
 
@@ -521,16 +521,24 @@
 
   // Highlighter pens: draw the marker as each one scrolls into view
   var markObserver;
+  function revealInView(marks){
+    var vh = window.innerHeight || document.documentElement.clientHeight;
+    marks.forEach(function(m){ var r=m.getBoundingClientRect(); if(r.top < vh*0.92 && r.bottom > 0) m.classList.add('drawn'); });
+  }
   function initMarkers(){
     var marks = document.querySelectorAll('.mk, .lead .hl');
+    revealInView(marks); // fallback: don't rely solely on the observer's first callback
     if(!('IntersectionObserver' in window)){ marks.forEach(function(m){ m.classList.add('drawn'); }); return; }
     if(markObserver) markObserver.disconnect();
     markObserver = new IntersectionObserver(function(entries){
       entries.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('drawn'); markObserver.unobserve(e.target); } });
-    }, {threshold:0.55});
+    }, {threshold:0, rootMargin:"0px 0px -12% 0px"});
     marks.forEach(function(m){ if(!m.classList.contains('drawn')) markObserver.observe(m); });
   }
   initMarkers();
+  // extra safety for browsers/tabs that restore scroll or fire IO late
+  window.addEventListener('load', function(){ revealInView(document.querySelectorAll('.mk, .lead .hl')); });
+  window.addEventListener('scroll', function(){ revealInView(document.querySelectorAll('.mk:not(.drawn), .lead .hl:not(.drawn)')); }, {passive:true});
 
   // Language toggle (JA <-> EN)
   (function(){
