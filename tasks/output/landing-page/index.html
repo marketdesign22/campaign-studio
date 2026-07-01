@@ -40,9 +40,22 @@
   .btn-line:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
   .btn-line svg{width:26px;height:26px;flex:none}
 
-  .topbar{background:var(--orange-deep);color:#fff;font-size:.84rem;font-weight:700;text-align:center;padding:9px 12px;letter-spacing:.02em}
+  @keyframes stripeMove{from{background-position:0 0}to{background-position:52px 0}}
+  @keyframes campPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.09)}}
+  @keyframes campIcon{0%,100%{transform:rotate(0)}20%{transform:rotate(-15deg)}60%{transform:rotate(15deg)}}
+  @keyframes campShine{0%{left:-40%}60%,100%{left:120%}}
+  .topbar{color:#fff;font-size:.85rem;font-weight:700;text-align:center;padding:10px 12px;letter-spacing:.02em;position:relative;overflow:hidden;
+    background-color:var(--orange-deep);
+    background-image:repeating-linear-gradient(-45deg,rgba(255,255,255,.15) 0 12px,rgba(255,255,255,0) 12px 26px);
+    background-size:52px 52px;animation:stripeMove 1.3s linear infinite}
+  .topbar::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:34%;pointer-events:none;
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-18deg);
+    animation:campShine 3.4s ease-in-out infinite}
   .topbar b{color:var(--yellow)}
+  .topbar .camp{display:inline-block;color:var(--yellow);font-weight:900;text-shadow:0 1px 0 rgba(0,0,0,.18);animation:campPulse 1.1s ease-in-out infinite}
+  .topbar .eico{animation:campIcon .9s ease-in-out infinite;transform-origin:center}
   .eico{width:1.15em;height:1.15em;vertical-align:-0.2em;display:inline-block;flex:none}
+  @media (prefers-reduced-motion: reduce){.topbar,.topbar .camp,.topbar .eico,.topbar::after{animation:none}}
 
   .hero-logo{height:60px;width:auto}
   .footer-logo{height:54px;width:auto;margin:0 auto 16px}
@@ -234,7 +247,7 @@
 <body>
 
 <!-- TOPBAR -->
-<div class="topbar"><svg class="eico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 21.5l5-13.2a1 1 0 0 1 1.6-.4l7 7a1 1 0 0 1-.4 1.6z"/><path d="M7 8.5l8 8"/><path d="M15 6.5a2 2 0 0 1 2-2M18.5 9a2 2 0 0 1 2-2"/><circle cx="14.2" cy="3.5" r=".6" fill="currentColor"/><circle cx="20.5" cy="12" r=".6" fill="currentColor"/><circle cx="21" cy="6.5" r=".6" fill="currentColor"/></svg> <span data-en="20th Anniversary Special Campaign — apply by <b>December 31, 2026</b>">20周年記念 特別期間限定キャンペーン｜<b>2026年12月31日まで</b> のお申し込み限定</span></div>
+<div class="topbar"><svg class="eico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 21.5l5-13.2a1 1 0 0 1 1.6-.4l7 7a1 1 0 0 1-.4 1.6z"/><path d="M7 8.5l8 8"/><path d="M15 6.5a2 2 0 0 1 2-2M18.5 9a2 2 0 0 1 2-2"/><circle cx="14.2" cy="3.5" r=".6" fill="currentColor"/><circle cx="20.5" cy="12" r=".6" fill="currentColor"/><circle cx="21" cy="6.5" r=".6" fill="currentColor"/></svg> <span data-en="<span class='camp'>20th Anniversary Special Campaign</span> — apply by <b>December 31, 2026</b>"><span class="camp">20周年記念 特別期間限定キャンペーン</span>｜<b>2026年12月31日まで</b> のお申し込み限定</span></div>
 
 <!-- HERO -->
 <header class="hero">
