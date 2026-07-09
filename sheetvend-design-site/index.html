@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SheetVendマーケットデザイン | スプレッドシートひとつで、あなたのマーケットをデザインしよう</title>
+<meta name="description" content="SheetVendマーケットデザインは、Googleスプレッドシートだけであなたの販売マーケットを構築・運営できるノーコードサービスです。在庫管理も注文受付もデザインもこれ一つ。カリフォルニアの陽気さそのままに、楽しく販売をはじめよう。" />
+<meta name="author" content="SheetVend LLC" />
+<link rel="canonical" href="https://sheetvend-design-site.vercel.app/" />
+
+<!-- OGP -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="SheetVendマーケットデザイン" />
+<meta property="og:title" content="SheetVendマーケットデザイン | スプレッドシートひとつで、あなたのマーケットをデザインしよう" />
+<meta property="og:description" content="Googleスプレッドシートだけであなたの販売マーケットを構築・運営できるノーコードサービス。在庫管理も注文受付もこれ一つ。" />
+<meta property="og:url" content="https://sheetvend-design-site.vercel.app/" />
+<meta property="og:image" content="https://sheetvend-design-site.vercel.app/assets/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:locale" content="ja_JP" />
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="SheetVendマーケットデザイン" />
+<meta name="twitter:description" content="スプレッドシートひとつで、あなたのマーケットをデザインしよう。" />
+<meta name="twitter:image" content="https://sheetvend-design-site.vercel.app/assets/og-image.png" />
+
+<!-- Favicon -->
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+<link rel="alternate icon" href="/assets/favicon.svg" />
+<link rel="apple-touch-icon" href="/assets/favicon.svg" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet" />
+
+<link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner wrap">
+    <a href="#top" class="logo">
+      <svg class="logo-mark" viewBox="0 0 64 64" aria-hidden="true">
+        <circle cx="32" cy="32" r="32" fill="#ff8a4c"/>
+        <circle cx="32" cy="26" r="10" fill="#ffe8c2"/>
+        <path d="M32 30 C 24 20, 12 18, 8 22 C 14 26, 22 27, 26 31 Z" fill="#2f9d5c"/>
+        <path d="M32 30 C 40 20, 52 18, 56 22 C 50 26, 42 27, 38 31 Z" fill="#2f9d5c"/>
+        <path d="M32 30 C 26 22, 20 14, 22 8 C 28 14, 30 22, 32 30 Z" fill="#1f7a45"/>
+        <path d="M32 30 C 38 22, 44 14, 42 8 C 36 14, 34 22, 32 30 Z" fill="#1f7a45"/>
+        <rect x="29" y="29" width="6" height="26" rx="3" fill="#c98b4a"/>
+      </svg>
+      <span class="logo-text">SheetVend<small>マーケットデザイン</small></span>
+    </a>
+
+    <nav class="main-nav" id="main-nav">
+      <a href="#features">特徴</a>
+      <a href="#how">使い方</a>
+      <a href="#faq">よくある質問</a>
+      <a href="https://lin.ee/soWHL7L" target="_blank" rel="noopener" class="nav-cta">LINEで相談する</a>
+    </nav>
+
+    <button class="menu-toggle" id="menu-toggle" aria-label="メニューを開く" aria-expanded="false" aria-controls="main-nav">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="hero">
+    <div class="hero-inner wrap">
+      <div class="hero-copy">
+        <span class="badge">🌴 2026 NEW OPEN</span>
+        <h1>スプレッドシートひとつで、<br /><em>あなたのマーケット</em>をデザインしよう</h1>
+        <p class="lead">
+          SheetVendマーケットデザインは、Googleスプレッドシートだけで販売ページ・在庫管理・注文受付までまるごと作れるノーコードサービス。
+          専門知識ゼロ、カリフォルニアの陽気さそのままに、楽しくお店をはじめられます。
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-line" href="https://lin.ee/soWHL7L" target="_blank" rel="noopener">
+            💬 LINEで無料相談
+          </a>
+          <a class="btn btn-mail" href="mailto:sheetvend@gmail.com">
+            ✉️ メールで問い合わせ
+          </a>
+        </div>
+        <p class="hero-note">導入相談・お見積りは無料です。まずは気軽にご連絡ください。</p>
+      </div>
+
+      <div class="hero-art">
+        <!-- California x Animal Crossing style illustration -->
+        <svg class="scene" viewBox="0 0 640 520" role="img" aria-labelledby="scene-title">
+          <title id="scene-title">椰子の木とハリウッドサイン、サンタモニカ・ピアを背景に、くまとりすがビーチでくつろぐイラスト</title>
+          <defs>
+            <clipPath id="cardClip">
+              <rect x="0" y="0" width="640" height="520" rx="36" />
+            </clipPath>
+            <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#5ec9e8"/>
+              <stop offset="55%" stop-color="#ffcf94"/>
+              <stop offset="100%" stop-color="#ffe3b0"/>
+            </linearGradient>
+            <linearGradient id="oceanGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#3aa0d6"/>
+              <stop offset="100%" stop-color="#1f6f9e"/>
+            </linearGradient>
+            <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#fff6d8"/>
+              <stop offset="100%" stop-color="#ffd27a"/>
+            </radialGradient>
+          </defs>
+
+          <g clip-path="url(#cardClip)">
+            <rect x="0" y="0" width="640" height="520" fill="url(#skyGrad)" />
+
+            <!-- sun -->
+            <circle class="float-slow" cx="520" cy="90" r="52" fill="url(#sunGrad)" opacity="0.95" />
+
+            <!-- clouds -->
+            <g class="float" fill="#ffffff" opacity="0.9">
+              <ellipse cx="120" cy="70" rx="34" ry="16"/>
+              <ellipse cx="150" cy="62" rx="26" ry="14"/>
+              <ellipse cx="95" cy="62" rx="20" ry="12"/>
+            </g>
+            <g class="float-slow" fill="#ffffff" opacity="0.85">
+              <ellipse cx="330" cy="46" rx="28" ry="13"/>
+              <ellipse cx="355" cy="40" rx="20" ry="11"/>
+            </g>
+
+            <!-- birds -->
+            <g stroke="#2a5b78" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.7">
+              <path d="M410 60 q6 -8 12 0 q6 -8 12 0"/>
+              <path d="M445 78 q5 -7 10 0 q5 -7 10 0"/>
+            </g>
+
+            <!-- Hollywood hill -->
+            <path d="M0 190 Q 160 130 340 175 Q 420 195 460 175 L 640 210 L 640 260 L 0 260 Z" fill="#8fbf6a"/>
+            <path d="M0 200 Q 160 145 340 185 Q 420 205 460 185 L 640 218" fill="none" stroke="#6fa350" stroke-width="4" opacity="0.6"/>
+            <text x="150" y="178" font-family="'M PLUS Rounded 1c', sans-serif" font-weight="800" font-size="26" letter-spacing="3" fill="#ffffff" transform="rotate(-4 150 178)">HOLLYWOOD</text>
+
+            <!-- distant palm silhouettes on hill -->
+            <g fill="#4f8a52" opacity="0.8">
+              <ellipse cx="60" cy="185" rx="10" ry="5"/>
+              <rect x="58" y="185" width="4" height="16" rx="2"/>
+              <ellipse cx="500" cy="188" rx="10" ry="5"/>
+              <rect x="498" y="188" width="4" height="16" rx="2"/>
+            </g>
+
+            <!-- ocean -->
+            <rect x="0" y="255" width="640" height="130" fill="url(#oceanGrad)"/>
+            <g stroke="#eaf7ff" stroke-width="3" fill="none" opacity="0.55" stroke-linecap="round">
+              <path d="M20 300 q20 8 40 0 q20 -8 40 0 q20 8 40 0"/>
+              <path d="M300 320 q20 8 40 0 q20 -8 40 0 q20 8 40 0"/>
+              <path d="M420 290 q20 8 40 0 q20 -8 40 0 q20 8 40 0"/>
+            </g>
+
+            <!-- Santa Monica pier -->
+            <g>
+              <path d="M430 300 L 630 270 L 630 282 L 442 312 Z" fill="#b98450"/>
+              <path d="M442 312 L 630 282 L 630 292 L 448 322 Z" fill="#8a6238"/>
+              <g stroke="#8a6238" stroke-width="4">
+                <line x1="470" y1="308" x2="470" y2="335"/>
+                <line x1="520" y1="298" x2="520" y2="330"/>
+                <line x1="570" y1="288" x2="570" y2="322"/>
+                <line x1="615" y1="278" x2="615" y2="308"/>
+              </g>
+              <!-- ferris wheel -->
+              <g transform="translate(575,235)">
+                <circle r="34" fill="none" stroke="#e8546b" stroke-width="5"/>
+                <circle r="5" fill="#e8546b"/>
+                <g stroke="#e8546b" stroke-width="3">
+                  <line x1="0" y1="-34" x2="0" y2="34"/>
+                  <line x1="-34" y1="0" x2="34" y2="0"/>
+                  <line x1="-24" y1="-24" x2="24" y2="24"/>
+                  <line x1="-24" y1="24" x2="24" y2="-24"/>
+                </g>
+                <rect x="-52" y="30" width="6" height="46" fill="#8a6238"/>
+                <rect x="46" y="30" width="6" height="46" fill="#8a6238"/>
+              </g>
+            </g>
+
+            <!-- beach -->
+            <path d="M0 350 Q 320 320 640 355 L 640 520 L 0 520 Z" fill="#ffedcf"/>
+            <path d="M0 350 Q 320 320 640 355" fill="none" stroke="#ffffff" stroke-width="6" opacity="0.8"/>
+
+            <!-- palm trees foreground left -->
+            <g transform="translate(58,330)">
+              <path d="M0 190 C -4 130 4 90 10 40" fill="none" stroke="#a9743f" stroke-width="14" stroke-linecap="round"/>
+              <g fill="#2f9d5c">
+                <path d="M10 40 C -30 20 -55 30 -60 10 C -30 8 -6 20 10 40 Z"/>
+                <path d="M10 40 C 34 12 60 16 68 -6 C 36 -2 16 16 10 40 Z"/>
+                <path d="M10 40 C -18 6 -20 -20 -42 -30 C -26 0 -4 18 10 40 Z"/>
+                <path d="M10 40 C 24 4 20 -22 40 -36 C 30 -4 18 16 10 40 Z"/>
+                <path d="M10 40 C 2 2 10 -26 -2 -46 C 12 -20 14 8 10 40 Z"/>
+              </g>
+            </g>
+
+            <!-- palm trees foreground right -->
+            <g transform="translate(600,350)">
+              <path d="M0 170 C 6 118 -4 82 -12 36" fill="none" stroke="#a9743f" stroke-width="13" stroke-linecap="round"/>
+              <g fill="#2f9d5c">
+                <path d="M-12 36 C 22 18 44 26 50 8 C 22 6 0 18 -12 36 Z"/>
+                <path d="M-12 36 C -32 10 -54 14 -60 -6 C -30 -2 -14 14 -12 36 Z"/>
+                <path d="M-12 36 C 14 4 16 -20 36 -28 C 22 0 2 16 -12 36 Z"/>
+                <path d="M-12 36 C -22 2 -18 -20 -36 -32 C -24 -2 -14 14 -12 36 Z"/>
+              </g>
+            </g>
+
+            <!-- Bear character -->
+            <g transform="translate(230,395)">
+            <g class="bob">
+              <ellipse cx="0" cy="78" rx="30" ry="8" fill="#000" opacity="0.08"/>
+              <ellipse cx="0" cy="46" rx="46" ry="40" fill="#c98b4a"/>
+              <ellipse cx="0" cy="58" rx="26" ry="22" fill="#f0c98f"/>
+              <circle cx="-30" cy="-4" r="14" fill="#c98b4a"/>
+              <circle cx="30" cy="-4" r="14" fill="#c98b4a"/>
+              <circle cx="-30" cy="-4" r="7" fill="#f0c98f"/>
+              <circle cx="30" cy="-4" r="7" fill="#f0c98f"/>
+              <circle cx="0" cy="4" r="34" fill="#c98b4a"/>
+              <ellipse cx="0" cy="14" rx="16" ry="12" fill="#f0c98f"/>
+              <circle cx="0" cy="10" r="4.5" fill="#4a3220"/>
+              <path d="M-9 -2 q9 -8 18 0" stroke="#2a2320" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <path d="M12 -3 q9 -8 18 0" stroke="#2a2320" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <path d="M-8 20 q8 6 16 0" stroke="#4a3220" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+              <!-- rolled sheet -->
+              <g transform="translate(38,44) rotate(18)">
+                <rect x="-8" y="-20" width="16" height="40" rx="4" fill="#eaf7ff" stroke="#8fb9cf" stroke-width="2"/>
+                <line x1="-4" y1="-12" x2="4" y2="-12" stroke="#3aa0d6" stroke-width="2"/>
+                <line x1="-4" y1="-4" x2="4" y2="-4" stroke="#3aa0d6" stroke-width="2"/>
+                <line x1="-4" y1="4" x2="4" y2="4" stroke="#3aa0d6" stroke-width="2"/>
+                <line x1="-4" y1="12" x2="4" y2="12" stroke="#3aa0d6" stroke-width="2"/>
+              </g>
+              <ellipse cx="40" cy="52" rx="10" ry="9" fill="#c98b4a"/>
+              <ellipse cx="-40" cy="56" rx="10" ry="9" fill="#c98b4a"/>
+            </g>
+            </g>
+
+            <!-- Chipmunk character -->
+            <g transform="translate(345,415)">
+            <g class="bob">
+              <ellipse cx="0" cy="58" rx="22" ry="6" fill="#000" opacity="0.08"/>
+              <path d="M20 10 C 55 0 60 -40 40 -55 C 55 -30 45 -5 18 8 Z" fill="#e2a86f"/>
+              <path d="M20 10 C 48 2 52 -32 36 -46 C 48 -26 40 -8 16 6 Z" fill="#f6d9ac"/>
+              <ellipse cx="0" cy="30" rx="30" ry="28" fill="#e2a86f"/>
+              <ellipse cx="0" cy="38" rx="17" ry="15" fill="#f6d9ac"/>
+              <circle cx="-18" cy="-6" r="9" fill="#e2a86f"/>
+              <circle cx="14" cy="-10" r="9" fill="#e2a86f"/>
+              <circle cx="-18" cy="-6" r="4" fill="#f6d9ac"/>
+              <circle cx="14" cy="-10" r="4" fill="#f6d9ac"/>
+              <circle cx="0" cy="2" r="22" fill="#e2a86f"/>
+              <ellipse cx="0" cy="10" rx="11" ry="8" fill="#f6d9ac"/>
+              <circle cx="-6" cy="-2" r="3" fill="#2a2320"/>
+              <circle cx="8" cy="-4" r="3" fill="#2a2320"/>
+              <ellipse cx="1" cy="6" rx="2.4" ry="2" fill="#5b4025"/>
+              <path d="M-16 34 q16 8 32 0" stroke="#8a5a2c" stroke-width="2" fill="none" opacity="0.6"/>
+              <ellipse cx="20" cy="34" rx="7" ry="6" fill="#e2a86f"/>
+              <ellipse cx="-20" cy="38" rx="7" ry="6" fill="#e2a86f"/>
+            </g>
+            </g>
+
+            <!-- shells -->
+            <g fill="#ff8a4c" opacity="0.7">
+              <circle cx="150" cy="470" r="5"/>
+              <circle cx="470" cy="480" r="4"/>
+              <circle cx="410" cy="450" r="3.5"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <div class="wave-strip">
+      <svg viewBox="0 0 640 40" preserveAspectRatio="none" width="100%" height="40" aria-hidden="true">
+        <path d="M0 20 Q160 0 320 20 T640 20 V40 H0 Z" fill="#ffedcf"/>
+      </svg>
+    </div>
+  </section>
+
+  <section class="news">
+    <div class="wrap">
+      <div class="news-heading">📣 お知らせ</div>
+      <div class="news-grid">
+        <div class="news-card">
+          <time>2026.07.09</time>
+          <p>SheetVendマーケットデザインのサイトをリニューアルしました。</p>
+        </div>
+        <div class="news-card">
+          <time>2026.06.20</time>
+          <p>LINEでの導入相談窓口を開設しました。まずはお気軽にどうぞ。</p>
+        </div>
+        <div class="news-card">
+          <time>2026.06.01</time>
+          <p>スプレッドシート在庫連携テンプレートを追加公開しました。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">FEATURES</span>
+        <h2>むずかしい設定は、なし。</h2>
+        <p>使い慣れたスプレッドシートが、そのままあなたのお店の司令塔になります。</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">🧾</div>
+          <h3>スプレッドシート連携</h3>
+          <p>商品リスト・価格・在庫をシートに書くだけで、そのまま販売ページに反映されます。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">📦</div>
+          <h3>自動在庫管理</h3>
+          <p>注文が入ると在庫数を自動で更新。売り切れの見落としがありません。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🎨</div>
+          <h3>カスタムデザイン</h3>
+          <p>ブランドカラーやロゴを反映したオリジナルデザインのマーケットページを作成できます。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">⚡</div>
+          <h3>最短即日で公開</h3>
+          <p>テンプレートを使えば、シートを用意するだけで最短即日でマーケットを公開できます。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">💬</div>
+          <h3>LINEサポート</h3>
+          <p>導入や運用でつまずいたときも、LINEで気軽に相談できる安心のサポート体制です。</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">🌴</div>
+          <h3>楽しく続けられる運営</h3>
+          <p>むずかしい管理画面はなし。楽しみながら、長く続けられる運営体験を届けます。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" class="steps">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">HOW IT WORKS</span>
+        <h2>はじめかたは、3ステップ</h2>
+        <p>お申し込みから公開まで、いつも隣でサポートします。</p>
+      </div>
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-num">1</div>
+          <h3>ご相談</h3>
+          <p>LINEまたはメールで、やりたいことをお聞かせください。無料でご提案します。</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">2</div>
+          <h3>シートを準備</h3>
+          <p>専用テンプレートに商品情報を入力するだけ。デザインの反映もおまかせください。</p>
+        </div>
+        <div class="step-card">
+          <div class="step-num">3</div>
+          <h3>マーケット公開</h3>
+          <p>公開後も、シートを更新するだけでいつでも商品や在庫を反映できます。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-wrap">
+    <div class="cta-banner">
+      <svg class="palm-corner left" viewBox="0 -30 110 130" aria-hidden="true">
+        <path d="M50 100 C 46 60 54 40 60 10" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <g fill="#fff">
+          <path d="M60 10 C 30 -6 10 4 6 -14 C 32 -16 52 -4 60 10 Z"/>
+          <path d="M60 10 C 84 -10 100 -6 108 -26 C 82 -22 66 -8 60 10 Z"/>
+        </g>
+      </svg>
+      <svg class="palm-corner right" viewBox="0 -30 110 130" aria-hidden="true">
+        <path d="M50 100 C 46 60 54 40 60 10" stroke="#fff" stroke-width="6" fill="none" stroke-linecap="round"/>
+        <g fill="#fff">
+          <path d="M60 10 C 30 -6 10 4 6 -14 C 32 -16 52 -4 60 10 Z"/>
+          <path d="M60 10 C 84 -10 100 -6 108 -26 C 82 -22 66 -8 60 10 Z"/>
+        </g>
+      </svg>
+      <h2>あなたのマーケットを、今日デザインしよう。</h2>
+      <p>相談は無料。まずは気軽にLINEかメールでお声がけください。カリフォルニアの陽気さで、あなたの一歩を応援します。</p>
+      <div class="cta-actions">
+        <a class="btn btn-line" href="https://lin.ee/soWHL7L" target="_blank" rel="noopener">💬 LINEで相談する</a>
+        <a class="btn btn-mail" href="mailto:sheetvend@gmail.com">✉️ sheetvend@gmail.com</a>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">FAQ</span>
+        <h2>よくある質問</h2>
+      </div>
+      <div class="faq-list">
+        <details class="faq-item">
+          <summary>スプレッドシートの知識がなくても使えますか?</summary>
+          <p>はい。専用テンプレートに沿って情報を入力するだけなので、関数やマクロの知識は不要です。導入時にLINEでサポートいたします。</p>
+        </details>
+        <details class="faq-item">
+          <summary>どのくらいの期間でマーケットを公開できますか?</summary>
+          <p>シートの準備ができていれば、最短即日で公開可能です。デザインのカスタマイズがある場合は数日〜1週間ほどお時間をいただきます。</p>
+        </details>
+        <details class="faq-item">
+          <summary>公開後にサポートは受けられますか?</summary>
+          <p>もちろんです。LINEまたはメールで随時ご相談いただけます。運用開始後の改善提案も行っています。</p>
+        </details>
+        <details class="faq-item">
+          <summary>料金はどのくらいですか?</summary>
+          <p>ご要望の規模やデザインのカスタマイズ範囲によって異なります。まずは無料相談でお気軽にご要望をお聞かせください。</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand">
+          <svg class="logo-mark" viewBox="0 0 64 64" aria-hidden="true">
+            <circle cx="32" cy="32" r="32" fill="#ff8a4c"/>
+            <circle cx="32" cy="26" r="10" fill="#ffe8c2"/>
+            <path d="M32 30 C 24 20, 12 18, 8 22 C 14 26, 22 27, 26 31 Z" fill="#2f9d5c"/>
+            <path d="M32 30 C 40 20, 52 18, 56 22 C 50 26, 42 27, 38 31 Z" fill="#2f9d5c"/>
+            <rect x="29" y="29" width="6" height="26" rx="3" fill="#c98b4a"/>
+          </svg>
+          SheetVendマーケットデザイン
+        </div>
+        <p>スプレッドシートひとつで、あなたのマーケットをデザインする。カリフォルニアの陽気さそのままに。</p>
+      </div>
+      <div class="footer-col">
+        <h4>MENU</h4>
+        <ul>
+          <li><a href="#features">特徴</a></li>
+          <li><a href="#how">使い方</a></li>
+          <li><a href="#faq">よくある質問</a></li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>CONTACT</h4>
+        <ul>
+          <li><a class="footer-contact-btn" href="https://lin.ee/soWHL7L" target="_blank" rel="noopener">💬 LINEで相談する</a></li>
+          <li><a class="footer-contact-btn" href="mailto:sheetvend@gmail.com">✉️ sheetvend@gmail.com</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <dl class="info-bar">
+      <div>
+        <dt>サービス名</dt>
+        <dd>SheetVendマーケットデザイン</dd>
+      </div>
+      <div>
+        <dt>運営</dt>
+        <dd>SheetVend LLC</dd>
+      </div>
+      <div>
+        <dt>お問い合わせ (LINE)</dt>
+        <dd><a href="https://lin.ee/soWHL7L" target="_blank" rel="noopener">https://lin.ee/soWHL7L</a></dd>
+      </div>
+      <div>
+        <dt>お問い合わせ (メール)</dt>
+        <dd><a href="mailto:sheetvend@gmail.com">sheetvend@gmail.com</a></dd>
+      </div>
+    </dl>
+
+    <div class="footer-bottom">
+      &copy; 2026 SheetVend LLC. All rights reserved.
+    </div>
+  </div>
+</footer>
+
+<script src="/assets/script.js"></script>
+</body>
+</html>

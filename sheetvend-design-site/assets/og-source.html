@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:1200px; height:630px; overflow:hidden; font-family:"M PLUS Rounded 1c","Hiragino Maru Gothic ProN",sans-serif; }
+  .stage { position:relative; width:1200px; height:630px; }
+  .scene { position:absolute; inset:0; width:100%; height:100%; }
+  .overlay {
+    position:absolute; left:0; right:0; bottom:0;
+    padding:34px 56px 40px;
+    background: linear-gradient(0deg, rgba(30,58,82,0.82) 0%, rgba(30,58,82,0.0) 100%);
+    color:#fff;
+  }
+  .brand { display:flex; align-items:center; gap:14px; margin-bottom:10px; }
+  .brand-mark { width:46px; height:46px; }
+  .brand-name { font-size:28px; font-weight:800; }
+  .tagline { font-size:34px; font-weight:800; line-height:1.3; text-shadow:0 2px 6px rgba(0,0,0,0.25); }
+</style>
+</head>
+<body>
+<div class="stage">
+  <svg class="scene" viewBox="0 0 640 520" preserveAspectRatio="xMidYMid slice">
+    <defs>
+      <clipPath id="cardClip"><rect x="0" y="0" width="640" height="520" /></clipPath>
+      <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#5ec9e8"/>
+        <stop offset="55%" stop-color="#ffcf94"/>
+        <stop offset="100%" stop-color="#ffe3b0"/>
+      </linearGradient>
+      <linearGradient id="oceanGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#3aa0d6"/>
+        <stop offset="100%" stop-color="#1f6f9e"/>
+      </linearGradient>
+      <radialGradient id="sunGrad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#fff6d8"/>
+        <stop offset="100%" stop-color="#ffd27a"/>
+      </radialGradient>
+    </defs>
+    <g clip-path="url(#cardClip)">
+      <rect x="0" y="0" width="640" height="520" fill="url(#skyGrad)" />
+      <circle cx="520" cy="90" r="52" fill="url(#sunGrad)" opacity="0.95" />
+      <g fill="#ffffff" opacity="0.9">
+        <ellipse cx="120" cy="70" rx="34" ry="16"/>
+        <ellipse cx="150" cy="62" rx="26" ry="14"/>
+        <ellipse cx="95" cy="62" rx="20" ry="12"/>
+      </g>
+      <path d="M0 190 Q 160 130 340 175 Q 420 195 460 175 L 640 210 L 640 260 L 0 260 Z" fill="#8fbf6a"/>
+      <text x="150" y="178" font-family="'M PLUS Rounded 1c', sans-serif" font-weight="800" font-size="26" letter-spacing="3" fill="#ffffff" transform="rotate(-4 150 178)">HOLLYWOOD</text>
+      <rect x="0" y="255" width="640" height="130" fill="url(#oceanGrad)"/>
+      <g>
+        <path d="M430 300 L 630 270 L 630 282 L 442 312 Z" fill="#b98450"/>
+        <path d="M442 312 L 630 282 L 630 292 L 448 322 Z" fill="#8a6238"/>
+        <g transform="translate(575,235)">
+          <circle r="34" fill="none" stroke="#e8546b" stroke-width="5"/>
+          <circle r="5" fill="#e8546b"/>
+          <g stroke="#e8546b" stroke-width="3">
+            <line x1="0" y1="-34" x2="0" y2="34"/>
+            <line x1="-34" y1="0" x2="34" y2="0"/>
+            <line x1="-24" y1="-24" x2="24" y2="24"/>
+            <line x1="-24" y1="24" x2="24" y2="-24"/>
+          </g>
+        </g>
+      </g>
+      <path d="M0 350 Q 320 320 640 355 L 640 520 L 0 520 Z" fill="#ffedcf"/>
+      <g transform="translate(58,330)">
+        <path d="M0 190 C -4 130 4 90 10 40" fill="none" stroke="#a9743f" stroke-width="14" stroke-linecap="round"/>
+        <g fill="#2f9d5c">
+          <path d="M10 40 C -30 20 -55 30 -60 10 C -30 8 -6 20 10 40 Z"/>
+          <path d="M10 40 C 34 12 60 16 68 -6 C 36 -2 16 16 10 40 Z"/>
+          <path d="M10 40 C -18 6 -20 -20 -42 -30 C -26 0 -4 18 10 40 Z"/>
+          <path d="M10 40 C 24 4 20 -22 40 -36 C 30 -4 18 16 10 40 Z"/>
+        </g>
+      </g>
+      <g transform="translate(600,350)">
+        <path d="M0 170 C 6 118 -4 82 -12 36" fill="none" stroke="#a9743f" stroke-width="13" stroke-linecap="round"/>
+        <g fill="#2f9d5c">
+          <path d="M-12 36 C 22 18 44 26 50 8 C 22 6 0 18 -12 36 Z"/>
+          <path d="M-12 36 C -32 10 -54 14 -60 -6 C -30 -2 -14 14 -12 36 Z"/>
+        </g>
+      </g>
+      <g transform="translate(230,395)">
+        <ellipse cx="0" cy="46" rx="46" ry="40" fill="#c98b4a"/>
+        <ellipse cx="0" cy="58" rx="26" ry="22" fill="#f0c98f"/>
+        <circle cx="-30" cy="-4" r="14" fill="#c98b4a"/>
+        <circle cx="30" cy="-4" r="14" fill="#c98b4a"/>
+        <circle cx="-30" cy="-4" r="7" fill="#f0c98f"/>
+        <circle cx="30" cy="-4" r="7" fill="#f0c98f"/>
+        <circle cx="0" cy="4" r="34" fill="#c98b4a"/>
+        <ellipse cx="0" cy="14" rx="16" ry="12" fill="#f0c98f"/>
+        <circle cx="0" cy="10" r="4.5" fill="#4a3220"/>
+        <path d="M-9 -2 q9 -8 18 0" stroke="#2a2320" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M12 -3 q9 -8 18 0" stroke="#2a2320" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </g>
+      <g transform="translate(345,415)">
+        <path d="M20 10 C 55 0 60 -40 40 -55 C 55 -30 45 -5 18 8 Z" fill="#e2a86f"/>
+        <ellipse cx="0" cy="30" rx="30" ry="28" fill="#e2a86f"/>
+        <ellipse cx="0" cy="38" rx="17" ry="15" fill="#f6d9ac"/>
+        <circle cx="-18" cy="-6" r="9" fill="#e2a86f"/>
+        <circle cx="14" cy="-10" r="9" fill="#e2a86f"/>
+        <circle cx="0" cy="2" r="22" fill="#e2a86f"/>
+        <ellipse cx="0" cy="10" rx="11" ry="8" fill="#f6d9ac"/>
+        <circle cx="-6" cy="-2" r="3" fill="#2a2320"/>
+        <circle cx="8" cy="-4" r="3" fill="#2a2320"/>
+      </g>
+    </g>
+  </svg>
+  <div class="overlay">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 64 64">
+        <circle cx="32" cy="32" r="32" fill="#ff8a4c"/>
+        <circle cx="32" cy="26" r="10" fill="#ffe8c2"/>
+        <rect x="29" y="29" width="6" height="26" rx="3" fill="#c98b4a"/>
+      </svg>
+      <div class="brand-name">SheetVendマーケットデザイン</div>
+    </div>
+    <div class="tagline">スプレッドシートひとつで、あなたのマーケットをデザインしよう</div>
+  </div>
+</div>
+</body>
+</html>
