@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ロサンゼルスで大学進学・学位取得 ｜ SCSU 認定大学（日本人向け）</title>
+  <meta name="description" content="Southern California State University（SCSU）は、ロサンゼルスの認定大学。ESLから学士・修士・博士まで、手頃な学費で学位取得。卒業後はOPTでアメリカ就労も。日本人向けサポート。姉妹校は語学学校HEI。" />
+  <style>
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+      color: #1a1a1a;
+      background: #fff;
+      line-height: 1.7;
+    }
+    img { max-width: 100%; height: auto; display: block; }
+    a { color: inherit; text-decoration: none; }
+
+    /* ===== UTILITY ===== */
+    .container { max-width: 860px; margin: 0 auto; padding: 0 20px; }
+    .section { padding: 64px 0; }
+    .section-label {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      color: #888;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .section-title {
+      font-size: clamp(22px, 4vw, 32px);
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 24px;
+    }
+    .section-title em { font-style: normal; color: #c8960a; }
+    .divider { border: none; border-top: 1px solid #e8e8e8; margin: 0; }
+
+    /* ===== STICKY HEADER ===== */
+    .sticky-header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      background: rgba(255,255,255,0.97);
+      border-bottom: 1px solid #e8e8e8;
+      padding: 0 20px;
+      display: flex; align-items: stretch; justify-content: space-between;
+      height: 52px;
+    }
+    .header-left { display: flex; align-items: center; gap: 6px; }
+    .header-logo { font-weight: 900; font-size: 15px; letter-spacing: 0.05em; }
+    .header-logo .sep { color: #ccc; margin: 0 4px; font-weight: 300; }
+    .header-sub { font-size: 11px; color: #888; }
+    .header-cta {
+      background: #06C755; color: #fff;
+      padding: 0 18px;
+      font-weight: 700; font-size: 13px;
+      display: flex; align-items: center; gap: 6px;
+      border: none; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .header-cta:hover { background: #05a847; }
+
+    /* ===== SCHOOL TAB SWITCHER ===== */
+    .school-switcher {
+      position: sticky;
+      top: 52px;
+      z-index: 150;
+      background: #fff;
+      border-bottom: 3px solid #e8e8e8;
+      display: flex;
+    }
+    .school-tab-btn {
+      flex: 1;
+      padding: 0 16px;
+      height: 56px;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      font-weight: 700; font-size: 15px;
+      color: #999;
+      cursor: pointer;
+      border: none;
+      background: #f8f8f8;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -3px;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .school-tab-btn .tab-icon {
+      width: 28px; height: 28px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 900;
+      flex-shrink: 0;
+    }
+    .school-tab-btn .tab-label { text-align: left; }
+    .school-tab-btn .tab-name { display: block; font-size: 15px; font-weight: 700; line-height: 1.2; }
+    .school-tab-btn .tab-desc { display: block; font-size: 11px; font-weight: 400; color: #aaa; }
+
+    /* HEI tab */
+    .school-tab-btn.tab-hei .tab-icon { background: #1a1a2e; color: #f5c842; }
+    .school-tab-btn.tab-hei.active {
+      color: #1a1a2e;
+      background: #fff;
+      border-bottom-color: #c8960a;
+    }
+    .school-tab-btn.tab-hei.active .tab-desc { color: #888; }
+
+    /* SCSU tab */
+    .school-tab-btn.tab-scsu .tab-icon { background: #1a3a5c; color: #7ec8f5; }
+    .school-tab-btn.tab-scsu.active {
+      color: #1a3a5c;
+      background: #fff;
+      border-bottom-color: #2d6a9f;
+    }
+    .school-tab-btn.tab-scsu.active .tab-desc { color: #888; }
+
+    .school-tab-btn:hover:not(.active) { background: #f0f0f0; color: #555; }
+
+    /* ===== TAB CONTENT PANELS ===== */
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ===== HEI PANEL (existing LP) ===== */
+
+    /* HEI HERO */
+    .hei-hero {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      color: #fff;
+      padding: 56px 20px 64px;
+    }
+    .hei-hero .badge {
+      display: inline-block;
+      background: rgba(200,150,10,0.25);
+      border: 1px solid #c8960a;
+      color: #f5c842;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+    .hei-hero h1 {
+      font-size: clamp(28px, 6vw, 48px);
+      font-weight: 900;
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+    .hei-hero h1 .accent { color: #f5c842; }
+    .hei-hero .sub {
+      font-size: clamp(13px, 2vw, 16px);
+      color: rgba(255,255,255,0.85);
+      margin-bottom: 28px;
+      max-width: 560px;
+      line-height: 1.7;
+    }
+    .hei-price-box {
+      display: inline-flex; align-items: baseline; gap: 6px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      padding: 14px 22px;
+      margin-bottom: 28px;
+    }
+    .hei-price-box .cur { font-size: 20px; color: #f5c842; }
+    .hei-price-box .num { font-size: 56px; font-weight: 900; color: #f5c842; line-height: 1; }
+    .hei-price-box .unit { font-size: 13px; color: rgba(255,255,255,0.7); }
+    .cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-line {
+      background: #06C755; color: #fff;
+      padding: 14px 28px; border-radius: 8px;
+      font-weight: 700; font-size: 15px;
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: background 0.2s; border: none; cursor: pointer;
+    }
+    .btn-line:hover { background: #05a847; }
+    .btn-outline-w {
+      background: transparent; color: #fff;
+      border: 2px solid rgba(255,255,255,0.5);
+      padding: 14px 28px; border-radius: 8px;
+      font-weight: 700; font-size: 15px;
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-outline-w:hover { background: rgba(255,255,255,0.1); border-color: #fff; }
+
+    /* HEI PAIN */
+    .pain-list { display: grid; gap: 10px; }
+    .pain-item {
+      background: #f9f9f9;
+      border-left: 3px solid #e0e0e0;
+      padding: 13px 16px;
+      border-radius: 0 8px 8px 0;
+      font-size: 15px; color: #444;
+    }
+    .pain-item::before { content: "…"; margin-right: 8px; color: #bbb; }
+
+    /* HEI REASON CARDS */
+    .reason-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .reason-card { background: #f9f9f9; border-radius: 12px; padding: 22px 18px; }
+    .reason-num { font-size: 34px; font-weight: 900; color: #e8e8e8; line-height: 1; margin-bottom: 8px; }
+    .reason-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .reason-desc { font-size: 13px; color: #666; }
+
+    /* HEI PRICE COMPARE */
+    .price-compare {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 16px; align-items: center; margin: 28px 0;
+    }
+    .price-box { background: #f9f9f9; border-radius: 12px; padding: 22px 18px; text-align: center; }
+    .price-box.hl { background: #1a1a2e; color: #fff; }
+    .price-box .lbl { font-size: 12px; color: #888; margin-bottom: 6px; }
+    .price-box.hl .lbl { color: rgba(255,255,255,0.6); }
+    .price-box .sn { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+    .price-box .pn { font-size: 34px; font-weight: 900; line-height: 1; }
+    .price-box.hl .pn { color: #f5c842; }
+    .price-box .ps { font-size: 12px; color: #888; margin-top: 4px; }
+    .price-box.hl .ps { color: rgba(255,255,255,0.6); }
+    .vs-b { font-size: 20px; font-weight: 900; color: #c8960a; text-align: center; }
+    .diff-note { text-align: center; font-size: 14px; color: #555; margin-top: 10px; }
+    .diff-note strong { color: #c8960a; }
+
+    /* HEI PRICING CARDS */
+    .pricing-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 14px; margin: 28px 0;
+    }
+    .pricing-card { border: 2px solid #e8e8e8; border-radius: 12px; padding: 22px 14px; text-align: center; position: relative; }
+    .pricing-card.pop { border-color: #c8960a; }
+    .pop-badge {
+      position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
+      background: #c8960a; color: #fff;
+      font-size: 11px; font-weight: 700;
+      padding: 3px 12px; border-radius: 20px; white-space: nowrap;
+    }
+    .pricing-card .wk { font-size: 12px; color: #888; margin-bottom: 4px; }
+    .pricing-card .pb { font-size: 38px; font-weight: 900; line-height: 1; }
+    .pricing-card .pj { font-size: 12px; color: #888; margin-top: 4px; }
+    .pricing-card .pd { font-size: 12px; color: #666; margin-top: 10px; }
+
+    /* STEPS */
+    .steps { display: grid; gap: 0; }
+    .step { display: grid; grid-template-columns: 48px 1fr; gap: 14px; padding: 22px 0; border-bottom: 1px solid #f0f0f0; }
+    .step:last-child { border-bottom: none; }
+    .step-num {
+      width: 48px; height: 48px; background: #1a1a2e; color: #fff;
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 18px; font-weight: 900; flex-shrink: 0;
+    }
+    .step-body { padding-top: 4px; }
+    .step-title { font-size: 16px; font-weight: 700; margin-bottom: 5px; }
+    .step-desc { font-size: 14px; color: #555; }
+
+    /* WHY GRID */
+    .why-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; }
+    .why-card { background: #f9f9f9; border-radius: 12px; padding: 22px 18px; }
+    .why-icon { font-size: 26px; margin-bottom: 10px; }
+    .why-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .why-desc { font-size: 13px; color: #555; }
+
+    /* TESTIMONIALS */
+    .testimonials { display: grid; gap: 16px; }
+    .testimonial { background: #f9f9f9; border-radius: 12px; padding: 22px 18px; }
+    .stars { color: #f5c842; font-size: 13px; margin-bottom: 8px; }
+    .testimonial-text { font-size: 14px; color: #444; line-height: 1.7; margin-bottom: 12px; }
+    .testimonial-author { display: flex; align-items: center; gap: 10px; }
+    .author-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: #1a1a2e; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px; flex-shrink: 0;
+    }
+    .author-name { font-size: 13px; font-weight: 700; }
+    .author-desc { font-size: 12px; color: #888; }
+
+    /* ===== SCSU PANEL (new LP) ===== */
+
+    /* SCSU HERO */
+    .scsu-hero {
+      background: linear-gradient(135deg, #0d2137 0%, #1a3a5c 60%, #2d6a9f 100%);
+      color: #fff;
+      padding: 56px 20px 64px;
+    }
+    .scsu-hero .badge {
+      display: inline-block;
+      background: rgba(45,106,159,0.3);
+      border: 1px solid #5ba3d9;
+      color: #a8d4f5;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+    .scsu-hero h1 {
+      font-size: clamp(26px, 5.5vw, 46px);
+      font-weight: 900;
+      line-height: 1.2;
+      margin-bottom: 12px;
+    }
+    .scsu-hero h1 .accent { color: #7ec8f5; }
+    .scsu-hero .sub {
+      font-size: clamp(13px, 2vw, 16px);
+      color: rgba(255,255,255,0.85);
+      margin-bottom: 28px;
+      max-width: 580px;
+      line-height: 1.7;
+    }
+    .scsu-price-box {
+      display: inline-flex; align-items: baseline; gap: 6px;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      padding: 14px 22px;
+      margin-bottom: 28px;
+    }
+    .scsu-price-box .cur { font-size: 20px; color: #7ec8f5; }
+    .scsu-price-box .num { font-size: 56px; font-weight: 900; color: #7ec8f5; line-height: 1; }
+    .scsu-price-box .unit { font-size: 13px; color: rgba(255,255,255,0.7); }
+    .btn-scsu-primary {
+      background: #2d6a9f; color: #fff;
+      padding: 14px 28px; border-radius: 8px;
+      font-weight: 700; font-size: 15px;
+      display: inline-flex; align-items: center; gap: 8px;
+      transition: background 0.2s; border: none; cursor: pointer;
+    }
+    .btn-scsu-primary:hover { background: #1e4f7a; }
+
+    /* SCSU TARGET */
+    .target-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+    }
+    .target-card {
+      border: 2px solid #e8f4fd;
+      border-radius: 12px;
+      padding: 20px 16px;
+      background: #f0f8ff;
+    }
+    .target-card .t-icon { font-size: 24px; margin-bottom: 8px; }
+    .target-card .t-title { font-size: 14px; font-weight: 700; color: #1a3a5c; margin-bottom: 4px; }
+    .target-card .t-desc { font-size: 13px; color: #555; }
+
+    /* SCSU REASONS */
+    .scsu-reason-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .scsu-reason-card { background: #f0f8ff; border-radius: 12px; padding: 22px 18px; border-left: 4px solid #2d6a9f; }
+    .scsu-reason-num { font-size: 34px; font-weight: 900; color: #c8e8f8; line-height: 1; margin-bottom: 8px; }
+    .scsu-reason-title { font-size: 15px; font-weight: 700; color: #1a3a5c; margin-bottom: 6px; }
+    .scsu-reason-desc { font-size: 13px; color: #555; }
+
+    /* SCSU PATH */
+    .path-flow {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0; flex-wrap: wrap; margin: 28px 0;
+    }
+    .path-node {
+      background: #fff; border: 2px solid #d0e8f8;
+      border-radius: 10px; padding: 14px 18px;
+      text-align: center; min-width: 120px;
+    }
+    .path-node.active { border-color: #2d6a9f; background: #2d6a9f; color: #fff; }
+    .path-node .nl { font-size: 10px; color: #888; margin-bottom: 3px; }
+    .path-node.active .nl { color: rgba(255,255,255,0.7); }
+    .path-node .nn { font-size: 14px; font-weight: 700; }
+    .path-node .ns { font-size: 11px; font-weight: 400; color: #888; }
+    .path-node.active .ns { color: rgba(255,255,255,0.8); }
+    .path-arr { font-size: 20px; color: #2d6a9f; padding: 0 8px; }
+
+    /* SCSU PROGRAM TABLE */
+    .prog-table {
+      width: 100%; border-collapse: collapse;
+      background: #fff; border-radius: 12px; overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .prog-table th {
+      background: #1a3a5c; color: #fff;
+      padding: 13px 14px; text-align: left;
+      font-size: 13px; font-weight: 700;
+    }
+    .prog-table td {
+      padding: 13px 14px; border-bottom: 1px solid #f0f0f0; font-size: 14px;
+    }
+    .prog-table tr:last-child td { border-bottom: none; }
+    .prog-table tr:hover td { background: #f5faff; }
+    .tag-stem { display: inline-block; background: #e8f4fd; color: #2d6a9f; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-left: 4px; }
+    .tag-opt { display: inline-block; background: #e8fdf0; color: #1a7a40; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-left: 4px; }
+    .tag-new { display: inline-block; background: #fff3e0; color: #e65100; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-left: 4px; }
+
+    /* OPT HIGHLIGHT */
+    .opt-block {
+      background: linear-gradient(135deg, #1a7a40 0%, #2d9a5a 100%);
+      color: #fff; border-radius: 12px; padding: 30px 24px; margin: 28px 0;
+    }
+    .opt-block h3 { font-size: 20px; font-weight: 700; margin-bottom: 10px; }
+    .opt-block p { font-size: 14px; color: rgba(255,255,255,0.9); line-height: 1.7; }
+    .opt-points {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 14px; margin-top: 18px;
+    }
+    .opt-pt {
+      background: rgba(255,255,255,0.15); border-radius: 8px;
+      padding: 14px; text-align: center;
+    }
+    .opt-pt .on { font-size: 28px; font-weight: 900; color: #a8f0c0; }
+    .opt-pt .ol { font-size: 12px; color: rgba(255,255,255,0.85); margin-top: 4px; }
+
+    /* ACCREDITATION */
+    .acc-badges { display: flex; gap: 10px; flex-wrap: wrap; margin: 20px 0; }
+    .acc-badge {
+      background: #fff; border: 1px solid #d0e8f8;
+      border-radius: 8px; padding: 9px 14px;
+      font-size: 13px; font-weight: 600; color: #1a3a5c;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .acc-badge .ck { color: #2d9a5a; }
+
+    /* SCSU TESTIMONIALS */
+    .scsu-testimonial { background: #f0f8ff; border-radius: 12px; padding: 22px 18px; }
+    .scsu-testimonial .author-avatar { background: #2d6a9f; }
+
+    /* CAMPUS GRID */
+    .campus-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .campus-card {
+      background: #fff;
+      border: 2px solid #d0e8f8;
+      border-radius: 12px;
+      padding: 20px 18px;
+      position: relative;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .campus-card:hover { border-color: #2d6a9f; box-shadow: 0 4px 16px rgba(45,106,159,0.12); }
+    .campus-card.main-campus { border-color: #2d6a9f; background: #f0f8ff; }
+    .campus-badge {
+      display: inline-block;
+      background: #2d6a9f; color: #fff;
+      font-size: 10px; font-weight: 700;
+      padding: 2px 10px; border-radius: 20px;
+      margin-bottom: 10px;
+    }
+    .campus-city { font-size: 12px; color: #888; margin-bottom: 4px; }
+    .campus-name { font-size: 16px; font-weight: 700; color: #1a3a5c; margin-bottom: 8px; }
+    .campus-addr { font-size: 13px; color: #444; line-height: 1.6; margin-bottom: 8px; }
+    .campus-note { font-size: 12px; color: #888; margin-bottom: 12px; line-height: 1.5; }
+    .campus-link {
+      display: inline-block;
+      font-size: 13px; font-weight: 600; color: #2d6a9f;
+      text-decoration: none;
+    }
+    .campus-link:hover { text-decoration: underline; }
+
+    /* ADMISSION STEPS */
+    .adm-steps { display: grid; gap: 0; }
+    .adm-step {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 14px;
+      padding: 20px 0;
+      border-bottom: 1px solid #e8f4fd;
+    }
+    .adm-step:last-child { border-bottom: none; }
+    .adm-num {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, #1a3a5c, #2d6a9f);
+      color: #fff; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 17px; font-weight: 900; flex-shrink: 0;
+    }
+    .adm-body { padding-top: 2px; }
+    .adm-title { font-size: 16px; font-weight: 700; color: #1a3a5c; margin-bottom: 5px; }
+    .adm-desc { font-size: 14px; color: #555; line-height: 1.7; margin-bottom: 6px; }
+    .adm-tip {
+      display: inline-block;
+      background: #e8f4fd; color: #2d6a9f;
+      font-size: 12px; font-weight: 600;
+      padding: 3px 10px; border-radius: 20px;
+    }
+
+    /* ===== CONTACT SECTION (shared) ===== */
+    .contact-section { background: #f9f9f9; }
+    .contact-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 36px; align-items: start;
+    }
+    @media (max-width: 640px) { .contact-grid { grid-template-columns: 1fr; } }
+    .contact-info h3 { font-size: 20px; font-weight: 700; margin-bottom: 14px; }
+    .contact-info p { font-size: 14px; color: #555; margin-bottom: 18px; line-height: 1.7; }
+    .line-cta-box {
+      background: #06C755; border-radius: 12px; padding: 18px;
+      text-align: center; margin-bottom: 14px;
+    }
+    .line-cta-box a {
+      color: #fff; font-weight: 700; font-size: 16px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .line-cta-box p { color: rgba(255,255,255,0.85); font-size: 12px; margin-top: 5px; margin-bottom: 0; }
+    .or-divider {
+      text-align: center; font-size: 13px; color: #888; margin: 10px 0;
+      position: relative;
+    }
+    .or-divider::before, .or-divider::after {
+      content: ''; position: absolute; top: 50%;
+      width: 38%; height: 1px; background: #e8e8e8;
+    }
+    .or-divider::before { left: 0; }
+    .or-divider::after { right: 0; }
+
+    .contact-form-box { background: #fff; border-radius: 12px; padding: 26px 22px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+    .contact-form-box h3 { font-size: 18px; font-weight: 700; margin-bottom: 18px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #444; }
+    .form-group label .req { color: #e53e3e; margin-left: 3px; }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%; border: 1.5px solid #e8e8e8; border-radius: 8px;
+      padding: 11px 13px; font-size: 14px; font-family: inherit;
+      transition: border-color 0.2s; background: #fff; color: #1a1a1a;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus { outline: none; border-color: #2d6a9f; }
+    .form-group textarea { resize: vertical; min-height: 90px; }
+    .form-submit {
+      width: 100%; border: none; padding: 15px;
+      border-radius: 8px; font-size: 16px; font-weight: 700;
+      cursor: pointer; transition: background 0.2s; font-family: inherit;
+      color: #fff;
+    }
+    .form-submit.hei-submit { background: #1a1a2e; }
+    .form-submit.hei-submit:hover { background: #0d0d1a; }
+    .form-submit.scsu-submit { background: #1a3a5c; }
+    .form-submit.scsu-submit:hover { background: #0d2137; }
+    .form-note { font-size: 12px; color: #888; text-align: center; margin-top: 8px; }
+    .form-success {
+      display: none; background: #e8fdf0; border: 1px solid #a8f0c0;
+      border-radius: 8px; padding: 14px; text-align: center;
+      color: #1a7a40; font-weight: 600; margin-top: 14px;
+    }
+
+    /* ===== CTA FINAL ===== */
+    .cta-final {
+      color: #fff; text-align: center; padding: 60px 20px;
+    }
+    .cta-final.hei-cta { background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%); }
+    .cta-final.scsu-cta { background: linear-gradient(135deg, #0d2137 0%, #1a3a5c 100%); }
+    .cta-final h2 { font-size: clamp(20px, 4vw, 30px); font-weight: 900; margin-bottom: 10px; }
+    .cta-final p { font-size: 15px; color: rgba(255,255,255,0.8); margin-bottom: 28px; }
+    .cta-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+
+    /* ===== FOOTER ===== */
+    footer {
+      background: #111; color: rgba(255,255,255,0.6);
+      padding: 28px 20px; font-size: 12px;
+      text-align: center; line-height: 1.9;
+    }
+    footer a { color: rgba(255,255,255,0.6); text-decoration: underline; }
+    footer a:hover { color: #fff; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 640px) {
+      .price-compare { grid-template-columns: 1fr; }
+      .vs-b { display: none; }
+      .path-flow { gap: 4px; }
+      .path-arr { font-size: 14px; padding: 0 4px; }
+      .path-node { min-width: 80px; padding: 10px 10px; }
+      .school-tab-btn .tab-desc { display: none; }
+      .school-tab-btn { font-size: 14px; }
+    }
+
+    /* ===== SCHOOL INFO BOX ===== */
+    .school-info-box {
+      background: #fff; border-radius: 12px; padding: 22px 18px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .school-info-box p { font-size: 14px; color: #444; margin-bottom: 10px; }
+    .school-info-box p:last-child { margin-bottom: 0; }
+
+    /* ===== VISA URGENCY BANNER ===== */
+    .visa-urgency-bar {
+      background: linear-gradient(135deg, #c0392b, #e74c3c);
+      color: #fff;
+      padding: 0;
+      overflow: hidden;
+    }
+    .visa-urgency-inner {
+      max-width: 860px; margin: 0 auto; padding: 14px 20px;
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    }
+    .visa-urgency-icon {
+      font-size: 22px; flex-shrink: 0;
+    }
+    .visa-urgency-text { flex: 1; min-width: 200px; }
+    .visa-urgency-text strong {
+      display: block; font-size: 15px; font-weight: 800;
+      margin-bottom: 3px; letter-spacing: 0.02em;
+    }
+    .visa-urgency-text span {
+      font-size: 13px; color: rgba(255,255,255,0.9); line-height: 1.5;
+    }
+    .visa-urgency-badge {
+      background: #fff; color: #c0392b;
+      font-size: 11px; font-weight: 800;
+      padding: 4px 12px; border-radius: 20px;
+      white-space: nowrap; flex-shrink: 0;
+      animation: pulse-badge 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse-badge {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+    .visa-urgency-cta {
+      background: #fff; color: #c0392b;
+      font-size: 13px; font-weight: 700;
+      padding: 8px 18px; border-radius: 6px;
+      text-decoration: none; white-space: nowrap; flex-shrink: 0;
+      transition: background 0.2s;
+    }
+    .visa-urgency-cta:hover { background: #ffe0de; }
+    @media (max-width: 640px) {
+      .visa-urgency-inner { gap: 8px; }
+      .visa-urgency-text strong { font-size: 13px; }
+      .visa-urgency-cta { width: 100%; text-align: center; }
+    }
+  </style>
+  <style>
+    /* standalone SCSU page: reveal panel, offset fixed header */
+    #panelScsu { display:block; }
+    .sticky-header .header-logo { font-size:16px; }
+  </style>
+</head>
+<body>
+
+<header class="sticky-header">
+  <div class="header-left">
+    <a href="index.html" style="display:inline-flex;align-items:center;gap:5px;background:#1a3a5c;color:#fff;font-weight:700;font-size:12px;padding:6px 13px;border-radius:20px;text-decoration:none;white-space:nowrap;margin-right:4px;">← <span data-i18n="tab-hei-name">語学学校 HEI</span></a>
+    <span class="header-logo" style="color:#1a3a5c;">SCSU</span>
+    <span class="header-sub">Los Angeles</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <button id="langToggleBtn" onclick="toggleLang()" style="background:#f0f0f0;border:1px solid #ddd;border-radius:20px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer;color:#444;display:flex;align-items:center;gap:5px;transition:all 0.2s;" title="Switch Language">
+      <span id="langBtnLabel">🇬🇧 EN</span>
+    </button>
+    <a href="https://lin.ee/nA6pMP8n" class="header-cta" target="_blank" rel="noopener">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.630 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.070 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+    <span data-i18n="header-line-cta">LINEで相談</span>
+  </a>
+  </div>
+</header>
+
+<div style="height:52px;"></div>
+
+<div class="tab-panel active" id="panelScsu">
+
+  <!-- VISA URGENCY BANNER -->
+  <div class="visa-urgency-bar">
+    <div class="visa-urgency-inner">
+      <div class="visa-urgency-icon">⚠️</div>
+      <div class="visa-urgency-text">
+        <strong data-i18n="visa-urg-title">アメリカ学生ビザの新ルールが9月15日に施行——今すぐ留学プランを見直してください</strong>
+        <span data-i18n="visa-urg-sub">新ルールにより、語学学校だけでの長期滞在に制限がかかる可能性があります。学位取得・OPT就労を目指す方は、今がプラン変更のチャンス。</span>
+      </div>
+      <div class="visa-urgency-badge" data-i18n="visa-urg-badge">カウントダウン中</div>
+      <a href="#scsu-contact" class="visa-urgency-cta" data-i18n="visa-urg-cta">今すぐ相談する</a>
+    </div>
+  </div>
+
+  <!-- SCSU HERO -->
+  <div class="scsu-hero">
+    <div class="container">
+      <span class="badge" data-i18n="scsu-badge">🎓 カリフォルニア州内 6キャンパス ｜ 手頃な学費 ｜ OPT就労対応</span>
+      <h1><span data-i18n="scsu-h1-line1">ロサンゼルスで</span><br><span class="accent" data-i18n="scsu-h1-accent1">学位取得</span><span data-i18n="scsu-h1-line2">と</span><br><span class="accent" data-i18n="scsu-h1-accent2">アメリカ就労</span><span data-i18n="scsu-h1-end">を実現。</span></h1>
+      <p class="sub" data-i18n="scsu-sub">Southern California State University（SCSU）は、ロサンゼルスにある認定大学。ESLから博士号まで、手頃な学費でキャリアアップを目指せます。学位取得後はOPT（最大12ヶ月）でアメリカ国内での有給就労経験も。</p>
+      <div class="scsu-price-box">
+        <span class="cur">$</span>
+        <span class="num">1,500</span>
+        <span class="unit" data-i18n="scsu-price-unit">〜 / 1クォーター<br>学士・修士プログラム</span>
+      </div>
+      <div class="cta-row">
+        <a href="#scsu-contact" class="btn-scsu-primary" data-i18n="scsu-cta-consult">無料相談・お問い合わせ</a>
+        <a href="#scsu-programs" class="btn-outline-w" data-i18n="scsu-cta-programs">プログラム一覧を見る</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCSU MAIN CONTENT -->
+  <section class="section">
+    <div class="container">
+
+      <!-- こんな方へ -->
+      <p class="section-label" data-i18n="scsu-label-whom">こんな方へ</p>
+      <h2 class="section-title" data-i18n="scsu-title-whom" data-i18n-html>SCSUは、<em>こんな方におすすめです。</em></h2>
+      <div class="target-cards" style="margin-bottom:48px;">
+        <div class="target-card">
+          <div class="t-icon">🎓</div>
+          <div class="t-title" data-i18n="scsu-t1-title">アメリカで学位を取りたい</div>
+          <div class="t-desc" data-i18n="scsu-t1-desc">学士・修士・博士まで、手頃な学費でアメリカの学位を取得できます。</div>
+        </div>
+        <div class="target-card">
+          <div class="t-icon">💼</div>
+          <div class="t-title" data-i18n="scsu-t2-title">卒業後にアメリカで働きたい</div>
+          <div class="t-desc" data-i18n="scsu-t2-desc">OPTで最大12ヶ月（STEM専攻は36ヶ月）、アメリカ国内で有給就労経験を積めます。</div>
+        </div>
+        <div class="target-card">
+          <div class="t-icon">💰</div>
+          <div class="t-title" data-i18n="scsu-t3-title">学費を抑えたい</div>
+          <div class="t-desc" data-i18n="scsu-t3-desc">1クォーター$1,500〜。一般的なアメリカの大学と比べて非常にリーズナブルです。</div>
+        </div>
+        <div class="target-card">
+          <div class="t-icon">📈</div>
+          <div class="t-title" data-i18n="scsu-t4-title">ビジネス・ITスキルを磨きたい</div>
+          <div class="t-desc" data-i18n="scsu-t4-desc">MBA・ビジネス統計・コンピュータサイエンスなど、就職に直結するプログラムが充実。</div>
+        </div>
+      </div>
+
+      <!-- SCSUが選ばれる理由 -->
+      <p class="section-label" data-i18n="scsu-label-why">WHY SCSU ／ 選ばれる理由</p>
+      <h2 class="section-title" data-i18n="scsu-title-why" data-i18n-html>SCSUが選ばれる、<em>3つの理由。</em></h2>
+      <div class="scsu-reason-cards" style="margin-bottom:48px;">
+
+        <!-- 01: キャンパス -->
+        <div class="scsu-reason-card" style="position:relative;overflow:hidden;">
+          <div class="scsu-reason-num">01</div>
+          <div class="scsu-reason-title" data-i18n="scsu-r1-title">📍 カリフォルニア州内　6キャンパスから選べる</div>
+          <div class="scsu-reason-desc" data-i18n="scsu-r1-desc">ロサンゼルス（メイン）・サンタアナ・サンディエゴ・オークランド・エルモンテ・リバーサイドの6都市にキャンパスを展開。お住まいや生活環境に合わせて自分に合ったキャンパスを選べます。</div>
+          <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;">
+            <span style="background:#e8f4fd;color:#1a3a5c;font-size:11px;font-weight:700;padding:3px 9px;border-radius:12px;">LA メイン</span>
+            <span style="background:#e8f4fd;color:#1a3a5c;font-size:11px;font-weight:700;padding:3px 9px;border-radius:12px;">サンタアナ</span>
+            <span style="background:#e8f4fd;color:#1a3a5c;font-size:11px;font-weight:700;padding:3px 9px;border-radius:12px;">サンディエゴ</span>
+            <span style="background:#e8f4fd;color:#1a3a5c;font-size:11px;font-weight:700;padding:3px 9px;border-radius:12px;">オークランド</span>
+            <span style="background:#e8f4fd;color:#1a3a5c;font-size:11px;font-weight:700;padding:3px 9px;border-radius:12px;">エルモンテ</span>
+            <span style="background:#e8f4fd;color:#1a3a5c;font-size:11px;font-weight:700;padding:3px 9px;border-radius:12px;">リバーサイド</span>
+          </div>
+        </div>
+
+        <!-- 02: 学費 -->
+        <div class="scsu-reason-card">
+          <div class="scsu-reason-num">02</div>
+          <div class="scsu-reason-title" data-i18n="scsu-r2-title">💰 一般大学の数分の1の学費で学位取得</div>
+          <div class="scsu-reason-desc" data-i18n="scsu-r2-desc">学士プログラムが1クォーター$1,500〜、MBAが$1,700〜。円安が続く今でも、アメリカの大学学位を手頃な費用で取得できます。</div>
+          <div style="margin-top:14px;background:#f9f9f9;border-radius:8px;padding:12px 14px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <span style="font-size:12px;color:#888;">一般的なLAの大学</span>
+              <span style="font-size:14px;font-weight:700;color:#c0392b;">$4,000〜 / クォーター</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:12px;color:#2d6a9f;font-weight:700;">SCSU</span>
+              <span style="font-size:14px;font-weight:800;color:#2d6a9f;">$1,500〜 / クォーター</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 03: OPT -->
+        <div class="scsu-reason-card">
+          <div class="scsu-reason-num">03</div>
+          <div class="scsu-reason-title" data-i18n="scsu-r3-title">💼 卒業後はアメリカで就労できるOPT</div>
+          <div class="scsu-reason-desc" data-i18n="scsu-r3-desc">学位取得後はOPT（Optional Practical Training）で最大12ヶ月、アメリカ国内で合法的に有給就労できます。STEM専攻なら最大36ヶ月に延長可能。アメリカでのキャリアを築く実践的なルートです。</div>
+          <div style="margin-top:12px;display:flex;gap:10px;">
+            <div style="flex:1;background:#e8f8ef;border-radius:8px;padding:10px;text-align:center;">
+              <div style="font-size:20px;font-weight:900;color:#2d9a5a;">12</div>
+              <div style="font-size:11px;color:#555;">ヶ月就労</div>
+              <div style="font-size:10px;color:#888;">通常プログラム</div>
+            </div>
+            <div style="flex:1;background:#e8f8ef;border-radius:8px;padding:10px;text-align:center;">
+              <div style="font-size:20px;font-weight:900;color:#2d9a5a;">36</div>
+              <div style="font-size:11px;color:#555;">ヶ月就労</div>
+              <div style="font-size:10px;color:#888;">STEM専攻</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 入学までのフロー -->
+      <p class="section-label" data-i18n="scsu-label-path">入学までのフロー</p>
+      <h2 class="section-title" data-i18n="scsu-title-path" data-i18n-html>ESLから学位取得まで、<em>明確なキャリアパス。</em></h2>
+      <div class="path-flow">
+        <div class="path-node">
+          <div class="nl" data-i18n="scsu-step1-label">STEP 1</div>
+          <div class="nn" data-i18n="scsu-step1-name">ESL</div>
+          <div class="ns" data-i18n="scsu-step1-sub">英語力向上</div>
+        </div>
+        <div class="path-arr">→</div>
+        <div class="path-node active">
+          <div class="nl" data-i18n="scsu-step2-label">STEP 2</div>
+          <div class="nn" data-i18n="scsu-step2-name">SCSU</div>
+          <div class="ns" data-i18n="scsu-step2-sub">学位取得</div>
+        </div>
+        <div class="path-arr">→</div>
+        <div class="path-node">
+          <div class="nl" data-i18n="scsu-step3-label">STEP 3</div>
+          <div class="nn" data-i18n="scsu-step3-name">OPT</div>
+          <div class="ns" data-i18n="scsu-step3-sub">アメリカ就労</div>
+        </div>
+        <div class="path-arr">→</div>
+        <div class="path-node">
+          <div class="nl" data-i18n="scsu-goal-label">GOAL</div>
+          <div class="nn" data-i18n="scsu-goal-name">キャリア</div>
+          <div class="ns" data-i18n="scsu-goal-sub">グローバル活躍</div>
+        </div>
+      </div>
+      <p style="font-size:14px;color:#555;line-height:1.7;background:#f0f8ff;border-radius:10px;padding:16px 18px;margin-bottom:48px;" data-i18n="scsu-path-desc">SCSUはESLプログラムから学士・修士・博士まで、一つの大学内で一貫したキャリアパスを歩めます。英語力に不安がある方はまずESLからスタートし、英語力が身についたら学位プログラムへ進むことができます。</p>
+
+      <!-- プログラム一覧 -->
+      <p class="section-label" id="scsu-programs" data-i18n="scsu-label-prog">プログラムと学費</p>
+      <h2 class="section-title" data-i18n="scsu-title-prog" data-i18n-html>ESLから博士号まで。<em>手頃な学費で幅広い選択肢。</em></h2>
+      <div style="overflow-x:auto;margin-bottom:12px;">
+        <table class="prog-table">
+          <thead>
+            <tr>
+              <th>プログラム</th>
+              <th>期間</th>
+              <th>1クォーター学費</th>
+              <th>特徴・タグ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>ESL（英語集中プログラム）</strong></td>
+              <td>1年</td>
+              <td>$1,500</td>
+              <td>TOEFL・IELTS対策も可能</td>
+            </tr>
+            <tr>
+              <td><strong>Certificate in English Communication</strong></td>
+              <td>約1年</td>
+              <td>$2,200</td>
+              <td>英語ビジネスコミュニケーション</td>
+            </tr>
+            <tr>
+              <td><strong>Certificate in Digital Business</strong></td>
+              <td>約1年</td>
+              <td>$2,800</td>
+              <td>デジタルビジネス<span class="tag-new">新設</span></td>
+            </tr>
+            <tr>
+              <td><strong>Associate of Arts（準学士）</strong><br><span style="font-size:12px;color:#888;">English Communication & Management</span></td>
+              <td>2年</td>
+              <td>$2,000</td>
+              <td>準学士号取得</td>
+            </tr>
+            <tr>
+              <td><strong>Bachelor of Business Administration（BBA）</strong></td>
+              <td>4年</td>
+              <td>$1,500</td>
+              <td>ビジネス経営<span class="tag-opt">OPT対象</span></td>
+            </tr>
+            <tr>
+              <td><strong>Bachelor of Arts in Intercultural Studies</strong></td>
+              <td>4年</td>
+              <td>$1,500</td>
+              <td>異文化理解・国際関係<span class="tag-opt">OPT対象</span></td>
+            </tr>
+            <tr>
+              <td><strong>Master of Business Administration（MBA）</strong></td>
+              <td>2年</td>
+              <td>$1,700</td>
+              <td>ビジネスリーダーシップ<span class="tag-opt">OPT対象</span></td>
+            </tr>
+            <tr>
+              <td><strong>MBA Concentration in Business Statistics</strong></td>
+              <td>2年</td>
+              <td>$2,400</td>
+              <td>データ分析・統計<span class="tag-stem">STEM</span><span class="tag-opt">OPT 3年</span></td>
+            </tr>
+            <tr>
+              <td><strong>Doctor of Business Administration（DBA）</strong></td>
+              <td>3年</td>
+              <td>$2,500</td>
+              <td>最高学位・経営リーダー育成<span class="tag-opt">OPT対象</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:12px;color:#888;margin-bottom:48px;">※学費は目安です。詳細はお問い合わせください。STEMプログラムはOPTが最大3年間延長可能です。</p>
+
+      <!-- OPT ハイライト -->
+      <div class="opt-block">
+        <h3 data-i18n="scsu-opt-title">🌟 OPT（Optional Practical Training）でアメリカ就労を実現</h3>
+        <p data-i18n="scsu-opt-desc">F-1ビザで学位を取得した後、OPTを利用してアメリカ国内で有給就労経験を積むことができます。SCSUはOPTの申請から手続きまで包括的にサポートします。卒業後すぐにアメリカで働きたい方に最適なルートです。</p>
+        <div class="opt-points">
+          <div class="opt-pt">
+            <div class="on">12</div>
+            <div class="ol" data-i18n="scsu-opt-l1" data-i18n-html>ヶ月の就労経験<br>（通常プログラム）</div>
+          </div>
+          <div class="opt-pt">
+            <div class="on">36</div>
+            <div class="ol" data-i18n="scsu-opt-l2" data-i18n-html>ヶ月の就労経験<br>（STEMプログラム）</div>
+          </div>
+          <div class="opt-pt">
+            <div class="on">F-1</div>
+            <div class="ol" data-i18n="scsu-opt-l3" data-i18n-html>ビザのまま<br>合法的に就労可能</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 認定・承認 -->
+      <div style="margin-top:48px;">
+        <p class="section-label" data-i18n="scsu-label-acc">認定・承認</p>
+        <h2 class="section-title" data-i18n="scsu-title-acc" data-i18n-html>信頼できる<em>認定校</em>だから安心。</h2>
+        <div class="acc-badges">
+          <div class="acc-badge"><span class="ck">✓</span> TRACS認定校</div>
+          <div class="acc-badge"><span class="ck">✓</span> CHEA メンバー</div>
+          <div class="acc-badge"><span class="ck">✓</span> SEVP認定（F-1ビザ対応）</div>
+          <div class="acc-badge"><span class="ck">✓</span> 2012年設立</div>
+        </div>
+        <p style="font-size:14px;color:#555;line-height:1.7;margin-top:14px;" data-i18n="scsu-acc-desc">SCSUはアメリカ連邦法に基づき非移民学生の受け入れが認められたSEVP認定校です。F-1学生ビザでの入学・在籍が可能で、OPTによる就労経験も公式にサポートされています。卒業生はUSC（南カリフォルニア大学）、UCアーバイン、ボストン大学などへの進学・就職実績があります。</p>
+      </div>
+
+      <!-- 入学要件 -->
+      <div style="margin-top:48px;" id="scsu-admission">
+        <p class="section-label" data-i18n="scsu-label-adm">入学要件</p>
+        <h2 class="section-title" data-i18n="scsu-title-adm" data-i18n-html>入学に必要な<em>書類と条件。</em></h2>
+        <p style="font-size:14px;color:#555;margin-bottom:24px;line-height:1.7;" data-i18n="scsu-adm-desc">SCSUへの入学に必要な書類は、プログラムによって異なります。英語力証明が難しい場合は、まずESLプログラムからスタートすることも可能です。</p>
+        <div style="overflow-x:auto;margin-bottom:12px;">
+          <table class="prog-table">
+            <thead>
+              <tr>
+                <th>プログラム</th>
+                <th>卒業証明書</th>
+                <th>英語力証明</th>
+                <th>残高証明</th>
+                <th>その他</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>ESL</strong></td>
+                <td>高校卒業証明書（英文）</td>
+                <td style="color:#2d9a5a;font-weight:600;">不要</td>
+                <td>$10,000以上</td>
+                <td>成績証明書</td>
+              </tr>
+              <tr>
+                <td><strong>Certificate / Associate</strong></td>
+                <td>高校卒業証明書（英文）</td>
+                <td>TOEFL等 または学内試験</td>
+                <td>$10,000以上</td>
+                <td>成績証明書</td>
+              </tr>
+              <tr>
+                <td><strong>Bachelor（学士）</strong></td>
+                <td>高校卒業証明書（英文）</td>
+                <td>TOEFL等 または学内試験</td>
+                <td>$10,000以上</td>
+                <td>成績証明書・個人面接</td>
+              </tr>
+              <tr>
+                <td><strong>Master（修士）</strong></td>
+                <td>学士号卒業証明書（英文）</td>
+                <td>TOEFL等 または学内試験</td>
+                <td>$10,000以上</td>
+                <td>成績証明書・個人面接</td>
+              </tr>
+              <tr>
+                <td><strong>Doctorate（博士）</strong></td>
+                <td>修士号卒業証明書（英文）</td>
+                <td>TOEFL等 または学内試験</td>
+                <td>$10,000以上</td>
+                <td>成績証明書・個人面接</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="font-size:12px;color:#888;margin-bottom:48px;" data-i18n="scsu-adm-note">※書類はすべて英文が必要です。日本語の書類がある場合は翻訳が必要です。詳細はお問い合わせください。</p>
+
+        <!-- 入学手続きステップ -->
+        <p class="section-label" data-i18n="scsu-label-steps">入学手続きの流れ</p>
+        <h2 class="section-title" data-i18n="scsu-title-steps" data-i18n-html>入学まで、<em>かんたん5ステップ。</em></h2>
+        <p style="font-size:14px;color:#555;margin-bottom:24px;" data-i18n="scsu-steps-desc">すべての手続きをLINEや日本語でサポートします。英語が不安でも大丈夫です。</p>
+        <div class="adm-steps">
+          <div class="adm-step">
+            <div class="adm-num">1</div>
+            <div class="adm-body">
+              <div class="adm-title" data-i18n="scsu-step-a-title">相談・プログラム選択</div>
+              <div class="adm-desc" data-i18n="scsu-step-a-desc">LINEまたはフォームでご連絡ください。希望のプログラム・キャンパス・開始時期などをヒアリングし、最適なプランをご提案します。日本語でOKです。</div>
+              <div class="adm-tip" data-i18n="scsu-step-a-tip">💬 LINEで気軽にどうぞ</div>
+            </div>
+          </div>
+          <div class="adm-step">
+            <div class="adm-num">2</div>
+            <div class="adm-body">
+              <div class="adm-title" data-i18n="scsu-step-b-title">書類の準備</div>
+              <div class="adm-desc" data-i18n="scsu-step-b-desc">必要書類（卒業証明書・成績証明書・残高証明書など）を準備します。英文翻訳が必要な書類は翻訳会社をご紹介することも可能です。</div>
+              <div class="adm-tip" data-i18n="scsu-step-b-tip">📄 書類リストをお送りします</div>
+            </div>
+          </div>
+          <div class="adm-step">
+            <div class="adm-num">3</div>
+            <div class="adm-body">
+              <div class="adm-title" data-i18n="scsu-step-c-title">入学申請・面接</div>
+              <div class="adm-desc" data-i18n="scsu-step-c-desc">オンラインまたは郵送で入学申請書を提出します（申請料$150 + 処理料$100）。学士以上のプログラムは学長または担当者との個人面接があります。</div>
+              <div class="adm-tip" data-i18n="scsu-step-c-tip">🖥️ オンライン申請可能</div>
+            </div>
+          </div>
+          <div class="adm-step">
+            <div class="adm-num">4</div>
+            <div class="adm-body">
+              <div class="adm-title" data-i18n="scsu-step-d-title">I-20発行・ビザ申請</div>
+              <div class="adm-desc" data-i18n="scsu-step-d-desc">入学許可後、SCSUからI-20（入学許可書）が発行されます。これをもとにアメリカ大使館でF-1学生ビザを申請します。手続きのサポートも行います。</div>
+              <div class="adm-tip" data-i18n="scsu-step-d-tip">🛂 ビザ手続きもサポート</div>
+            </div>
+          </div>
+          <div class="adm-step">
+            <div class="adm-num">5</div>
+            <div class="adm-body">
+              <div class="adm-title" data-i18n="scsu-step-e-title">渡米・授業開始</div>
+              <div class="adm-desc" data-i18n="scsu-step-e-desc">渡米後、キャンパスで手続きを完了し授業開始です。入学時期は年4回（1月・4月・7月・10月）から選べます。</div>
+              <div class="adm-tip" data-i18n="scsu-step-e-tip">✈️ 年4回の入学時期</div>
+            </div>
+          </div>
+        </div>
+        <div style="background:#e8f4fd;border-radius:10px;padding:16px 18px;margin-top:20px;border-left:4px solid #2d6a9f;">
+          <p style="font-size:14px;color:#1a3a5c;font-weight:600;margin-bottom:4px;" data-i18n="scsu-transfer-title">💡 他の学校からの転学をお考えの方へ</p>
+          <p style="font-size:13px;color:#555;" data-i18n="scsu-transfer-desc">F-1ビザを維持したままの転学手続きもサポートしています。詳細はお問い合わせください。</p>
+        </div>
+      </div>
+
+      <!-- 卒業生の声 -->
+      <div style="margin-top:48px;">
+        <p class="section-label" data-i18n="scsu-label-testi">GRADUATE VOICES ／ 卒業生の声</p>
+        <h2 class="section-title" data-i18n="scsu-title-testi" data-i18n-html>卒業生の、<em>リアルな声。</em></h2>
+        <div class="testimonials">
+          <div class="testimonial scsu-testimonial">
+            <div class="stars">★★★★★</div>
+            <p class="testimonial-text">MBAプログラムはとても充実していて、教授陣も非常にプロフェッショナルでした。スタッフも親切で、勉強しやすい環境でした。SCSUで学んだことが、次のステップへの大きな力になっています。</p>
+            <div class="testimonial-author">
+              <div class="author-avatar" style="background:#2d6a9f;">M</div>
+              <div><div class="author-name">Meruyert D.</div><div class="author-desc">MBA卒業 → George Washington University 進学</div></div>
+            </div>
+          </div>
+          <div class="testimonial scsu-testimonial">
+            <div class="stars">★★★★★</div>
+            <p class="testimonial-text">SCSUでの経験は素晴らしかったです。授業内容、人々、環境すべてが私の成長を後押ししてくれました。思っていた以上に深く学べました。</p>
+            <div class="testimonial-author">
+              <div class="author-avatar" style="background:#2d6a9f;">Z</div>
+              <div><div class="author-name">Zhanyl A.</div><div class="author-desc">MBA卒業 → USC Master of Science in AI（奨学金付き）</div></div>
+            </div>
+          </div>
+          <div class="testimonial scsu-testimonial">
+            <div class="stars">★★★★★</div>
+            <p class="testimonial-text">SCSUに通って本当に良かったです。教授もスタッフも非常に有能で専門的でした。学業的な成果を伸ばすことができ、友人にも強くお勧めします。</p>
+            <div class="testimonial-author">
+              <div class="author-avatar" style="background:#2d6a9f;">S</div>
+              <div><div class="author-name">Samat U.</div><div class="author-desc">MBA卒業 → Boston University, Masters in Law 進学</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- キャンパス紹介 -->
+      <div style="margin-top:48px;" id="scsu-campuses">
+        <p class="section-label" data-i18n="scsu-label-campus">キャンパス</p>
+        <h2 class="section-title" data-i18n="scsu-title-campus" data-i18n-html>カリフォルニア州内<em>6キャンパス</em>展開。</h2>
+        <p style="font-size:14px;color:#555;margin-bottom:24px;line-height:1.7;" data-i18n="scsu-campus-desc">SCSUはロサンゼルスをはじめ、カリフォルニア州内の6都市にキャンパスを展開しています。お住まいや生活環境に合わせてキャンパスを選ぶことができます。全キャンパス共通の電話・メールでお問い合わせいただけます。</p>
+        <div class="campus-grid">
+          <div class="campus-card main-campus">
+            <div class="campus-badge" data-i18n="scsu-campus-main-badge">メインキャンパス</div>
+            <div class="campus-city">🏙️ Los Angeles, CA</div>
+            <div class="campus-name" data-i18n="scsu-campus-la-name">ロサンゼルス</div>
+            <div class="campus-addr">3470 Wilshire Blvd, Suite 380<br>Los Angeles, CA 90010</div>
+            <div class="campus-note" data-i18n="scsu-campus-la-note">Metro B Line「Wilshire/Vermont」駅 徒歩約5分</div>
+            <a href="https://www.scsuniversity.edu/los-angeles/" target="_blank" rel="noopener" class="campus-link" data-i18n="scsu-campus-link">詳細を見る →</a>
+          </div>
+          <div class="campus-card">
+            <div class="campus-city">🌆 Santa Ana, CA</div>
+            <div class="campus-name" data-i18n="scsu-campus-sa-name">サンタアナ（オレンジ郡）</div>
+            <div class="campus-addr">600 W Santa Ana Blvd, Suite 705<br>Santa Ana, CA 92701</div>
+            <div class="campus-note" data-i18n="scsu-campus-sa-note">BBA・MBA開講中</div>
+            <a href="https://www.scsuniversity.edu/santa-ana/" target="_blank" rel="noopener" class="campus-link" data-i18n="scsu-campus-link">詳細を見る →</a>
+          </div>
+          <div class="campus-card">
+            <div class="campus-city">🌊 San Diego, CA</div>
+            <div class="campus-name" data-i18n="scsu-campus-sd-name">サンディエゴ</div>
+            <div class="campus-addr">1920 E St<br>San Diego, CA 92102</div>
+            <div class="campus-note" data-i18n="scsu-campus-sd-note">BBA開講中・追加プログラム準備中</div>
+            <a href="https://www.scsuniversity.edu/san-diego/" target="_blank" rel="noopener" class="campus-link" data-i18n="scsu-campus-link">詳細を見る →</a>
+          </div>
+          <div class="campus-card">
+            <div class="campus-city">🌉 Oakland, CA</div>
+            <div class="campus-name" data-i18n="scsu-campus-ok-name">オークランド（ベイエリア）</div>
+            <div class="campus-addr">1204 Preservation Park Way<br>Oakland, CA 94612</div>
+            <div class="campus-note" data-i18n="scsu-campus-ok-note">BBA開講中・追加プログラム準備中</div>
+            <a href="https://www.scsuniversity.edu/oakland/" target="_blank" rel="noopener" class="campus-link" data-i18n="scsu-campus-link">詳細を見る →</a>
+          </div>
+          <div class="campus-card">
+            <div class="campus-city">🏘️ El Monte, CA</div>
+            <div class="campus-name" data-i18n="scsu-campus-em-name">エルモンテ（LA近郊）</div>
+            <div class="campus-addr">11100 Valley Blvd, Suite 220<br>El Monte, CA 91731</div>
+            <div class="campus-note" data-i18n="scsu-campus-em-note">BBA開講中・追加プログラム準備中</div>
+            <a href="https://www.scsuniversity.edu/el-monte/" target="_blank" rel="noopener" class="campus-link" data-i18n="scsu-campus-link">詳細を見る →</a>
+          </div>
+          <div class="campus-card">
+            <div class="campus-city">🏔️ Riverside, CA</div>
+            <div class="campus-name" data-i18n="scsu-campus-rv-name">リバーサイド（インランドエンパイア）</div>
+            <div class="campus-addr">5475 Arlington Ave<br>Riverside, CA 92504</div>
+            <div class="campus-note" data-i18n="scsu-campus-rv-note">BBA開講中・追加プログラム準備中</div>
+            <a href="https://www.scsuniversity.edu/riverside/" target="_blank" rel="noopener" class="campus-link" data-i18n="scsu-campus-link">詳細を見る →</a>
+          </div>
+        </div>
+        <div style="background:#f0f8ff;border-radius:10px;padding:14px 18px;margin-top:16px;">
+          <p style="font-size:13px;color:#444;"><strong data-i18n="scsu-campus-contact">📞 全キャンパス共通連絡先</strong>　(213) 382-5300 ／ info@scsuniversity.edu ／ 月〜金 9:00 AM – 5:00 PM</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- SCSU CONTACT -->
+  <section class="section contact-section" id="scsu-contact">
+    <div class="container">
+      <p class="section-label" data-i18n="scsu-label-contact">お問い合わせ</p>
+      <h2 class="section-title" data-i18n="scsu-title-contact" data-i18n-html>まずは、<em>気軽に相談から。</em></h2>
+      <p style="font-size:15px;color:#555;margin-bottom:36px;" data-i18n="scsu-contact-desc">プログラムの詳細、学費、ビザ手続きなど、どんな質問でも日本語でお気軽にどうぞ。</p>
+      <div class="contact-grid">
+        <div class="contact-info">
+          <h3 data-i18n="scsu-line-title">LINEで気軽に相談</h3>
+          <p data-i18n="scsu-line-desc">「こんなこと聞いていいの？」も大歓迎。日本語でOKです。まずは相談からで大丈夫！</p>
+          <div class="line-cta-box">
+            <a href="https://lin.ee/nA6pMP8n" target="_blank" rel="noopener">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.630 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.070 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+              <span data-i18n="scsu-line-btn">LINEで無料相談する</span>
+            </a>
+            <p data-i18n="scsu-line-note">友だち追加後、日本語でメッセージをどうぞ</p>
+          </div>
+          <div class="or-divider">または</div>
+          <div class="school-info-box" style="margin-top:12px;">
+            <p><strong>Southern California State University（SCSU）</strong></p>
+            <p>📞 (213) 382-5300<br>📧 info@scsuniversity.edu<br>📍 3470 Wilshire Blvd Suite 380, LA, CA 90010</p>
+          </div>
+        </div>
+        <div>
+          <div class="contact-form-box">
+            <h3 data-i18n="scsu-form-title">📝 お問い合わせフォーム</h3>
+            <form id="scsuForm" onsubmit="handleSubmit(event,'scsuSuccess')">
+              <div class="form-group">
+                <label><span data-i18n="scsu-form-name-label">お名前</span><span class="req">*</span></label>
+                <input type="text" placeholder="例：山田 太郎" data-i18n="scsu-form-name-ph" required />
+              </div>
+              <div class="form-group">
+                <label><span data-i18n="scsu-form-email-label">メールアドレス</span><span class="req">*</span></label>
+                <input type="email" placeholder="例：taro@example.com" data-i18n="scsu-form-email-ph" required />
+              </div>
+              <div class="form-group">
+                <label data-i18n="scsu-form-tel-label">電話番号（任意）</label>
+                <input type="tel" placeholder="例：090-1234-5678" data-i18n="scsu-form-tel-ph" />
+              </div>
+              <div class="form-group">
+                <label><span data-i18n="scsu-form-prog-label">ご希望のプログラム</span><span class="req">*</span></label>
+                <select required>
+                  <option value="">選択してください</option>
+                  <option>ESL（英語集中プログラム）</option>
+                  <option>Certificate（証明書プログラム）</option>
+                  <option>Associate（準学士）</option>
+                  <option>Bachelor（学士・BBA）</option>
+                  <option>Master（修士・MBA）</option>
+                  <option>MBA Business Statistics（STEM）</option>
+                  <option>Doctorate（博士・DBA）</option>
+                  <option>まだ決まっていない／相談したい</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label data-i18n="scsu-form-status-label">現在の状況</label>
+                <select>
+                  <option value="">選択してください（任意）</option>
+                  <option>日本在住・これから渡米予定</option>
+                  <option>アメリカ在住（他の学校に在籍中）</option>
+                  <option>現在別の学校に在籍中・SCSUへの転学を検討</option>
+                  <option>その他</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label><span data-i18n="scsu-form-msg-label">ご質問・メッセージ</span><span class="req">*</span></label>
+                <textarea placeholder="例：MBAプログラムの詳細を教えてください。OPTの手続きについても相談したいです。" data-i18n="scsu-form-msg-ph" required></textarea>
+              </div>
+              <button type="submit" class="form-submit scsu-submit" data-i18n="scsu-form-submit">送信する →</button>
+              <p class="form-note" data-i18n="scsu-form-note">通常1〜2営業日以内に日本語でご返信します。</p>
+            </form>
+            <div class="form-success" id="scsuSuccess" data-i18n="scsu-form-success">✅ お問い合わせを受け付けました。1〜2営業日以内にご連絡します。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCSU CTA FINAL -->
+  <div class="cta-final scsu-cta">
+    <div class="container">
+      <h2 data-i18n="scsu-cta-h2">アメリカで学位取得とキャリアアップを。</h2>
+      <p data-i18n="scsu-cta-p">まずはLINEで「ちょっと聞いてみる」から。申し込みではなく、相談からで大丈夫！</p>
+      <div class="cta-buttons">
+        <a href="https://lin.ee/nA6pMP8n" class="btn-line" target="_blank" rel="noopener">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.630 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63h2.386c.349 0 .63.285.63.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.627-.63.349 0 .631.285.631.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.281.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.070 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/></svg>
+          <span data-i18n="scsu-cta-line">LINEで相談する（無料）</span>
+        </a>
+        <a href="#scsu-contact" class="btn-outline-w" data-i18n="scsu-cta-form">フォームで問い合わせ</a>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /panelScsu -->
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="container">
+    <p style="font-weight:700;color:rgba(255,255,255,0.85);margin-bottom:6px;" data-i18n="footer-title">HEI × SCSU ロサンゼルス留学・大学進学</p>
+    <p>Hollywood Education Institute ｜ 3470 Wilshire Blvd #350, Los Angeles, CA 90010<br>
+    Tel: +1 (213) 386-3800 ｜ info@hollywoodinstitute.net ｜ <a href="https://www.instagram.com/hollywood_edu/" target="_blank" rel="noopener">@hollywood_edu</a></p>
+    <p style="margin-top:6px;">Southern California State University ｜ 3470 Wilshire Blvd Suite 380, Los Angeles, CA 90010<br>
+    Tel: (213) 382-5300 ｜ info@scsuniversity.edu ｜ <a href="https://www.scsuniversity.edu" target="_blank" rel="noopener">www.scsuniversity.edu</a></p>
+    <p style="margin-top:14px;">© Hollywood Education Institute &amp; Southern California State University. All rights reserved.</p>
+  </div>
+</footer>
+
+<script>
+// ===== LANGUAGE TOGGLE =====
+  let currentLang = 'ja';
+
+  const translations = {
+    // --- SHARED HEADER / TABS ---
+    'header-line-cta':        { ja: 'LINEで相談',         en: 'Chat on LINE' },
+    'tab-hei-name':           { ja: '語学学校 HEI',        en: 'Language School HEI' },
+    'tab-scsu-name':          { ja: '大学・大学院 SCSU',   en: 'University SCSU' },
+
+    // --- SCSU HERO ---
+    'scsu-badge':             { ja: '🎓 カリフォルニア州内 6キャンパス ｜ 手頃な学費 ｜ OPT就労対応', en: '🎓 6 Campuses in California | Affordable Tuition | OPT Work Authorization' },
+
+    // --- VISA URGENCY BANNER ---
+    'visa-urg-title':          { ja: 'アメリカ学生ビザの新ルールが9月15日に施行——今すぐ留学プランを見直してください', en: 'New U.S. Student Visa Rules Take Effect September 15 — Review Your Study Plan Now' },
+    'visa-urg-sub':            { ja: '新ルールにより、語学学校だけでの長期滞在に制限がかかる可能性があります。学位取得・OPT就労を目指す方は、今がプラン変更のチャンス。', en: 'New rules may restrict long-term stays at language schools only. If you are aiming for a degree or OPT work experience, now is the time to reconsider your plan.' },
+    'visa-urg-badge':          { ja: 'カウントダウン中', en: 'Deadline Approaching' },
+    'visa-urg-cta':            { ja: '今すぐ相談する', en: 'Consult Now' },
+    'scsu-h1-line1':          { ja: 'ロサンゼルスで', en: 'Earn Your Degree' },
+    'scsu-h1-accent1':        { ja: '学位取得', en: 'in Los Angeles' },
+    'scsu-h1-line2':          { ja: 'と', en: '— and Build Your' },
+    'scsu-h1-accent2':        { ja: 'アメリカ就労', en: 'U.S. Career' },
+    'scsu-h1-end':            { ja: 'を実現。', en: 'with OPT.' },
+    'scsu-sub':               { ja: 'Southern California State University（SCSU）は、ロサンゼルスにある認定大学。ESLから博士号まで、手頃な学費でキャリアアップを目指せます。学位取得後はOPT（最大12ヶ月）でアメリカ国内での有給就労経験も。',
+                                en: 'Southern California State University (SCSU) is an accredited university in Los Angeles. From ESL to Doctorate, advance your career at an affordable tuition. After graduation, gain U.S. work experience through OPT (up to 12 months).' },
+    'scsu-price-unit':        { ja: '〜 / 1クォーター\n学士・修士プログラム', en: '~ / per quarter\nBachelor & Master programs' },
+    'scsu-cta-consult':       { ja: '無料相談・お問い合わせ', en: 'Free Consultation' },
+    'scsu-cta-programs':      { ja: 'プログラム一覧を見る', en: 'View All Programs' },
+
+    // --- FOR WHOM ---
+    'scsu-label-whom':        { ja: 'こんな方へ', en: 'WHO IS SCSU FOR' },
+    'scsu-title-whom':        { ja: 'SCSUは、<em>こんな方におすすめです。</em>', en: 'SCSU is the right choice <em>if you want to…</em>' },
+    'scsu-t1-title':          { ja: 'アメリカで学位を取りたい', en: 'Earn a U.S. Degree' },
+    'scsu-t1-desc':           { ja: '学士・修士・博士まで、手頃な学費でアメリカの学位を取得できます。', en: 'Earn a Bachelor, Master, or Doctorate at an affordable cost.' },
+    'scsu-t2-title':          { ja: '卒業後にアメリカで働きたい', en: 'Work in the U.S. After Graduation' },
+    'scsu-t2-desc':           { ja: 'OPTで最大12ヶ月（STEM専攻は36ヶ月）、アメリカ国内で有給就労経験を積めます。', en: 'Use OPT to work in the U.S. for up to 12 months (36 months for STEM majors).' },
+    'scsu-t3-title':          { ja: '学費を抑えたい', en: 'Keep Tuition Affordable' },
+    'scsu-t3-desc':           { ja: '1クォーター$1,500〜。一般的なアメリカの大学と比べて非常にリーズナブルです。', en: 'Starting at $1,500 per quarter — significantly lower than typical U.S. universities.' },
+    'scsu-t4-title':          { ja: 'ビジネス・ITスキルを磨きたい', en: 'Build Business & IT Skills' },
+    'scsu-t4-desc':           { ja: 'MBA・ビジネス統計・コンピュータサイエンスなど、就職に直結するプログラムが充実。', en: 'Strong programs in MBA, Business Statistics, and Computer Science for career-ready skills.' },
+
+    // --- WHY SCSU ---
+    'scsu-label-why':         { ja: 'WHY SCSU ／ 選ばれる理由', en: 'WHY SCSU' },
+    'scsu-title-why':         { ja: 'SCSUが選ばれる、<em>3つの理由。</em>', en: 'Three reasons students <em>choose SCSU.</em>' },
+    'scsu-r1-title':          { ja: '📍 カリフォルニア州内　6キャンパスから選べる', en: '📍 Choose from 6 Campuses Across California' },
+    'scsu-r1-desc':           { ja: 'ロサンゼルス（メイン）・サンタアナ・サンディエゴ・オークランド・エルモンテ・リバーサイドの6都市にキャンパスを展開。お住まいや生活環境に合わせて自分に合ったキャンパスを選べます。', en: 'Campuses in Los Angeles, Santa Ana, San Diego, Oakland, El Monte, and Riverside. Choose the location that fits your lifestyle.' },
+    'scsu-r2-title':          { ja: '💰 一般大学の数分の1の学費で学位取得', en: '💰 Earn a Degree at a Fraction of Typical U.S. Tuition' },
+    'scsu-r2-desc':           { ja: '学士プログラムが1クォーター$1,500〜、MBAが$1,700〜。円安が続く今でも、アメリカの大学学位を手頃な費用で取得できます。', en: 'Bachelor programs from $1,500/quarter, MBA from $1,700/quarter. Earn a U.S. degree at an affordable cost even with the current exchange rate.' },
+    'scsu-r3-title':          { ja: '💼 卒業後はアメリカで就労できるOPT', en: '💼 Graduate and Work in the U.S. via OPT' },
+    'scsu-r3-desc':           { ja: '学位取得後はOPT（Optional Practical Training）で最大12ヶ月、アメリカ国内で合法的に有給就労できます。STEM専攻なら最大36ヶ月に延長可能。アメリカでのキャリアを築く実践的なルートです。', en: 'After graduation, use OPT to work legally in the U.S. for up to 12 months (36 months for STEM majors). The most practical route to building a U.S. career.' },
+
+    // --- CAREER PATH ---
+    'scsu-label-path':        { ja: '入学までのフロー', en: 'CAREER PATH' },
+    'scsu-title-path':        { ja: 'ESLから学位取得まで、<em>明確なキャリアパス。</em>', en: 'A clear path from ESL <em>to your degree and career.</em>' },
+    'scsu-path-desc':         { ja: 'SCSUはESLプログラムから学士・修士・博士まで、一つの大学内で一貫したキャリアパスを歩めます。英語力に不安がある方はまずESLからスタートし、英語力が身についたら学位プログラムへ進むことができます。',
+                                en: 'SCSU offers a seamless path from ESL through Bachelor, Master, and Doctorate programs — all within one institution. Students with limited English can start with ESL and progress to degree programs.' },
+    'scsu-step1-label':       { ja: 'STEP 1', en: 'STEP 1' },
+    'scsu-step1-name':        { ja: 'ESL', en: 'ESL' },
+    'scsu-step1-sub':         { ja: '英語力向上', en: 'English Skills' },
+    'scsu-step2-label':       { ja: 'STEP 2', en: 'STEP 2' },
+    'scsu-step2-name':        { ja: 'SCSU', en: 'SCSU' },
+    'scsu-step2-sub':         { ja: '学位取得', en: 'Degree Program' },
+    'scsu-step3-label':       { ja: 'STEP 3', en: 'STEP 3' },
+    'scsu-step3-name':        { ja: 'OPT', en: 'OPT' },
+    'scsu-step3-sub':         { ja: 'アメリカ就労', en: 'U.S. Work Exp.' },
+    'scsu-goal-label':        { ja: 'GOAL', en: 'GOAL' },
+    'scsu-goal-name':         { ja: 'キャリア', en: 'Career' },
+    'scsu-goal-sub':          { ja: 'グローバル活躍', en: 'Global Success' },
+
+    // --- PROGRAMS ---
+    'scsu-label-prog':        { ja: 'プログラムと学費', en: 'PROGRAMS & TUITION' },
+    'scsu-title-prog':        { ja: 'ESLから博士号まで。<em>手頃な学費で幅広い選択肢。</em>', en: 'From ESL to Doctorate. <em>Wide choice at affordable tuition.</em>' },
+
+    // --- OPT ---
+    'scsu-opt-title':         { ja: '🌟 OPT（Optional Practical Training）でアメリカ就労を実現', en: '🌟 Work in the U.S. Through OPT (Optional Practical Training)' },
+    'scsu-opt-desc':          { ja: 'F-1ビザで学位を取得した後、OPTを利用してアメリカ国内で有給就労経験を積むことができます。SCSUはOPTの申請から手続きまで包括的にサポートします。卒業後すぐにアメリカで働きたい方に最適なルートです。',
+                                en: 'After earning your degree on an F-1 visa, use OPT to gain paid work experience in the U.S. SCSU provides comprehensive support for OPT applications and procedures.' },
+    'scsu-opt-l1':            { ja: 'ヶ月の就労経験<br>（通常プログラム）', en: 'months of work<br>(standard programs)' },
+    'scsu-opt-l2':            { ja: 'ヶ月の就労経験<br>（STEMプログラム）', en: 'months of work<br>(STEM programs)' },
+    'scsu-opt-l3':            { ja: 'ビザのまま<br>合法的に就労可能', en: 'visa status<br>maintained legally' },
+
+    // --- ACCREDITATION ---
+    'scsu-label-acc':         { ja: '認定・承認', en: 'ACCREDITATION' },
+    'scsu-title-acc':         { ja: '信頼できる<em>認定校</em>だから安心。', en: 'Trusted <em>accreditation</em> you can rely on.' },
+    'scsu-acc-desc':          { ja: 'SCSUはアメリカ連邦法に基づき非移民学生の受け入れが認められたSEVP認定校です。F-1学生ビザでの入学・在籍が可能で、OPTによる就労経験も公式にサポートされています。卒業生はUSC（南カリフォルニア大学）、UCアーバイン、ボストン大学などへの進学・就職実績があります。',
+                                en: 'SCSU is a federally certified SEVP school authorized to enroll non-immigrant students. F-1 visa enrollment and OPT work authorization are fully supported. Alumni have gone on to USC, UC Irvine, Boston University, and more.' },
+
+    // --- ADMISSION REQUIREMENTS ---
+    'scsu-label-adm':         { ja: '入学要件', en: 'ADMISSION REQUIREMENTS' },
+    'scsu-title-adm':         { ja: '入学に必要な<em>書類と条件。</em>', en: 'Required <em>documents and conditions.</em>' },
+    'scsu-adm-desc':          { ja: 'SCSUへの入学に必要な書類は、プログラムによって異なります。英語力証明が難しい場合は、まずESLプログラムからスタートすることも可能です。',
+                                en: 'Required documents vary by program. If English proficiency is a concern, you may start with the ESL program first.' },
+    'scsu-adm-note':          { ja: '※書類はすべて英文が必要です。日本語の書類がある場合は翻訳が必要です。詳細はお問い合わせください。',
+                                en: '* All documents must be in English. Japanese documents require certified translation. Contact us for details.' },
+
+    // --- ADMISSION STEPS ---
+    'scsu-label-steps':       { ja: '入学手続きの流れ', en: 'APPLICATION PROCESS' },
+    'scsu-title-steps':       { ja: '入学まで、<em>かんたん5ステップ。</em>', en: 'Just <em>5 simple steps</em> to enroll.' },
+    'scsu-steps-desc':        { ja: 'すべての手続きをLINEや日本語でサポートします。英語が不安でも大丈夫です。', en: 'We support all steps in English. Feel free to reach out anytime.' },
+    'scsu-step-a-title':      { ja: '相談・プログラム選択', en: 'Consultation & Program Selection' },
+    'scsu-step-a-desc':       { ja: 'LINEまたはフォームでご連絡ください。希望のプログラム・キャンパス・開始時期などをヒアリングし、最適なプランをご提案します。日本語でOKです。', en: 'Contact us via LINE or the inquiry form. We will listen to your goals and suggest the best program, campus, and start date.' },
+    'scsu-step-a-tip':        { ja: '💬 LINEで気軽にどうぞ', en: '💬 Chat with us on LINE' },
+    'scsu-step-b-title':      { ja: '書類の準備', en: 'Document Preparation' },
+    'scsu-step-b-desc':       { ja: '必要書類（卒業証明書・成績証明書・残高証明書など）を準備します。英文翻訳が必要な書類は翻訳会社をご紹介することも可能です。', en: 'Prepare required documents (graduation certificate, transcripts, bank statement, etc.). We can refer you to a certified translation service if needed.' },
+    'scsu-step-b-tip':        { ja: '📄 書類リストをお送りします', en: '📄 We will send you a document checklist' },
+    'scsu-step-c-title':      { ja: '入学申請・面接', en: 'Application & Interview' },
+    'scsu-step-c-desc':       { ja: 'オンラインまたは郵送で入学申請書を提出します（申請料$150 + 処理料$100）。学士以上のプログラムは学長または担当者との個人面接があります。', en: 'Submit your application online or by mail (application fee $150 + processing fee $100). Bachelor-level and above programs require a personal interview.' },
+    'scsu-step-c-tip':        { ja: '🖥️ オンライン申請可能', en: '🖥️ Online application available' },
+    'scsu-step-d-title':      { ja: 'I-20発行・ビザ申請', en: 'I-20 Issuance & Visa Application' },
+    'scsu-step-d-desc':       { ja: '入学許可後、SCSUからI-20（入学許可書）が発行されます。これをもとにアメリカ大使館でF-1学生ビザを申請します。手続きのサポートも行います。', en: 'After admission, SCSU issues your I-20 (Certificate of Eligibility). Use it to apply for your F-1 student visa at the U.S. Embassy. We support the process.' },
+    'scsu-step-d-tip':        { ja: '🛂 ビザ手続きもサポート', en: '🛂 Visa application support included' },
+    'scsu-step-e-title':      { ja: '渡米・授業開始', en: 'Arrival & Classes Begin' },
+    'scsu-step-e-desc':       { ja: '渡米後、キャンパスで手続きを完了し授業開始です。入学時期は年4回（1月・4月・7月・10月）から選べます。', en: 'Complete enrollment on campus after arrival and start classes. Intake is available 4 times a year (January, April, July, October).' },
+    'scsu-step-e-tip':        { ja: '✈️ 年4回の入学時期', en: '✈️ 4 intake periods per year' },
+    'scsu-transfer-title':    { ja: '💡 他の学校からの転学をお考えの方へ', en: '💡 Considering a transfer from another school?' },
+    'scsu-transfer-desc':     { ja: 'F-1ビザを維持したままの転学手続きもサポートしています。詳細はお問い合わせください。', en: 'We support F-1 visa transfer procedures from other institutions. Contact us for details.' },
+
+    // --- TESTIMONIALS ---
+    'scsu-label-testi':       { ja: 'GRADUATE VOICES ／ 卒業生の声', en: 'GRADUATE VOICES' },
+    'scsu-title-testi':       { ja: '卒業生の、<em>リアルな声。</em>', en: 'Hear from <em>our graduates.</em>' },
+
+    // --- CAMPUSES ---
+    'scsu-label-campus':      { ja: 'キャンパス', en: 'CAMPUSES' },
+    'scsu-title-campus':      { ja: 'カリフォルニア州内<em>6キャンパス</em>展開。', en: '<em>6 campuses</em> across California.' },
+    'scsu-campus-desc':       { ja: 'SCSUはロサンゼルスをはじめ、カリフォルニア州内の6都市にキャンパスを展開しています。お住まいや生活環境に合わせてキャンパスを選ぶことができます。全キャンパス共通の電話・メールでお問い合わせいただけます。',
+                                en: 'SCSU operates campuses in 6 cities across California. Choose the campus that best fits your lifestyle. All campuses share the same phone and email contact.' },
+    'scsu-campus-contact':    { ja: '📞 全キャンパス共通連絡先', en: '📞 All-campus contact' },
+    'scsu-campus-main-badge': { ja: 'メインキャンパス', en: 'Main Campus' },
+    'scsu-campus-la-name':    { ja: 'ロサンゼルス', en: 'Los Angeles' },
+    'scsu-campus-la-note':    { ja: 'Metro B Line「Wilshire/Vermont」駅 徒歩約5分', en: '5 min walk from Metro B Line Wilshire/Vermont' },
+    'scsu-campus-sa-name':    { ja: 'サンタアナ（オレンジ郡）', en: 'Santa Ana (Orange County)' },
+    'scsu-campus-sa-note':    { ja: 'BBA・MBA開講中', en: 'BBA & MBA available' },
+    'scsu-campus-sd-name':    { ja: 'サンディエゴ', en: 'San Diego' },
+    'scsu-campus-sd-note':    { ja: 'BBA開講中・追加プログラム準備中', en: 'BBA available; more programs coming soon' },
+    'scsu-campus-ok-name':    { ja: 'オークランド（ベイエリア）', en: 'Oakland (Bay Area)' },
+    'scsu-campus-ok-note':    { ja: 'BBA開講中・追加プログラム準備中', en: 'BBA available; more programs coming soon' },
+    'scsu-campus-em-name':    { ja: 'エルモンテ（LA近郊）', en: 'El Monte (Greater LA)' },
+    'scsu-campus-em-note':    { ja: 'BBA開講中・追加プログラム準備中', en: 'BBA available; more programs coming soon' },
+    'scsu-campus-rv-name':    { ja: 'リバーサイド（インランドエンパイア）', en: 'Riverside (Inland Empire)' },
+    'scsu-campus-rv-note':    { ja: 'BBA開講中・追加プログラム準備中', en: 'BBA available; more programs coming soon' },
+    'scsu-campus-link':       { ja: '詳細を見る →', en: 'View details →' },
+
+    // --- CONTACT ---
+    'scsu-label-contact':     { ja: 'お問い合わせ', en: 'CONTACT' },
+    'scsu-title-contact':     { ja: 'まずは、<em>気軽に相談から。</em>', en: 'Start with a <em>free consultation.</em>' },
+    'scsu-contact-desc':      { ja: 'プログラムの詳細、学費、ビザ手続きなど、どんな質問でも日本語でお気軽にどうぞ。', en: 'Ask us anything about programs, tuition, or visa procedures. We respond in English within 1–2 business days.' },
+    'scsu-line-title':        { ja: 'LINEで気軽に相談', en: 'Chat with us on LINE' },
+    'scsu-line-desc':         { ja: '「こんなこと聞いていいの？」も大歓迎。日本語でOKです。まずは相談からで大丈夫！', en: 'No question is too small. Feel free to message us anytime!' },
+    'scsu-line-btn':          { ja: 'LINEで無料相談する', en: 'Chat on LINE (Free)' },
+    'scsu-line-note':         { ja: '友だち追加後、日本語でメッセージをどうぞ', en: 'Add us and send a message anytime' },
+    'scsu-form-title':        { ja: '📝 お問い合わせフォーム', en: '📝 Inquiry Form' },
+    'scsu-form-name-label':   { ja: 'お名前', en: 'Full Name' },
+    'scsu-form-name-ph':      { ja: '例：山田 太郎', en: 'e.g. Taro Yamada' },
+    'scsu-form-email-label':  { ja: 'メールアドレス', en: 'Email Address' },
+    'scsu-form-email-ph':     { ja: '例：taro@example.com', en: 'e.g. taro@example.com' },
+    'scsu-form-tel-label':    { ja: '電話番号（任意）', en: 'Phone Number (optional)' },
+    'scsu-form-tel-ph':       { ja: '例：090-1234-5678', en: 'e.g. +1-213-000-0000' },
+    'scsu-form-prog-label':   { ja: 'ご希望のプログラム', en: 'Program of Interest' },
+    'scsu-form-status-label': { ja: '現在の状況', en: 'Current Status' },
+    'scsu-form-msg-label':    { ja: 'ご質問・メッセージ', en: 'Questions / Message' },
+    'scsu-form-msg-ph':       { ja: '例：MBAプログラムの詳細を教えてください。OPTの手続きについても相談したいです。', en: 'e.g. I would like to know more about the MBA program and OPT procedures.' },
+    'scsu-form-submit':       { ja: '送信する →', en: 'Submit →' },
+    'scsu-form-note':         { ja: '通常1〜2営業日以内に日本語でご返信します。', en: 'We typically reply within 1–2 business days.' },
+    'scsu-form-success':      { ja: '✅ お問い合わせを受け付けました。1〜2営業日以内にご連絡します。', en: '✅ Your inquiry has been received. We will contact you within 1–2 business days.' },
+
+    // --- FINAL CTA ---
+    'scsu-cta-h2':            { ja: 'アメリカで学位取得とキャリアアップを。', en: 'Earn Your U.S. Degree and Build Your Career.' },
+    'scsu-cta-p':             { ja: 'まずはLINEで「ちょっと聞いてみる」から。申し込みではなく、相談からで大丈夫！', en: 'Start with a quick message on LINE — no commitment, just a conversation.' },
+    'scsu-cta-line':          { ja: 'LINEで相談する（無料）', en: 'Chat on LINE (Free)' },
+    'scsu-cta-form':          { ja: 'フォームで問い合わせ', en: 'Send an Inquiry' },
+
+    // --- FOOTER ---
+    'footer-title':           { ja: 'HEI × SCSU ロサンゼルス留学・大学進学', en: 'HEI × SCSU — Los Angeles Study & University Admission' },
+    'footer-copy':            { ja: '© Hollywood Education Institute & Southern California State University. All rights reserved.', en: '© Hollywood Education Institute & Southern California State University. All rights reserved.' },
+  };
+
+  function applyLang(lang) {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if (!translations[key]) return;
+      const val = translations[key][lang];
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        el.placeholder = val;
+      } else if (el.hasAttribute('data-i18n-html')) {
+        el.innerHTML = val;
+      } else {
+        el.textContent = val;
+      }
+    });
+    // Update html lang attribute
+    document.documentElement.lang = lang === 'ja' ? 'ja' : 'en';
+  }
+
+  function toggleLang() {
+    currentLang = currentLang === 'ja' ? 'en' : 'ja';
+    document.getElementById('langBtnLabel').textContent = currentLang === 'ja' ? '🇬🇧 EN' : '🇯🇵 JA';
+    applyLang(currentLang);
+  }
+
+  // ===== FORM SUBMIT =====
+  function handleSubmit(e, successId) {
+    e.preventDefault();
+    e.target.style.display = 'none';
+    document.getElementById(successId).style.display = 'block';
+  }
+
+  // ===== SMOOTH SCROLL for anchor links =====
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        const offset = 60; // fixed header
+        const top = target.getBoundingClientRect().top + window.pageYOffset - offset;
+        window.scrollTo({ top, behavior: 'smooth' });
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
