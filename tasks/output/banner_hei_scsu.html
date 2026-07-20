@@ -1,274 +1,183 @@
 <!doctype html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>留学キャンペーンバナー — HEI ⇄ SCSU（160×600 切替）</title>
+<title>Vivinavi Dual-Panel Banner — HEI ⇄ SCSU (160×600)</title>
 <style>
   /* ============================================================
      PAGE FRAME (theme-aware studio backdrop)
      ============================================================ */
   :root{
-    --page-bg:#efe9e0;
+    --page-bg:#eef1f4;
     --card:#ffffff;
-    --ink:#231d16;
-    --muted:#7a7166;
-    --line:#e2dacd;
-    --accent:#d95e0c;
-    --shadow:0 18px 50px -22px rgba(60,40,15,.45);
+    --ink:#1b2430;
+    --muted:#6b7686;
+    --line:#dde3ea;
+    --accent:#2f6db0;
+    --shadow:0 18px 50px -22px rgba(20,40,70,.45);
   }
   @media (prefers-color-scheme:dark){
     :root{
-      --page-bg:#181512;
-      --card:#221e1a;
-      --ink:#f3ede3;
-      --muted:#a49a8c;
-      --line:#332d26;
-      --accent:#f7a24a;
-      --shadow:0 18px 55px -20px rgba(0,0,0,.7);
+      --page-bg:#12171d;--card:#1c232b;--ink:#eef2f7;--muted:#98a4b3;
+      --line:#2a333d;--accent:#5b9bd8;--shadow:0 18px 55px -20px rgba(0,0,0,.7);
     }
   }
   :root[data-theme="light"]{
-    --page-bg:#efe9e0;--card:#ffffff;--ink:#231d16;--muted:#7a7166;--line:#e2dacd;--accent:#d95e0c;
-    --shadow:0 18px 50px -22px rgba(60,40,15,.45);
+    --page-bg:#eef1f4;--card:#ffffff;--ink:#1b2430;--muted:#6b7686;--line:#dde3ea;--accent:#2f6db0;
+    --shadow:0 18px 50px -22px rgba(20,40,70,.45);
   }
   :root[data-theme="dark"]{
-    --page-bg:#181512;--card:#221e1a;--ink:#f3ede3;--muted:#a49a8c;--line:#332d26;--accent:#f7a24a;
+    --page-bg:#12171d;--card:#1c232b;--ink:#eef2f7;--muted:#98a4b3;--line:#2a333d;--accent:#5b9bd8;
     --shadow:0 18px 55px -20px rgba(0,0,0,.7);
   }
 
   *{box-sizing:border-box}
   html,body{margin:0}
   body{
-    background:var(--page-bg);
-    color:var(--ink);
-    font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","YuGothic","Meiryo",system-ui,-apple-system,sans-serif;
-    line-height:1.5;
-    -webkit-font-smoothing:antialiased;
-    padding:32px 20px 64px;
+    background:var(--page-bg);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    line-height:1.5;-webkit-font-smoothing:antialiased;padding:32px 20px 64px;
   }
-  .wrap{max-width:920px;margin:0 auto}
+  .wrap{max-width:960px;margin:0 auto}
 
-  .page-head{margin:0 auto 28px;max-width:640px;text-align:center}
-  .eyebrow{
-    font-size:12px;letter-spacing:.22em;text-transform:uppercase;
-    color:var(--accent);font-weight:800;margin:0 0 8px;
-  }
-  .page-head h1{
-    font-size:clamp(22px,4vw,30px);margin:0 0 8px;font-weight:900;
-    letter-spacing:-.01em;text-wrap:balance;
-  }
+  .page-head{margin:0 auto 28px;max-width:660px;text-align:center}
+  .eyebrow{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);font-weight:800;margin:0 0 8px}
+  .page-head h1{font-size:clamp(22px,4vw,30px);margin:0 0 8px;font-weight:900;letter-spacing:-.01em;text-wrap:balance}
   .page-head p{margin:0;color:var(--muted);font-size:14.5px}
 
-  /* ============================================================
-     STAGE (live animated banner)
-     ============================================================ */
+  /* live stage */
   .stage-block{display:flex;flex-direction:column;align-items:center;gap:18px;margin-bottom:44px}
-  .stage{
-    width:240px;height:900px;
-    display:flex;justify-content:center;
-    filter:drop-shadow(var(--shadow));
-  }
+  .stage{width:240px;height:900px;display:flex;justify-content:center;filter:drop-shadow(var(--shadow))}
   .stage .banner{transform:scale(1.5);transform-origin:top left}
 
   .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center}
-  .btn{
-    appearance:none;border:1px solid var(--line);background:var(--card);color:var(--ink);
+  .btn{appearance:none;border:1px solid var(--line);background:var(--card);color:var(--ink);
     font:inherit;font-size:13px;font-weight:700;padding:9px 16px;border-radius:999px;cursor:pointer;
-    display:inline-flex;align-items:center;gap:7px;transition:transform .12s ease,border-color .12s ease;
-  }
+    display:inline-flex;align-items:center;gap:7px;transition:transform .12s ease,border-color .12s ease}
   .btn:hover{border-color:var(--accent)}
   .btn:active{transform:translateY(1px)}
   .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
   .btn .dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
   .hint{color:var(--muted);font-size:12.5px}
 
-  /* ============================================================
-     COMPARISON GALLERY (frozen frames)
-     ============================================================ */
-  .gallery{
-    display:flex;gap:26px;flex-wrap:wrap;justify-content:center;margin-bottom:46px;
-  }
+  /* comparison gallery */
+  .gallery{display:flex;gap:26px;flex-wrap:wrap;justify-content:center;margin-bottom:46px}
   .frame-card{display:flex;flex-direction:column;align-items:center;gap:12px}
   .frame-card .stage{width:176px;height:660px;filter:drop-shadow(var(--shadow))}
   .frame-card .banner{transform:scale(1.1);transform-origin:top left}
-  .frame-tag{
-    font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
-    color:var(--muted);
-  }
+  .frame-tag{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
   .frame-tag b{color:var(--ink)}
 
-  /* ============================================================
-     NOTES CARD
-     ============================================================ */
-  .notes{
-    background:var(--card);border:1px solid var(--line);border-radius:18px;
-    padding:26px 28px;max-width:640px;margin:0 auto;box-shadow:var(--shadow);
-  }
+  /* notes */
+  .notes{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px 28px;max-width:680px;margin:0 auto;box-shadow:var(--shadow)}
   .notes h2{margin:0 0 4px;font-size:16px;font-weight:900;letter-spacing:-.01em}
   .notes .sub{margin:0 0 18px;color:var(--muted);font-size:13px}
-  .spec{
-    display:grid;grid-template-columns:auto 1fr;gap:6px 18px;font-size:13.5px;
-    border-top:1px solid var(--line);padding-top:16px;margin-top:4px;
-  }
+  .spec{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;font-size:13.5px;border-top:1px solid var(--line);padding-top:16px;margin-top:4px}
   .spec dt{color:var(--muted);font-weight:700}
   .spec dd{margin:0}
   .spec dd b{color:var(--accent)}
-  .flag{
-    margin-top:18px;padding:13px 15px;border-radius:12px;font-size:13px;line-height:1.55;
-    background:color-mix(in srgb,var(--accent) 12%,transparent);
-    border:1px solid color-mix(in srgb,var(--accent) 34%,transparent);
-  }
+  .spec code{background:color-mix(in srgb,var(--accent) 12%,transparent);padding:1px 5px;border-radius:5px;font-size:12px}
+  .flag{margin-top:18px;padding:13px 15px;border-radius:12px;font-size:13px;line-height:1.55;
+    background:color-mix(in srgb,var(--accent) 12%,transparent);border:1px solid color-mix(in srgb,var(--accent) 34%,transparent)}
   .flag b{color:var(--accent)}
 
   /* ============================================================
-     THE BANNER — 160 x 600 skyscraper
+     THE BANNER — 160×600, five-row grid
+     rows: HEADER · HOOK · VALUE · PRICE · CTA
+     Price and CTA rows are identical in both panels, so they
+     stay locked in place across the switch.
      ============================================================ */
-  .banner{
-    position:relative;width:160px;height:600px;overflow:hidden;border-radius:6px;
-    background:#f2751a;
-    font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","YuGothic","Meiryo",sans-serif;
-    user-select:none;
-  }
-  .frame{
-    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
-    padding:11px 10px 0;gap:7px;text-align:center;
-    animation:swapA 12s infinite;
-    will-change:opacity,transform;
-  }
+  .banner{position:relative;width:160px;height:600px;overflow:hidden;border-radius:6px;background:#f26f18;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;user-select:none}
+  .frame{position:absolute;inset:0;display:grid;
+    grid-template-rows:56px 104px 168px 150px 78px;gap:7px;padding:8px;
+    animation:swapA 8s infinite;will-change:opacity}
   .frame--scsu{animation-name:swapB}
 
-  /* palettes */
   .frame--hei{
-    background:linear-gradient(178deg,#f9a53f 0%,#f68a28 46%,#f2731a 100%);
-    --edge:#a8480a;--cta:#d95e0c;--cta-b:#b34a06;--cta-ink:#fff;
-    --pill-bg:#fff;--pill-ink:#e2650e;--price:#fff;--band:rgba(255,255,255,.20);
-    --badge-ink:#ef6d16;
+    background:linear-gradient(179deg,#f9a13a 0%,#f4801f 52%,#ee6c12 100%);
+    --ink:#fff;--band:#e12f28;--cta-bg:linear-gradient(180deg,#33b24d,#1f8a37);--cta-ink:#fff;
+    --cta-edge:#166b2a;--num:#ef6d16;--tag:#ef6d16;
   }
   .frame--scsu{
-    background:linear-gradient(178deg,#2a68b2 0%,#1c4e8c 48%,#13315c 100%);
-    --edge:#0a1f3d;--cta:#f4b740;--cta-b:#d99b1e;--cta-ink:#12305a;
-    --pill-bg:#f4b740;--pill-ink:#12305a;--price:#f4b740;--band:rgba(255,255,255,.16);
-    --badge-ink:#1c4e8c;
+    background:linear-gradient(179deg,#3f6d97 0%,#335b82 52%,#284a6b 100%);
+    --ink:#fff;--band:#e12f28;--cta-bg:linear-gradient(180deg,#ffa423,#f38a00);--cta-ink:#fff;
+    --cta-edge:#c96f00;--num:#2f5e88;--tag:#335b82;
   }
 
-  /* decorative foliage line-art near bottom */
-  .frame::before,.frame::after{
-    content:"";position:absolute;bottom:30px;width:34px;height:70px;opacity:.35;
-    background:radial-gradient(circle at 50% 100%, transparent 60%, rgba(255,255,255,.5) 61% 63%, transparent 64%);
-    pointer-events:none;
-  }
+  .frame > *{min-width:0}
 
-  /* logo badge */
-  .badge{
-    display:flex;align-items:center;gap:7px;background:#fff;border-radius:10px;
-    padding:8px 9px;width:100%;box-shadow:0 3px 8px rgba(0,0,0,.12);
-  }
-  .badge .cap{width:26px;height:22px;flex:none;color:var(--badge-ink)}
-  .badge .cap svg{width:100%;height:100%;display:block;fill:currentColor}
-  .badge .name{
-    text-align:left;color:#3a3a3a;font-weight:900;line-height:1.08;letter-spacing:.02em;
-    font-size:8px;
-  }
-  .badge .name span{display:block;color:var(--badge-ink)}
-  .badge .name .top{color:#2c2c2c;font-size:6.2px;letter-spacing:.14em;margin-bottom:1px}
+  /* HEADER */
+  .hdr{display:flex;align-items:center;gap:7px}
+  .hdr .cap{width:24px;height:24px;flex:none;color:#fff}
+  .hdr .cap svg{width:100%;height:100%;display:block;fill:currentColor}
+  .hdr .wm{display:flex;flex-direction:column;line-height:1;flex:1;min-width:0}
+  .hdr .wm .mark{font-size:19px;font-weight:900;color:#fff;letter-spacing:.03em}
+  .hdr .wm .sub{font-size:6.6px;font-weight:700;color:#fff;opacity:.92;margin-top:2px;letter-spacing:.02em;white-space:nowrap}
+  .hdr .anniv{flex:none;background:#fff;color:var(--tag);font-weight:900;font-size:6.6px;line-height:1.1;
+    text-align:center;padding:4px 6px;border-radius:6px;box-shadow:0 2px 4px rgba(0,0,0,.18)}
+  .hdr .anniv b{display:block;font-size:11px}
 
-  /* headline */
-  .headline{
-    color:#fff;font-weight:900;font-size:15.5px;line-height:1.16;margin-top:2px;
-    text-shadow:
-      -1.4px -1.4px 0 var(--edge),1.4px -1.4px 0 var(--edge),
-      -1.4px 1.4px 0 var(--edge),1.4px 1.4px 0 var(--edge),
-      0 2px 3px rgba(0,0,0,.28);
-    letter-spacing:.01em;
-  }
+  /* HOOK */
+  .hook{display:flex;flex-direction:column;gap:5px;justify-content:center}
+  .band{align-self:flex-start;background:var(--band);color:#fff;font-weight:800;font-size:7.8px;
+    letter-spacing:.03em;text-transform:uppercase;padding:3px 8px;border-radius:4px;
+    box-shadow:0 1px 3px rgba(0,0,0,.25)}
+  .hook .main{color:#fff;font-weight:900;font-size:13.5px;line-height:1.14;
+    text-shadow:0 1px 2px rgba(0,0,0,.22)}
 
-  /* anniversary / program pill */
-  .pill{
-    background:var(--pill-bg);color:var(--pill-ink);font-weight:900;font-size:10px;
-    padding:4px 11px;border-radius:999px;letter-spacing:.02em;box-shadow:0 2px 5px rgba(0,0,0,.15);
-  }
+  /* VALUE */
+  .value{display:flex;flex-direction:column;gap:7px;justify-content:center}
+  .value .lead{color:#fff;font-weight:900;font-size:11px;line-height:1.2;text-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .value ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+  .value li{display:flex;align-items:flex-start;gap:5px;color:#fff;font-size:8.4px;font-weight:600;line-height:1.25}
+  .value li .ck{flex:none;width:11px;height:11px;border-radius:50%;background:#fff;color:var(--num);
+    display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:900;margin-top:.5px}
 
-  /* course */
-  .course-main{
-    color:#fff;font-weight:900;font-size:16.5px;line-height:1.1;
-    text-shadow:-1px -1px 0 var(--edge),1px -1px 0 var(--edge),-1px 1px 0 var(--edge),1px 1px 0 var(--edge);
-  }
-  .course-sub{
-    color:#fff;font-weight:800;font-size:12.5px;background:var(--band);
-    padding:3px 12px;border-radius:6px;letter-spacing:.03em;
-  }
+  /* PRICE (white box) — locked position */
+  .price{background:#fff;border-radius:9px;padding:9px 10px;display:flex;flex-direction:column;
+    justify-content:center;gap:2px;box-shadow:0 3px 8px rgba(0,0,0,.16);color:#2a2f36}
+  .price .plabel{font-size:8px;font-weight:800;color:#6a7178;letter-spacing:.04em}
+  .price .pmain{display:flex;align-items:baseline;gap:5px;line-height:1}
+  .price .pmain .num{font-size:31px;font-weight:900;color:var(--num);letter-spacing:-.02em}
+  .price .pmain .approx{font-size:8px;font-weight:700;color:#7a828a}
+  .price .psecond{font-size:9px;font-weight:700;color:#3a4048;margin-top:1px}
+  .price .psecond b{color:var(--num)}
+  .price .pcourse{font-size:8.4px;font-weight:800;color:#2a2f36;letter-spacing:.02em}
+  .price .pnote{font-size:6.6px;font-weight:600;color:#8a9099;line-height:1.3;margin-top:1px}
 
-  /* price */
-  .price{
-    color:var(--price);font-weight:900;font-size:44px;line-height:.92;letter-spacing:-.02em;
-    margin:1px 0 -1px;
-    text-shadow:
-      -2px -2px 0 var(--edge),2px -2px 0 var(--edge),
-      -2px 2px 0 var(--edge),2px 2px 0 var(--edge),
-      0 4px 6px rgba(0,0,0,.3);
-  }
-  .note{color:#fff;font-weight:700;font-size:8.6px;line-height:1.35;opacity:.96}
-
-  /* CTA */
-  .cta{
-    margin-top:2px;background:linear-gradient(180deg,var(--cta),var(--cta-b));
-    color:var(--cta-ink);font-weight:900;font-size:12.5px;
-    padding:8px 10px;border-radius:8px;width:100%;
-    box-shadow:0 3px 0 rgba(0,0,0,.18),0 4px 9px rgba(0,0,0,.2);
-    display:flex;align-items:center;justify-content:center;gap:5px;
-  }
-  .cta .tri{font-size:10px;transform:translateY(.5px)}
-
-  /* student photo placeholder */
-  .photo{
-    position:relative;width:100%;height:92px;border-radius:9px;overflow:hidden;margin-top:2px;
-    background:
-      linear-gradient(120deg,rgba(255,255,255,.16),rgba(0,0,0,.14)),
-      linear-gradient(180deg,#c9d7e6,#8fa7bf);
-    box-shadow:inset 0 0 0 2px rgba(255,255,255,.55);
-  }
-  .photo svg{position:absolute;inset:0;width:100%;height:100%}
-  .photo .tag{
-    position:absolute;left:6px;bottom:5px;font-size:6.5px;font-weight:800;letter-spacing:.14em;
-    color:rgba(255,255,255,.9);text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,.5);
-  }
-
-  /* footer accreditation */
-  .accredit{
-    margin-top:auto;margin-bottom:9px;color:#fff;font-weight:900;font-size:12.5px;letter-spacing:.28em;
-    text-shadow:0 1px 2px rgba(0,0,0,.3);
-    display:flex;align-items:center;gap:7px;
-  }
-  .accredit .rule{width:16px;height:2px;background:rgba(255,255,255,.7);border-radius:2px}
+  /* CTA — locked position */
+  .cta{align-self:stretch;display:flex;align-items:center;justify-content:center;gap:6px;
+    background:var(--cta-bg);color:var(--cta-ink);font-weight:900;font-size:13.5px;border-radius:9px;
+    box-shadow:0 3px 0 var(--cta-edge),0 5px 10px rgba(0,0,0,.22);text-shadow:0 1px 1px rgba(0,0,0,.18)}
+  .cta .arw{font-size:13px}
 
   /* ============================================================
-     SWITCHING ANIMATION
+     SWITCH — ~4s per panel, 8s loop, quick crossfade
      ============================================================ */
   @keyframes swapA{
-    0%,42%   {opacity:1;transform:scale(1)}
-    49%,91%  {opacity:0;transform:scale(1.015)}
-    98%,100% {opacity:1;transform:scale(1)}
+    0%,44%{opacity:1}
+    50%,94%{opacity:0}
+    100%{opacity:1}
   }
   @keyframes swapB{
-    0%,42%   {opacity:0;transform:scale(1.015)}
-    49%,91%  {opacity:1;transform:scale(1)}
-    98%,100% {opacity:0;transform:scale(1.015)}
+    0%,44%{opacity:0}
+    50%,94%{opacity:1}
+    100%{opacity:0}
   }
   .banner.paused .frame{animation-play-state:paused}
-
-  /* frozen frames in gallery */
   .banner.static .frame{animation:none}
-  .banner.show-hei  .frame--hei {opacity:1;transform:none}
+  .banner.show-hei  .frame--hei {opacity:1}
   .banner.show-hei  .frame--scsu{opacity:0}
   .banner.show-scsu .frame--hei {opacity:0}
-  .banner.show-scsu .frame--scsu{opacity:1;transform:none}
+  .banner.show-scsu .frame--scsu{opacity:1}
 
   @media (prefers-reduced-motion:reduce){
     .frame{animation:none}
     #liveBanner .frame--scsu{opacity:0}
-    #liveBanner.showB .frame--hei{opacity:0}
-    #liveBanner.showB .frame--scsu{opacity:1}
+    #liveBanner.show-scsu .frame--hei{opacity:0}
+    #liveBanner.show-scsu .frame--scsu{opacity:1}
   }
 </style>
 </head>
@@ -276,9 +185,9 @@
   <div class="wrap">
 
     <header class="page-head">
-      <p class="eyebrow">Study Abroad Campaign · Skyscraper 160×600</p>
-      <h1>HEI ⇄ SCSU 切替バナー</h1>
-      <p>参考の Hollywood Education Institute 広告を作り直し、HEI と SCSU の2フレームが自動で切り替わる縦型バナーにしました。</p>
+      <p class="eyebrow">Vivinavi · Dual-Panel Skyscraper 160×600</p>
+      <h1>HEI ⇄ SCSU Rotating Banner</h1>
+      <p>Two panels sharing one Header → Hook → Value → Price → CTA structure, so the price box and CTA button stay locked in place as the banner rotates every ~4 seconds.</p>
     </header>
 
     <!-- ===== LIVE ANIMATED BANNER ===== -->
@@ -286,90 +195,95 @@
       <div class="stage">
         <div class="banner" id="liveBanner">
 
-          <!-- HEI FRAME -->
+          <!-- ===================== HEI PANEL ===================== -->
           <div class="frame frame--hei">
-            <div class="badge">
+            <div class="hdr">
               <span class="cap"><svg viewBox="0 0 48 40" aria-hidden="true"><path d="M24 3 1 13l23 10 23-10z"/><path d="M9 20v8.5c0 3.3 6.7 6 15 6s15-2.7 15-6V20l-15 6.5z"/><rect x="44" y="13" width="2.2" height="12.5"/><circle cx="45.1" cy="27.5" r="2.6"/></svg></span>
-              <span class="name"><span class="top">HOLLYWOOD</span><span>EDUCATION</span><span>INSTITUTE</span></span>
+              <span class="wm"><span class="mark">HEI</span><span class="sub">Hollywood Education Institute</span></span>
+              <span class="anniv"><b>20th</b>Anniversary</span>
             </div>
-            <div class="headline">初めての留学・<br>転校大歓迎!</div>
-            <div class="pill">HEI 20周年記念</div>
-            <div class="course-main">スタンダードESL</div>
-            <div class="course-sub">3ヶ月コース</div>
-            <div class="price">$900</div>
-            <div class="note">2026年12月31日までの<br>申し込み対象</div>
-            <div class="cta"><span class="tri">▶</span>ここをクリック</div>
-            <div class="photo">
-              <svg viewBox="0 0 160 92" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-                <g fill="rgba(255,255,255,.85)">
-                  <circle cx="30" cy="40" r="12"/><path d="M12 92c0-14 8-24 18-24s18 10 18 24z"/>
-                  <circle cx="128" cy="42" r="12"/><path d="M110 92c0-14 8-24 18-24s18 10 18 24z"/>
-                </g>
-                <g fill="rgba(255,255,255,.95)">
-                  <circle cx="64" cy="34" r="14"/><path d="M43 92c0-16 9-27 21-27s21 11 21 27z"/>
-                  <circle cx="98" cy="36" r="13"/><path d="M79 92c0-15 8.5-26 19-26s19 11 19 26z"/>
-                </g>
-              </svg>
-              <span class="tag">Photo</span>
+
+            <div class="hook">
+              <span class="band">New visa rule effective Sept 15</span>
+              <div class="main">Transferring? Do it before the rule takes effect</div>
             </div>
-            <div class="accredit"><span class="rule"></span>認定校<span class="rule"></span></div>
+
+            <div class="value">
+              <div class="lead">Keep tuition low, study English long term</div>
+              <ul>
+                <li><span class="ck">✓</span>Accredited school</li>
+                <li><span class="ck">✓</span>20th Anniversary pricing</li>
+                <li><span class="ck">✓</span>Transfer support available</li>
+              </ul>
+            </div>
+
+            <div class="price">
+              <span class="plabel">Standard ESL · 3 months</span>
+              <span class="pmain"><span class="num">$900</span><span class="approx">≈ ¥144,000</span></span>
+              <span class="psecond">6 months <b>$1,800</b></span>
+              <span class="pnote">*For applications received by December 31, 2026</span>
+            </div>
+
+            <div class="cta">Click here<span class="arw">→</span></div>
           </div>
 
-          <!-- SCSU FRAME -->
+          <!-- ===================== SCSU PANEL ===================== -->
           <div class="frame frame--scsu">
-            <div class="badge">
-              <span class="cap"><svg viewBox="0 0 48 40" aria-hidden="true"><path d="M24 3 1 13l23 10 23-10z"/><path d="M9 20v8.5c0 3.3 6.7 6 15 6s15-2.7 15-6V20l-15 6.5z"/><rect x="44" y="13" width="2.2" height="12.5"/><circle cx="45.1" cy="27.5" r="2.6"/></svg></span>
-              <span class="name"><span class="top">SOUTHERN CALIFORNIA</span><span>STATE</span><span>UNIVERSITY</span></span>
+            <div class="hdr">
+              <span class="cap"><svg viewBox="0 0 48 40" aria-hidden="true"><path d="M4 17 24 7l20 10-20 9z"/><rect x="8" y="20" width="3" height="13"/><rect x="16" y="20" width="3" height="13"/><rect x="29" y="20" width="3" height="13"/><rect x="37" y="20" width="3" height="13"/><rect x="5" y="33" width="38" height="3.5"/></svg></span>
+              <span class="wm"><span class="mark">SCSU</span><span class="sub">A university on Wilshire, LA</span></span>
             </div>
-            <div class="headline">大学進学も<br>安心サポート!</div>
-            <div class="pill">SCSU 提携プログラム</div>
-            <div class="course-main">インテンシブ英語</div>
-            <div class="course-sub">6ヶ月コース</div>
-            <div class="price">$1,600</div>
-            <div class="note">2026年12月31日までの<br>申し込み対象</div>
-            <div class="cta"><span class="tri">▶</span>ここをクリック</div>
-            <div class="photo">
-              <svg viewBox="0 0 160 92" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-                <g fill="rgba(255,255,255,.85)">
-                  <circle cx="30" cy="40" r="12"/><path d="M12 92c0-14 8-24 18-24s18 10 18 24z"/>
-                  <circle cx="128" cy="42" r="12"/><path d="M110 92c0-14 8-24 18-24s18 10 18 24z"/>
-                </g>
-                <g fill="rgba(255,255,255,.95)">
-                  <circle cx="64" cy="34" r="14"/><path d="M43 92c0-16 9-27 21-27s21 11 21 27z"/>
-                  <circle cx="98" cy="36" r="13"/><path d="M79 92c0-15 8.5-26 19-26s19 11 19 26z"/>
-                </g>
-              </svg>
-              <span class="tag">Photo</span>
+
+            <div class="hook">
+              <span class="band">2026 Sept · new student visa rule</span>
+              <div class="main">ESL study capped at 24 months</div>
             </div>
-            <div class="accredit"><span class="rule"></span>認定校<span class="rule"></span></div>
+
+            <div class="value">
+              <div class="lead">Earn a degree or certificate</div>
+              <ul>
+                <li><span class="ck">✓</span>Japanese-speaking staff</li>
+                <li><span class="ck">✓</span>OPT up to 3 years (STEM)</li>
+                <li><span class="ck">✓</span>4 intakes / yr · quarterly plan</li>
+              </ul>
+            </div>
+
+            <div class="price">
+              <span class="plabel">Degree programs · from</span>
+              <span class="pmain"><span class="num">$1,500</span><span class="approx">/ 3 months</span></span>
+              <span class="psecond">BBA, MBA &amp; more</span>
+              <span class="pnote">Tuition varies by program &amp; term</span>
+            </div>
+
+            <div class="cta">Learn more<span class="arw">→</span></div>
           </div>
 
         </div>
       </div>
 
       <div class="controls">
-        <button class="btn" id="toggleBtn" type="button"><span class="dot"></span><span id="toggleLabel">一時停止</span></button>
-        <button class="btn" id="stepBtn" type="button">フレーム切替 ▶</button>
-        <span class="hint">自動切替 12秒ループ（各フレーム約5秒表示）</span>
+        <button class="btn" id="toggleBtn" type="button"><span class="dot"></span><span id="toggleLabel">Pause</span></button>
+        <button class="btn" id="stepBtn" type="button">Switch panel →</button>
+        <span class="hint">Auto-rotates every ~4s (8s loop)</span>
       </div>
     </section>
 
     <!-- ===== FROZEN COMPARISON ===== -->
-    <section class="gallery" id="gallery" aria-label="各フレームの静止比較"></section>
+    <section class="gallery" id="gallery" aria-label="Both panels, frozen"></section>
 
     <!-- ===== NOTES ===== -->
     <section class="notes">
-      <h2>仕様と差し替えメモ</h2>
-      <p class="sub">実制作・入稿前に確認してください。</p>
+      <h2>Build spec &amp; hand-off notes</h2>
+      <p class="sub">Built to the Vivinavi Dual-Panel brief. Review before production/export.</p>
       <dl class="spec">
-        <dt>サイズ</dt><dd><b>160 × 600 px</b>（ワイドスカイスクレイパー）／ 表示は拡大プレビュー</dd>
-        <dt>形式</dt><dd>自己完結HTML＋CSSアニメーション（外部リソース・画像リンクなし）</dd>
-        <dt>切替</dt><dd>HEI → SCSU を12秒でクロスフェード・ループ。<code>prefers-reduced-motion</code> 対応</dd>
-        <dt>フォント</dt><dd>Hiragino / Yu Gothic 系の極太システムフォント＋縁取りで白抜きポスター表現</dd>
-        <dt>差し替え</dt><dd>写真枠は <b>Photo</b> プレースホルダー。実写真・ロゴ画像に差し替え可</dd>
+        <dt>Size</dt><dd><b>160 × 600 px</b> wide skyscraper (shown scaled up for preview)</dd>
+        <dt>Motion</dt><dd>HEI ↔ SCSU crossfade, <b>~4s per panel</b> / 8s loop · honors <code>prefers-reduced-motion</code></dd>
+        <dt>Structure</dt><dd>Shared 5-row grid: Header · Hook · Value · Price · CTA — <b>Price &amp; CTA locked in identical positions</b> across the switch</dd>
+        <dt>Color</dt><dd>HEI: orange bg / green CTA · SCSU: blue <code>#335B82</code> / orange CTA <code>#FF9800</code> · red hook band on both</dd>
+        <dt>Format</dt><dd>Self-contained HTML+CSS (no external assets). Deliverable brief calls for a GIF — this drives the frames; can be exported to GIF/MP4 on request</dd>
       </dl>
       <div class="flag">
-        <b>SCSU の内容は仮置きです。</b> 参考のHEI広告に対になるよう「Southern California State University／インテンシブ英語 6ヶ月／$1,600」と暫定設定しています。正式名称・コース名・価格・締切・ブランドカラー・キャッチコピー・ロゴを教えていただければ、そのまま反映します。
+        <b>Placeholders to confirm:</b> the HEI &amp; SCSU logos are set as text wordmarks with a cap/columns icon — drop in the real logo art anytime. SCSU’s secondary price line and note are inferred from “Tuition from $1,500 (per 3 months) · BBA, MBA and other degree programs”. Send final logos, exact figures, and the click-through URLs to lock it.
       </div>
     </section>
 
@@ -383,7 +297,6 @@
       var stepBtn = document.getElementById('stepBtn');
       var gallery = document.getElementById('gallery');
 
-      // Build frozen comparison frames by cloning the live banner
       function makeCard(mod, tagHtml){
         var card = document.createElement('div');
         card.className = 'frame-card';
@@ -401,35 +314,27 @@
         card.appendChild(tag);
         return card;
       }
-      gallery.appendChild(makeCard('show-hei','フレーム A · <b>HEI</b>'));
-      gallery.appendChild(makeCard('show-scsu','フレーム B · <b>SCSU</b>'));
+      gallery.appendChild(makeCard('show-hei','Panel A · <b>HEI</b>'));
+      gallery.appendChild(makeCard('show-scsu','Panel B · <b>SCSU</b>'));
 
-      // Play / pause the auto-switch
       var paused = false;
-      toggleBtn.addEventListener('click', function(){
-        paused = !paused;
+      function setPaused(p){
+        paused = p;
         live.classList.toggle('paused', paused);
-        toggleLabel.textContent = paused ? '再生' : '一時停止';
+        toggleLabel.textContent = paused ? 'Play' : 'Pause';
+      }
+      toggleBtn.addEventListener('click', function(){
+        if(paused){ live.classList.remove('static','show-hei','show-scsu'); }
+        setPaused(!paused);
       });
 
-      // Manual step (useful when reduced-motion or paused)
       var showingB = false;
       stepBtn.addEventListener('click', function(){
-        // Pause auto animation and freeze to a chosen frame
-        paused = true;
         live.classList.add('paused','static');
         showingB = !showingB;
         live.classList.toggle('show-scsu', showingB);
         live.classList.toggle('show-hei', !showingB);
-        live.classList.remove('showB');
-        toggleLabel.textContent = '再生';
-      });
-
-      // If a user re-enables play after stepping, restore animation
-      toggleBtn.addEventListener('click', function(){
-        if(!paused){
-          live.classList.remove('static','show-hei','show-scsu');
-        }
+        paused = true; toggleLabel.textContent = 'Play';
       });
     })();
   </script>
