@@ -27,6 +27,7 @@
       width:26px;height:26px;border-radius:6px;flex-shrink:0;
       display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;
     }
+    .switch-btn .logo{height:30px;width:auto;max-width:120px;object-fit:contain;flex-shrink:0}
     .switch-btn .tx{display:flex;flex-direction:column;text-align:left;line-height:1.15}
     .switch-btn .nm{font-size:14px;font-weight:800}
     .switch-btn .sb{font-size:10px;font-weight:500;color:#b3b3b3}
@@ -54,11 +55,11 @@
 
   <nav class="switch-bar" role="tablist" aria-label="学校切り替え">
     <button class="switch-btn hei active" id="btnHei" role="tab" aria-selected="true" onclick="showTab('hei')">
-      <span class="ic">H</span>
+      <img class="logo" src="images/logo-orange.png" alt="" aria-hidden="true">
       <span class="tx"><span class="nm">語学学校 HEI</span><span class="sb">Hollywood Education Institute</span></span>
     </button>
     <button class="switch-btn scsu" id="btnScsu" role="tab" aria-selected="false" onclick="showTab('scsu')">
-      <span class="ic">S</span>
+      <img class="logo" src="images/scsu-seal.svg" alt="" aria-hidden="true">
       <span class="tx"><span class="nm">大学・大学院 SCSU</span><span class="sb">Southern California State University</span></span>
     </button>
   </nav>
