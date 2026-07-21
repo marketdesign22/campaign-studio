@@ -74,7 +74,7 @@
   .banner{position:relative;width:160px;height:600px;overflow:hidden;border-radius:6px;background:#f2751a;
     font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic","YuGothic","Meiryo",sans-serif;user-select:none}
   .frame{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
-    padding:11px 10px 0;gap:7px;text-align:center;animation:swapA 8s infinite;will-change:opacity}
+    padding:11px 10px 10px;gap:7px;text-align:center;animation:swapA 8s infinite;will-change:opacity}
   .frame--scsu{animation-name:swapB}
 
   .frame--hei{
@@ -119,9 +119,17 @@
   .course-sub{color:#fff;font-weight:800;font-size:12.5px;background:var(--band);padding:3px 12px;border-radius:6px;letter-spacing:.03em}
 
   /* price */
-  .price{color:#fff;font-weight:900;font-size:44px;line-height:.92;letter-spacing:-.02em;margin:1px 0 -1px;
+  .price{color:#fff;font-weight:900;font-size:44px;line-height:.92;letter-spacing:-.02em;margin:1px 0 -1px;white-space:nowrap;
     text-shadow:-2px -2px 0 var(--edge),2px -2px 0 var(--edge),-2px 2px 0 var(--edge),2px 2px 0 var(--edge),0 4px 6px rgba(0,0,0,.3)}
   .note{color:#fff;font-weight:700;font-size:8.6px;line-height:1.35;opacity:.96}
+  .price .per{font-size:13px;font-weight:900;letter-spacing:0;margin-left:2px}
+  .note .seal{display:inline-block;font-size:9.5px;font-weight:900;letter-spacing:.12em;
+    border:1.4px solid rgba(255,255,255,.9);border-radius:5px;padding:1.5px 8px;margin-top:3px}
+  .frame--scsu .headline{font-size:12.8px;line-height:1.18}
+  .frame--scsu .pill{font-size:8px;line-height:1.25;padding:4px 9px}
+  .frame--scsu .course-main{font-size:13.5px}
+  .frame--scsu .price{font-size:34px}
+  .frame--scsu .price .per{font-size:12px}
 
   /* CTA */
   .cta{margin-top:2px;background:linear-gradient(180deg,var(--cta),var(--cta-b));color:var(--cta-ink);
@@ -130,15 +138,15 @@
   .cta .tri{font-size:10px;transform:translateY(.5px)}
 
   /* student photo placeholder */
-  .photo{position:relative;width:100%;height:92px;border-radius:9px;overflow:hidden;margin-top:2px;
-    background:linear-gradient(120deg,rgba(255,255,255,.16),rgba(0,0,0,.14)),linear-gradient(180deg,#c9d7e6,#8fa7bf);
-    box-shadow:inset 0 0 0 2px rgba(255,255,255,.55)}
-  .photo svg{position:absolute;inset:0;width:100%;height:100%}
-  .photo .ptag{position:absolute;left:6px;bottom:5px;font-size:6.5px;font-weight:800;letter-spacing:.14em;
-    color:rgba(255,255,255,.9);text-transform:uppercase;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+  .photo{position:relative;width:100%;flex:1 1 auto;min-height:100px;border-radius:9px;overflow:hidden;margin-top:2px;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(160deg,#e3e9f0,#bcc9d8);box-shadow:inset 0 0 0 2px rgba(255,255,255,.6)}
+  .photo .ph-inner{display:flex;flex-direction:column;align-items:center;gap:5px;color:#6b7c90}
+  .photo .ph-icon{width:36px;height:30px;fill:currentColor;opacity:.7}
+  .photo .ph-label{font-size:8px;font-weight:800;letter-spacing:.16em;opacity:.72}
 
   /* footer */
-  .accredit{margin-top:auto;margin-bottom:9px;color:#fff;font-weight:900;font-size:12.5px;letter-spacing:.28em;
+  .accredit{margin-top:2px;margin-bottom:2px;color:#fff;font-weight:900;font-size:12.5px;letter-spacing:.28em;
     text-shadow:0 1px 2px rgba(0,0,0,.3);display:flex;align-items:center;gap:7px}
   .accredit .rule{width:16px;height:2px;background:rgba(255,255,255,.7);border-radius:2px}
 
@@ -189,11 +197,10 @@
             <div class="note">2026年12月31日までの<br>申し込み対象</div>
             <div class="cta"><span class="tri">▶</span>ここをクリック</div>
             <div class="photo">
-              <svg viewBox="0 0 160 92" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-                <g fill="rgba(255,255,255,.85)"><circle cx="30" cy="40" r="12"/><path d="M12 92c0-14 8-24 18-24s18 10 18 24z"/><circle cx="128" cy="42" r="12"/><path d="M110 92c0-14 8-24 18-24s18 10 18 24z"/></g>
-                <g fill="rgba(255,255,255,.95)"><circle cx="64" cy="34" r="14"/><path d="M43 92c0-16 9-27 21-27s21 11 21 27z"/><circle cx="98" cy="36" r="13"/><path d="M79 92c0-15 8.5-26 19-26s19 11 19 26z"/></g>
-              </svg>
-              <span class="ptag">Photo</span>
+              <div class="ph-inner">
+                <svg class="ph-icon" viewBox="0 0 48 40" aria-hidden="true"><rect x="3" y="5" width="42" height="30" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="16" cy="16" r="4.5"/><path d="M8 34l12-13 7 7 6-6 9 10z"/></svg>
+                <span class="ph-label">写真を配置</span>
+              </div>
             </div>
             <div class="accredit"><span class="rule"></span>認定校<span class="rule"></span></div>
           </div>
@@ -202,23 +209,21 @@
           <div class="frame frame--scsu">
             <div class="badge">
               <span class="cap"><svg viewBox="0 0 48 40" aria-hidden="true"><path d="M4 17 24 7l20 10-20 9z"/><rect x="8" y="20" width="3" height="12.5"/><rect x="16" y="20" width="3" height="12.5"/><rect x="29" y="20" width="3" height="12.5"/><rect x="37" y="20" width="3" height="12.5"/><rect x="5" y="33" width="38" height="3.4"/></svg></span>
-              <span class="name"><span class="mark">SCSU</span><span class="tag">ウィルシャーの大学・LA</span></span>
+              <span class="name"><span class="mark">SCSU</span><span class="tag">コリアタウンにある大学</span></span>
             </div>
-            <div class="headline">学位・修了証が<br>取得できる!</div>
-            <div class="pill">2026年9月 ビザ新ルール対応</div>
-            <div class="course-main">学位プログラム</div>
-            <div class="course-sub">BBA・MBA 対応</div>
-            <div class="price">$1,500〜</div>
-            <div class="note">3ヶ月あたり／年4回入学・<br>日本語スタッフ在籍</div>
-            <div class="cta"><span class="tri">▶</span>詳しくはこちら</div>
+            <div class="headline">4年制大学で学位が<br>取得できる!<br>選べるキャンパス</div>
+            <div class="pill">2026年9月15日〜<br>学生ビザ新ルール対応</div>
+            <div class="course-main">バチェラープログラム</div>
+            <div class="course-sub">ESLから人気</div>
+            <div class="price">$1,500<span class="per">/3ヶ月</span></div>
+            <div class="note">日本人スタッフ<br><b class="seal">認定大学</b></div>
+            <div class="cta"><span class="tri">▶</span>ここをクリック</div>
             <div class="photo">
-              <svg viewBox="0 0 160 92" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-                <g fill="rgba(255,255,255,.85)"><circle cx="30" cy="40" r="12"/><path d="M12 92c0-14 8-24 18-24s18 10 18 24z"/><circle cx="128" cy="42" r="12"/><path d="M110 92c0-14 8-24 18-24s18 10 18 24z"/></g>
-                <g fill="rgba(255,255,255,.95)"><circle cx="64" cy="34" r="14"/><path d="M43 92c0-16 9-27 21-27s21 11 21 27z"/><circle cx="98" cy="36" r="13"/><path d="M79 92c0-15 8.5-26 19-26s19 11 19 26z"/></g>
-              </svg>
-              <span class="ptag">Photo</span>
+              <div class="ph-inner">
+                <svg class="ph-icon" viewBox="0 0 48 40" aria-hidden="true"><rect x="3" y="5" width="42" height="30" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="16" cy="16" r="4.5"/><path d="M8 34l12-13 7 7 6-6 9 10z"/></svg>
+                <span class="ph-label">写真を配置</span>
+              </div>
             </div>
-            <div class="accredit"><span class="rule"></span>認定校<span class="rule"></span></div>
           </div>
 
         </div>
@@ -242,11 +247,11 @@
         <dt>サイズ</dt><dd><b>160 × 600 px</b>（ワイドスカイスクレイパー）／ 表示は拡大プレビュー</dd>
         <dt>切替</dt><dd>HEI ↔ SCSU を <b>約4秒ごと</b>にクロスフェード（8秒ループ）／ <code>prefers-reduced-motion</code> 対応</dd>
         <dt>配色</dt><dd>HEI: オレンジ（参考どおり）／ SCSU: ブルー <code>#335B82</code>・オレンジCTA <code>#FF9800</code></dd>
-        <dt>構成</dt><dd>両パネル共通の縦リズムで、Price と CTA の位置を揃えて切替</dd>
+        <dt>構成</dt><dd>共通の縦リズム＋可変フォト枠で 600px を隙間なく充填（HEI は認定校フッター有／SCSU はフッター無し・認定大学は情報内に表示）</dd>
         <dt>形式</dt><dd>自己完結HTML＋CSS（外部リソース・画像リンクなし）。ブリーフの GIF 書き出しにも対応可</dd>
       </dl>
       <div class="flag">
-        <b>差し替え待ち:</b> 両パネルの写真は <b>Photo</b> プレースホルダー（実写真に差し替え可）。SCSU のロゴは「SCSU」ワードマーク＋校舎アイコンの仮置き、価格「$1,500〜」やコース名も暫定です。正式ロゴ・価格・締切・クリック先URL、さらに載せたい訴求（OPT最長3年/STEM、日本語対応、ESL24ヶ月上限 など）を教えていただければ反映します。
+        <b>SCSU パネルは指定内容で確定。</b> 残る差し替えは、両パネルの写真（「写真を配置」枠）、SCSU の正式ロゴアート、各CTAのクリック先URLです。これらをいただければ最終版として書き出せます。
       </div>
     </section>
 
