@@ -1,0 +1,47 @@
+name: Deploy to GitHub Pages
+
+# 既定ブランチへのpush時、または手動実行(Run workflow)でデプロイします。
+on:
+  push:
+    branches:
+      - claude/run-setup-script-VvTnV
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同時実行は1つに（進行中はキャンセル）
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Assemble site (publish only the LP files)
+        run: |
+          mkdir -p _site
+          cp index.html hei.html scsu.html _site/
+          cp -r images _site/
+          touch _site/.nojekyll
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ロサンゼルス留学・大学進学 ｜ HEI（語学学校）× SCSU（大学）日本人向け</title>
+  <meta name="description" content="ロサンゼルスの語学学校HEIと認定大学SCSU。上部のボタンで切り替え。語学留学から学位取得・OPT就労まで、日本人スタッフがサポート。" />
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:#fff;overflow:hidden}
+
+    /* ===== TOP SWITCH BAR ===== */
+    .switch-bar{
+      position:fixed;top:0;left:0;right:0;z-index:1000;height:54px;
+      display:flex;background:#fff;border-bottom:1px solid #e4e4e4;
+      box-shadow:0 1px 6px rgba(0,0,0,.06);
+    }
+    .switch-btn{
+      flex:1;border:none;background:#f7f7f7;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;gap:9px;
+      font-family:inherit;color:#9a9a9a;font-weight:700;
+      border-bottom:3px solid transparent;transition:all .18s ease;padding:0 12px;
+    }
+    .switch-btn:hover:not(.active){background:#efefef;color:#666}
+    .switch-btn .ic{
+      width:26px;height:26px;border-radius:6px;flex-shrink:0;
+      display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;
+    }
+    .switch-btn .logo{height:30px;width:auto;max-width:120px;object-fit:contain;flex-shrink:0}
+    .switch-btn .tx{display:flex;flex-direction:column;text-align:left;line-height:1.15}
+    .switch-btn .nm{font-size:14px;font-weight:800}
+    .switch-btn .sb{font-size:10px;font-weight:500;color:#b3b3b3}
+    /* HEI */
+    .switch-btn.hei .ic{background:#F99521;color:#fff}
+    .switch-btn.hei.active{background:#fff;color:#EC6A0E;border-bottom-color:#F99521}
+    .switch-btn.hei.active .sb{color:#c98a52}
+    /* SCSU */
+    .switch-btn.scsu .ic{background:#1a3a5c;color:#7ec8f5}
+    .switch-btn.scsu.active{background:#fff;color:#1a3a5c;border-bottom-color:#2d6a9f}
+    .switch-btn.scsu.active .sb{color:#6f93b3}
+
+    /* ===== FRAMES ===== */
+    .frame-wrap{position:fixed;top:54px;left:0;right:0;bottom:0}
+    .frame-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:none}
+    .frame-wrap iframe.active{display:block}
+
+    @media (max-width:520px){
+      .switch-btn .sb{display:none}
+      .switch-btn .nm{font-size:13px}
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="switch-bar" role="tablist" aria-label="学校切り替え">
+    <button class="switch-btn hei active" id="btnHei" role="tab" aria-selected="true" onclick="showTab('hei')">
+      <img class="logo" src="images/logo-orange.png" alt="" aria-hidden="true">
+      <span class="tx"><span class="nm">語学学校 HEI</span><span class="sb">Hollywood Education Institute</span></span>
+    </button>
+    <button class="switch-btn scsu" id="btnScsu" role="tab" aria-selected="false" onclick="showTab('scsu')">
+      <img class="logo" src="images/scsu-seal.svg" alt="" aria-hidden="true">
+      <span class="tx"><span class="nm">大学・大学院 SCSU</span><span class="sb">Southern California State University</span></span>
+    </button>
+  </nav>
+
+  <div class="frame-wrap">
+    <iframe id="frameHei"  class="active" src="hei.html" title="HEI 語学学校" loading="eager"></iframe>
+    <iframe id="frameScsu" data-src="scsu.html" title="SCSU 大学・大学院" loading="lazy"></iframe>
+  </div>
+
+  <script>
+    function showTab(tab){
+      var isHei = tab === 'hei';
+      var fScsu = document.getElementById('frameScsu');
+      // lazy-load SCSU on first open
+      if(!isHei && !fScsu.src){ fScsu.src = fScsu.getAttribute('data-src'); }
+
+      document.getElementById('btnHei').classList.toggle('active', isHei);
+      document.getElementById('btnScsu').classList.toggle('active', !isHei);
+      document.getElementById('btnHei').setAttribute('aria-selected', isHei);
+      document.getElementById('btnScsu').setAttribute('aria-selected', !isHei);
+      document.getElementById('frameHei').classList.toggle('active', isHei);
+      fScsu.classList.toggle('active', !isHei);
+      document.title = isHei
+        ? 'ロサンゼルス語学留学 ｜ HEI 語学学校（日本人向け）'
+        : 'ロサンゼルス大学進学・学位取得 ｜ SCSU 認定大学（日本人向け）';
+      // reflect selection in the URL hash (shareable deep-link)
+      if(history.replaceState) history.replaceState(null, '', isHei ? '#hei' : '#scsu');
+    }
+    // open SCSU directly via #scsu (e.g. from an ad link)
+    if(location.hash === '#scsu'){ showTab('scsu'); }
+  </script>
+
+</body>
+</html>
