@@ -505,19 +505,23 @@
       <h2 data-en="Reach us by <span class='mk'>form, too.</span>">フォームでも、<span class="mk">気軽にどうぞ。</span></h2>
       <p data-en="Prefer a form over LINE? Ask us anything about tuition, transfers or visas — in Japanese.">LINEはちょっと…という方はこちら。学費・転校・ビザなど、日本語でお気軽に。</p>
     </div>
-    <form class="cform" onsubmit="event.preventDefault();this.style.display='none';document.getElementById('heiOk').style.display='block';">
-      <div class="fg"><label><span data-en="Full name">お名前</span><span class="req">*</span></label><input type="text" placeholder="例：山田 太郎" required></div>
-      <div class="fg"><label><span data-en="Email">メールアドレス</span><span class="req">*</span></label><input type="email" placeholder="例：taro@example.com" required></div>
-      <div class="fg"><label data-en="Phone (optional)">電話番号（任意）</label><input type="tel" placeholder="例：090-1234-5678"></div>
+    <form class="cform" onsubmit="w3submit(event,'heiOk')">
+      <input type="hidden" name="access_key" value="__PASTE_WEB3FORMS_ACCESS_KEY__">
+      <input type="hidden" name="subject" value="【HEI LP】新規お問い合わせ">
+      <input type="hidden" name="from_name" value="HEI Landing Page">
+      <input type="checkbox" name="botcheck" style="display:none" tabindex="-1" autocomplete="off">
+      <div class="fg"><label><span data-en="Full name">お名前</span><span class="req">*</span></label><input type="text" name="name" placeholder="例：山田 太郎" required></div>
+      <div class="fg"><label><span data-en="Email">メールアドレス</span><span class="req">*</span></label><input type="email" name="email" placeholder="例：taro@example.com" required></div>
+      <div class="fg"><label data-en="Phone (optional)">電話番号（任意）</label><input type="tel" name="phone" placeholder="例：090-1234-5678"></div>
       <div class="fg"><label data-en="Current status">現在の状況</label>
-        <select>
+        <select name="status">
           <option value="" data-en="Please select (optional)">選択してください（任意）</option>
           <option data-en="In Japan, planning to move">日本在住・これから渡米予定</option>
           <option data-en="In the U.S. (enrolled elsewhere)">アメリカ在住（他校に在籍中）</option>
           <option data-en="Other">その他</option>
         </select>
       </div>
-      <div class="fg"><label><span data-en="Questions / message">ご質問・メッセージ</span><span class="req">*</span></label><textarea placeholder="例：学費の詳細や転校について相談したいです。" required></textarea></div>
+      <div class="fg"><label><span data-en="Questions / message">ご質問・メッセージ</span><span class="req">*</span></label><textarea name="message" placeholder="例：学費の詳細や転校について相談したいです。" required></textarea></div>
       <button type="submit" class="send" data-en="Submit →">送信する →</button>
       <p class="note" data-en="We usually reply within 1–2 business days.">通常1〜2営業日以内に日本語でご返信します。</p>
     </form>
@@ -608,6 +612,19 @@
     if(next)next.addEventListener('click',function(){go(i+1);reset();});
     reset();
   });
+
+  async function w3submit(e, okId){
+    e.preventDefault();
+    var form=e.target, btn=form.querySelector('button[type="submit"]');
+    if(btn) btn.disabled=true;
+    try{
+      var r=await fetch('https://api.web3forms.com/submit',{method:'POST',body:new FormData(form)});
+      var j=await r.json();
+      if(j.success){ form.style.display='none'; document.getElementById(okId).style.display='block'; return; }
+    }catch(_){}
+    if(btn) btn.disabled=false;
+    alert('送信に失敗しました。お手数ですがLINEからご連絡ください。');
+  }
 </script>
 
 </body>
