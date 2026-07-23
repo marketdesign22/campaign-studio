@@ -724,13 +724,13 @@
     }
     btn.addEventListener('click', function(){ setTimeout(apply,0); });
   })();
-  var GS_ENDPOINT = ""; // ← Google Apps Script web-app URL: also logs each submission to a Google Sheet
+  var GS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzAoktNEyV4OiX-Jqes83omcj8oEbq03joIM-NARhJ_Slm3OFK-Yvbbpps7-pGB2YCZAQ/exec"; // also logs each submission to a Google Sheet
   async function w3submit(e, okId){
     e.preventDefault();
     var form=e.target, btn=form.querySelector('button[type="submit"]');
     if(btn) btn.disabled=true;
     var data=new FormData(form);
-    if(GS_ENDPOINT){ try{ fetch(GS_ENDPOINT,{method:'POST',mode:'no-cors',body:data}); }catch(_){} }
+    if(GS_ENDPOINT){ try{ var ps=new URLSearchParams(); data.forEach(function(v,k){ ps.append(k,v); }); fetch(GS_ENDPOINT,{method:'POST',mode:'no-cors',body:ps}); }catch(_){} }
     try{
       var r=await fetch('https://api.web3forms.com/submit',{method:'POST',body:data});
       var j=await r.json();
