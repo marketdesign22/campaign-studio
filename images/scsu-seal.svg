@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Southern California State University">
   <defs>
-    <path id="scsuArcTop" d="M26 100 A74 74 0 0 0 174 100" fill="none"/>
-    <path id="scsuArcBot" d="M30 100 A70 70 0 0 1 170 100" fill="none"/>
+    <path id="scsuTop" fill="none" d="M 26 100 A 74 74 0 0 1 174 100"/>
+    <path id="scsuBot" fill="none" d="M 22 100 A 78 78 0 0 0 178 100"/>
     <clipPath id="scsuShield">
       <path d="M72 79 Q72 75 76 75 H124 Q128 75 128 79 V115 Q128 128 100 140 Q72 128 72 115 Z"/>
     </clipPath>
@@ -11,14 +11,14 @@
     <!-- rings -->
     <circle cx="100" cy="100" r="97" fill="#fff"/>
     <circle cx="100" cy="100" r="95" fill="none" stroke="#12608f" stroke-width="1.5"/>
-    <circle cx="100" cy="100" r="89" fill="none" stroke="#12608f" stroke-width="4"/>
+    <circle cx="100" cy="100" r="88" fill="none" stroke="#12608f" stroke-width="4"/>
 
     <!-- circular text -->
-    <text font-family="Georgia,'Times New Roman',serif" font-weight="700" font-size="14.5" letter-spacing="1.2" fill="#12608f">
-      <textPath href="#scsuArcTop" startOffset="50%" text-anchor="middle">SOUTHERN CALIFORNIA STATE</textPath>
+    <text font-family="Georgia,'Times New Roman',serif" font-weight="700" font-size="13" letter-spacing="0.6" fill="#12608f">
+      <textPath href="#scsuTop" startOffset="50%" text-anchor="middle">SOUTHERN CALIFORNIA STATE</textPath>
     </text>
-    <text font-family="Georgia,'Times New Roman',serif" font-weight="700" font-size="15" letter-spacing="4" fill="#12608f">
-      <textPath href="#scsuArcBot" startOffset="50%" text-anchor="middle">UNIVERSITY</textPath>
+    <text font-family="Georgia,'Times New Roman',serif" font-weight="700" font-size="15.5" letter-spacing="3.5" fill="#12608f">
+      <textPath href="#scsuBot" startOffset="50%" text-anchor="middle">UNIVERSITY</textPath>
     </text>
 
     <!-- shield base -->
@@ -38,23 +38,23 @@
       <text x="114" y="129" fill="#fff">U</text>
     </g>
 
-    <!-- laurel sprigs -->
-    <g fill="#12608f">
-      <g transform="translate(78,132)">
-        <path d="M0 0 Q-14 -2 -24 8" fill="none" stroke="#12608f" stroke-width="1.6"/>
-        <ellipse cx="-6" cy="1" rx="4" ry="2" transform="rotate(28 -6 1)"/>
-        <ellipse cx="-13" cy="3" rx="4" ry="2" transform="rotate(20 -13 3)"/>
-        <ellipse cx="-20" cy="7" rx="4" ry="2" transform="rotate(10 -20 7)"/>
-        <ellipse cx="-9" cy="6" rx="3.4" ry="1.8" transform="rotate(-40 -9 6)"/>
-        <ellipse cx="-16" cy="9" rx="3.4" ry="1.8" transform="rotate(-48 -16 9)"/>
+    <!-- laurel sprigs at the bottom, flanking the shield -->
+    <g fill="#12608f" stroke="none">
+      <g transform="translate(84,143)">
+        <path d="M0 0 Q-13 3 -22 14" fill="none" stroke="#12608f" stroke-width="1.4"/>
+        <ellipse cx="-4" cy="2" rx="3.6" ry="1.8" transform="rotate(35 -4 2)"/>
+        <ellipse cx="-10" cy="5" rx="3.6" ry="1.8" transform="rotate(28 -10 5)"/>
+        <ellipse cx="-16" cy="9" rx="3.6" ry="1.8" transform="rotate(20 -16 9)"/>
+        <ellipse cx="-8" cy="8" rx="3" ry="1.5" transform="rotate(-30 -8 8)"/>
+        <ellipse cx="-14" cy="12" rx="3" ry="1.5" transform="rotate(-38 -14 12)"/>
       </g>
-      <g transform="translate(122,132) scale(-1,1)">
-        <path d="M0 0 Q-14 -2 -24 8" fill="none" stroke="#12608f" stroke-width="1.6"/>
-        <ellipse cx="-6" cy="1" rx="4" ry="2" transform="rotate(28 -6 1)"/>
-        <ellipse cx="-13" cy="3" rx="4" ry="2" transform="rotate(20 -13 3)"/>
-        <ellipse cx="-20" cy="7" rx="4" ry="2" transform="rotate(10 -20 7)"/>
-        <ellipse cx="-9" cy="6" rx="3.4" ry="1.8" transform="rotate(-40 -9 6)"/>
-        <ellipse cx="-16" cy="9" rx="3.4" ry="1.8" transform="rotate(-48 -16 9)"/>
+      <g transform="translate(116,143) scale(-1,1)">
+        <path d="M0 0 Q-13 3 -22 14" fill="none" stroke="#12608f" stroke-width="1.4"/>
+        <ellipse cx="-4" cy="2" rx="3.6" ry="1.8" transform="rotate(35 -4 2)"/>
+        <ellipse cx="-10" cy="5" rx="3.6" ry="1.8" transform="rotate(28 -10 5)"/>
+        <ellipse cx="-16" cy="9" rx="3.6" ry="1.8" transform="rotate(20 -16 9)"/>
+        <ellipse cx="-8" cy="8" rx="3" ry="1.5" transform="rotate(-30 -8 8)"/>
+        <ellipse cx="-14" cy="12" rx="3" ry="1.5" transform="rotate(-38 -14 12)"/>
       </g>
     </g>
   </g>
