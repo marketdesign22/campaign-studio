@@ -323,12 +323,16 @@
   .hero-seal{height:66px;width:auto}
   @media(max-width:880px){.hero-seal{height:52px}}
   .footer-seal{height:70px;width:auto;margin:0 auto 14px;display:block;background:#fff;border-radius:50%;padding:4px}
+  /* professional inline icons (replace emoji) */
+  .hi{width:1.15em;height:1.15em;vertical-align:-.17em;margin-right:.36em;flex:none;stroke-width:2}
+  .hi-sm{width:1em;height:1em;vertical-align:-.13em;margin-right:.3em;flex:none;stroke-width:2}
+  /* clean, balanced line-breaks throughout */
+  h2,h3,.lede,.pricetag{text-wrap:balance}
+  p,.pcard p,.reason p,.path-note,.case-note,.optblk p,.form-note,.tnote{text-wrap:pretty}
 </style>
 </head>
 <body>
 
-<!-- TOPBAR (visa urgency) -->
-<div class="topbar"><svg class="eico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.6 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg> <span data-en="<span class='camp'>New U.S. student-visa rule takes effect Sept 15</span> — if you want a degree &amp; OPT, review your plan now"><span class="camp">アメリカ学生ビザ 新ルール 9/15 施行</span>｜学位取得・OPT就労を目指すなら、今がプラン見直しのとき</span></div>
 
 <!-- HERO -->
 <header class="hero">
@@ -348,20 +352,16 @@
     </div>
 
     <div class="hero-inner">
-      <span class="hero-badge" data-en="🎓 6 CA campuses ・ accredited ・ <b class='optword'>OPT</b> work">🎓 カリフォルニア6キャンパス ・ 認定大学 ・ <b class="optword">OPT</b>就労対応</span>
+      <span class="hero-badge"><svg class="hi-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5"/></svg><span data-en="6 campuses across California ・ accredited ・ <b class='optword'>OPT</b> work">カリフォルニアに6つのキャンパス ・ 認定大学 ・ <b class="optword">OPT</b>就労対応</span></span>
       <div class="offer-card">
         <span class="wow" data-en="OPT<br>up to<br><span class='wowbig'>36 mo</span>">OPT<br>最大<br><span class="wowbig">36ヶ月</span></span>
         <div class="lede" data-en="Earn a U.S. degree in California —<br>and build your career with OPT.">カリフォルニアで学位取得。<br>卒業後はOPTでアメリカ就労へ。</div>
-        <div class="pricetag" data-en="Bachelor / Master programs">学士・修士プログラム</div>
+        <div class="pricetag" data-en="Bachelor's degree (4-year)">学士号（4年制）</div>
         <div class="big"><span class="cur">$</span>1,500<span style="font-size:.4em;vertical-align:.35em">〜</span></div>
         <div class="yen" data-en="per quarter (≈3 months) ・ approx ¥240,000~">1クォーター（約3ヶ月）あたり ・ 約 ¥240,000〜</div>
         <div class="sub" data-en="From Certificate to Doctorate ・ accredited university SCSU">サーティフィケートから博士号まで ・ 認定大学 SCSU</div>
-        <div class="mini" data-en="Bachelor $1,500~ ・ MBA $1,700~ / earn a degree at an affordable cost">学士 $1,500〜 ・ MBA $1,700〜 ／ 手頃な学費で学位取得</div>
       </div>
     </div>
-  </div>
-  <div class="hero-foot wrap rel">
-    <a class="btn-line" href="#" data-line><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 5.69 2 10.23c0 4.07 3.58 7.48 8.42 8.12.33.07.78.22.89.5.1.26.07.66.03.92l-.14.86c-.04.26-.2 1.02.89.56 1.1-.46 5.9-3.48 8.05-5.95C21.4 13.6 22 11.99 22 10.23 22 5.69 17.52 2 12 2Z"/></svg><span data-en="Chat with us on LINE">LINEで無料相談する</span></a>
   </div>
   <svg class="hero-wave" viewBox="0 0 1200 42" preserveAspectRatio="none" fill="currentColor"><path d="M0 42 C150 6 300 6 450 24 C600 42 750 42 900 24 C1050 8 1150 8 1200 20 L1200 42 Z"/></svg>
 </header>
@@ -446,10 +446,11 @@
       <h3 style="font-size:1.15rem;font-weight:900;color:var(--blue-deep);margin-bottom:12px" data-en="Other fees (besides tuition)">授業料以外にかかる費用・手数料</h3>
       <div class="tbl-wrap"><table class="sc" style="box-shadow:none;min-width:0">
         <tr><th data-en="Fee">項目</th><th data-en="Amount">金額</th><th data-en="Notes">備考</th></tr>
-        <tr><td colspan="3" style="background:#eef2f7;font-weight:800;color:var(--blue-deep)" data-en="🛂 For the student-visa application (applying from Japan)">🛂 学生ビザ申請時に必要（日本から申請する方）</td></tr>
+        <tr><td colspan="3" style="background:#eef2f7;font-weight:800;color:var(--blue-deep)"><svg class="hi-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2.5"/><circle cx="12" cy="9.5" r="2.3"/><path d="M8.4 16c.5-1.6 1.9-2.5 3.6-2.5s3.1.9 3.6 2.5"/></svg><span data-en="For the student-visa application (applying from Japan)">学生ビザ申請時に必要（日本から申請する方）</span></td></tr>
         <tr><td data-en="Processing fee">手続き費用</td><td>$100</td><td data-en="Non-refundable">返金不可</td></tr>
         <tr><td data-en="SEVIS fee (I-901)">SEVIS費用（I-901）</td><td>$350</td><td data-en="Non-refundable">返金不可</td></tr>
-        <tr><td colspan="3" style="background:#eef2f7;font-weight:800;color:var(--blue-deep)" data-en="📚 Applies to everyone">📚 全員にかかる費用</td></tr>
+        <tr><td colspan="3" style="background:#eef2f7;font-weight:800;color:var(--blue-deep)"><svg class="hi-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5c2.2-1 4.4-1 6.5 0v13c-2.1-1-4.3-1-6.5 0z"/><path d="M20 5.5c-2.2-1-4.4-1-6.5 0v13c2.1-1 4.3-1 6.5 0z"/><path d="M10.5 5.5v13M13.5 5.5v13"/></svg><span data-en="Applies to everyone">全員にかかる費用</span></td></tr>
+        <tr><td data-en="Application fee">アプリケーション手数料</td><td>$150</td><td data-en="Everyone">全員</td></tr>
         <tr><td data-en="Textbooks (online)">テキスト代（オンライン）</td><td data-en="~$100–150 / quarter">各学期 $100〜$150</td><td data-en="Everyone">全員</td></tr>
       </table></div>
       <p style="font-size:.82rem;color:var(--muted);font-weight:600;margin-top:12px" data-en="* The English course fee is charged separately (only if your English is below the minimum score). Tuition also excludes registration, materials and similar fees — see the official page for the full, up-to-date schedule.">※英語コースの費用は別枠です（英語力が基準未満の場合のみ）。授業料には登録料・教材費等は含まれません。最新・詳細は公式ページをご確認ください。</p>
@@ -462,7 +463,7 @@
 <section>
   <div class="wrap rel">
     <div class="optblk">
-      <h3 data-en="🌟 Work in the U.S. through OPT (Optional Practical Training)">🌟 OPTでアメリカ就労を実現</h3>
+      <h3><svg class="hi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12.5h18"/></svg><span data-en="Work in the U.S. through OPT (Optional Practical Training)">OPTでアメリカ就労を実現</span></h3>
       <p style="font-weight:900;color:#bff3d1;font-size:1.05rem;margin-bottom:6px" data-en="A chance you can't get at a language school — only a university offers this.">語学学校では得ることのできない、大学だからこそのチャンス。</p>
       <p data-en="After earning your degree on an F-1 visa, use OPT to gain paid work experience in the U.S. SCSU supports the OPT application end to end — ideal if you want to work in the U.S. right after graduation.">F-1ビザで学位取得後、OPTでアメリカ国内での有給就労経験を積めます。SCSUは申請から手続きまで包括的にサポート。卒業後すぐにアメリカで働きたい方に最適です。</p>
       <div class="optpts">
@@ -510,7 +511,7 @@
       <div class="ocard step"><div class="badge"><span class="s">STEP</span><span class="n">04</span></div><h3 data-en="I-20 &amp; visa">I-20・ビザ</h3><div class="romaji">visa</div><p data-en="After admission, SCSU issues your I-20. Use it to apply for the F-1 visa at the U.S. Embassy. We support the process.">入学許可後、SCSUがI-20を発行。これでF-1ビザを申請します。手続きもサポートします。</p></div>
       <div class="ocard step"><div class="badge"><span class="s">STEP</span><span class="n">05</span></div><h3 data-en="Arrive &amp; start">渡米・開始</h3><div class="romaji">start</div><p data-en="Complete enrollment on campus and start classes. Intake is 4× a year (Jan / Apr / Jul / Oct).">渡米後キャンパスで手続きを済ませ授業開始。入学は年4回（1・4・7・10月）。</p></div>
     </div>
-    <div class="why-price" style="margin-top:30px" data-en="💡 <b>Transferring from another school?</b> We also support F-1 transfer procedures. Contact us for details.">💡 <b>他校からの転学をお考えの方へ。</b> F-1ビザを維持したままの転学手続きもサポートします。詳細はお問い合わせください。</div>
+    <div class="why-price" style="margin-top:30px"><svg class="hi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.3 1 2.5h6c0-1.2.3-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg><span data-en="<b>Transferring from another school?</b> We also support F-1 transfer procedures. Contact us for details."><b>他校からの転学をお考えの方へ。</b> F-1ビザを維持したままの転学手続きもサポートします。詳細はお問い合わせください。</span></div>
 
     <div style="margin-top:44px">
       <div class="head" style="margin-bottom:26px">
@@ -525,7 +526,7 @@
         <div class="ocard cal-card"><div class="cq">FALL</div><div class="cm">10月</div><div class="cd" data-en="Fall Quarter">秋学期スタート</div></div>
       </div>
       <p class="pnote" data-en="* Each quarter begins on the first Monday of the month; dates may vary slightly by year — contact us for the latest schedule.">※各学期は開始月の第1月曜日スタート（年により多少前後します）。最新の日程はお問い合わせください。</p>
-      <div style="max-width:820px;margin:22px auto 0;background:linear-gradient(135deg,#c0392b,#e74c3c);color:#fff;border:var(--bd);border-radius:16px;padding:20px 24px;box-shadow:6px 6px 0 var(--ink);text-align:center;font-weight:800;line-height:1.7" data-en="🚨 <b>Considering a transfer?</b> The new U.S. student-visa rule takes effect this <b>September</b>. Finish your transfer before then and start in the <b>October (Fall) quarter</b> — <u>this is your last chance!</u>">🚨 <b>転校をお考えの方へ。</b> アメリカ学生ビザの新ルールが<b>9月</b>に施行されます。それまでに転校手続きを終えて、<b>10月（秋学期）スタート</b>を強くおすすめします。<u>今が最後のチャンスです！</u></div>
+      <div style="max-width:820px;margin:22px auto 0;background:linear-gradient(135deg,#c0392b,#e74c3c);color:#fff;border:var(--bd);border-radius:16px;padding:20px 24px;box-shadow:6px 6px 0 var(--ink);text-align:center;font-weight:800;line-height:1.7"><svg style="width:1.5em;height:1.5em;vertical-align:-.32em;margin-right:.3em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.6 1.8 18a2 2 0 0 0 1.7 3h16.9a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg><span data-en="<b>Considering a transfer?</b> The new U.S. student-visa rule takes effect this <b>September</b>. Finish your transfer before then and start in the <b>October (Fall) quarter</b> — <u>this is your last chance!</u>"><b>転校をお考えの方へ。</b> アメリカ学生ビザの新ルールが<b>9月</b>に施行されます。それまでに転校手続きを終えて、<b>10月（秋学期）スタート</b>を強くおすすめします。<u>今が最後のチャンスです！</u></span></div>
     </div>
   </div>
 </section>
@@ -561,7 +562,7 @@
       <div class="ocard camp-card"><div class="camp-photo"><span style="font-size:1.7rem">🏘️</span><span>El Monte</span><img src="images/campus-elmonte.jpg%20.jpg" alt="" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.remove()}"></div><div class="ccity">El Monte, CA</div><h3 data-en="El Monte (Greater LA)">エルモンテ（LA近郊）</h3><div class="addr">11100 Valley Blvd, Suite 220<br>El Monte, CA 91731</div><div class="note" data-en="BBA available; more coming soon">BBA開講中・追加準備中</div><a class="more" href="https://www.scsuniversity.edu/el-monte/" target="_blank" rel="noopener" data-en="View details →">詳細を見る →</a></div>
       <div class="ocard camp-card"><div class="camp-photo"><span style="font-size:1.7rem">🏔️</span><span>Riverside</span><img src="images/campus-riverside.jpg" alt="" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.remove()}"></div><div class="ccity">Riverside, CA</div><h3 data-en="Riverside (Inland Empire)">リバーサイド（インランドエンパイア）</h3><div class="addr">5475 Arlington Ave<br>Riverside, CA 92504</div><div class="note" data-en="BBA available; more coming soon">BBA開講中・追加準備中</div><a class="more" href="https://www.scsuniversity.edu/riverside/" target="_blank" rel="noopener" data-en="View details →">詳細を見る →</a></div>
     </div>
-    <div class="camp-contact"><span data-en="📞 All-campus contact">📞 全キャンパス共通連絡先</span>　(213) 382-5300 ／ info@scsuniversity.edu ／ <span data-en="Mon–Fri 9:00 AM – 5:00 PM">月〜金 9:00 AM – 5:00 PM</span></div>
+    <div class="camp-contact"><svg class="hi-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.5 21a17 17 0 0 1-12.5-12.5 2 2 0 0 1 2-2.5h2.6a1.5 1.5 0 0 1 1.5 1.3c.1.9.3 1.7.6 2.5a1.5 1.5 0 0 1-.4 1.6l-1 1a13 13 0 0 0 5 5l1-1a1.5 1.5 0 0 1 1.6-.4c.8.3 1.6.5 2.5.6a1.5 1.5 0 0 1 1.3 1.5v2.6a2 2 0 0 1-2.5 2z"/></svg><span data-en="All-campus contact">全キャンパス共通連絡先</span>　(213) 382-5300 ／ info@scsuniversity.edu ／ <span data-en="Mon–Fri 9:00 AM – 5:00 PM">月〜金 9:00 AM – 5:00 PM</span></div>
   </div>
 </section>
 
@@ -578,11 +579,11 @@
         <a class="btn-line" href="#" data-line><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 5.69 2 10.23c0 4.07 3.58 7.48 8.42 8.12.33.07.78.22.89.5.1.26.07.66.03.92l-.14.86c-.04.26-.2 1.02.89.56 1.1-.46 5.9-3.48 8.05-5.95C21.4 13.6 22 11.99 22 10.23 22 5.69 17.52 2 12 2Z"/></svg><span data-en="Free consultation on LINE">LINEで無料相談する</span></a>
         <div class="ocard side-box">
           <p style="font-weight:700;margin-bottom:8px" data-en="No question is too small — in Japanese is fine. Start with a chat, not an application.">「こんなこと聞いていいの？」も大歓迎。日本語でOK。申し込みではなく相談からで大丈夫！</p>
-          <p style="font-size:.9rem;color:#37576a;font-weight:600"><b>Southern California State University</b><br>📞 (213) 382-5300<br>📧 info@scsuniversity.edu<br>📍 3470 Wilshire Blvd Suite 380, LA, CA 90010</p>
+          <p style="font-size:.9rem;color:#37576a;font-weight:600"><b>Southern California State University</b><br><svg class="hi-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.5 21a17 17 0 0 1-12.5-12.5 2 2 0 0 1 2-2.5h2.6a1.5 1.5 0 0 1 1.5 1.3c.1.9.3 1.7.6 2.5a1.5 1.5 0 0 1-.4 1.6l-1 1a13 13 0 0 0 5 5l1-1a1.5 1.5 0 0 1 1.6-.4c.8.3 1.6.5 2.5.6a1.5 1.5 0 0 1 1.3 1.5v2.6a2 2 0 0 1-2.5 2z"/></svg>(213) 382-5300<br><svg class="hi-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7.5 8.5 6 8.5-6"/></svg>info@scsuniversity.edu<br><svg class="hi-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>3470 Wilshire Blvd Suite 380, LA, CA 90010</p>
         </div>
       </div>
       <div class="ocard form-card">
-        <h3 data-en="📝 Inquiry form">📝 お問い合わせフォーム</h3>
+        <h3><svg class="hi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M18.4 2.6a2 2 0 0 1 2.9 2.9L13 14l-4 1 1-4z"/></svg><span data-en="Inquiry form">お問い合わせフォーム</span></h3>
         <form id="scsuForm" onsubmit="w3submit(event,'scsuOk')">
           <input type="hidden" name="access_key" value="a5e9b8d3-21a1-4c82-a595-d67e7df5aa06">
           <input type="hidden" name="subject" value="【SCSU LP】新規お問い合わせ">
@@ -603,7 +604,7 @@
               <option data-en="Undecided / want advice">まだ決まっていない／相談したい</option>
             </select>
           </div>
-          <div class="fg"><label data-en="Current status">現在の状況</label>
+          <div class="fg"><label><span data-en="Current status">現在の状況</span><span class="req">*</span></label>
             <select name="status" required>
               <option value="" data-en="Please select">選択してください</option>
               <option data-en="In Japan, planning to move">日本在住・これから渡米予定</option>
@@ -612,7 +613,7 @@
               <option data-en="Other">その他</option>
             </select>
           </div>
-          <div class="fg"><label data-en="How did you hear about us?">当校をどこで知りましたか？</label>
+          <div class="fg"><label><span data-en="How did you hear about us?">当校をどこで知りましたか？</span><span class="req">*</span></label>
             <select name="referral" required>
               <option value="" data-en="Please select">選択してください</option>
               <option data-en="Graduate / current student / acquaintance">卒業生・在校生・知り合いの紹介</option>
@@ -625,7 +626,7 @@
           <button type="submit" class="form-submit" data-en="Submit →">送信する →</button>
           <p class="form-note" data-en="We usually reply within 1–2 business days.">通常1〜2営業日以内に日本語でご返信します。</p>
         </form>
-        <div class="form-ok" id="scsuOk" data-en="✅ Your inquiry has been received. We'll contact you within 1–2 business days.">✅ お問い合わせを受け付けました。1〜2営業日以内にご連絡します。</div>
+        <div class="form-ok" id="scsuOk"><svg class="hi-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.3 12 2.6 2.6 4.8-5.2"/></svg><span data-en="Your inquiry has been received. We'll contact you within 1–2 business days.">お問い合わせを受け付けました。1〜2営業日以内にご連絡します。</span></div>
       </div>
     </div>
   </div>
@@ -637,7 +638,7 @@
     <h2 data-en="Earn your U.S. degree, <span class='mk'>build your career.</span>">アメリカで学位取得と<span class="mk">キャリアアップを。</span></h2>
     <p data-en="Start with a quick message on LINE — no commitment, just a conversation.">まずはLINEで「ちょっと聞いてみる」から。申し込みではなく、相談からで大丈夫！</p>
     <a class="btn-line" href="#" data-line style="background:#fff;color:var(--blue)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 5.69 2 10.23c0 4.07 3.58 7.48 8.42 8.12.33.07.78.22.89.5.1.26.07.66.03.92l-.14.86c-.04.26-.2 1.02.89.56 1.1-.46 5.9-3.48 8.05-5.95C21.4 13.6 22 11.99 22 10.23 22 5.69 17.52 2 12 2Z"/></svg><span data-en="Chat on LINE (free)">LINEで相談する（無料）</span></a>
-    <p class="small" data-en="📞 (213) 382-5300 ・ info@scsuniversity.edu">📞 (213) 382-5300 ・ info@scsuniversity.edu</p>
+    <p class="small"><svg class="hi-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.5 21a17 17 0 0 1-12.5-12.5 2 2 0 0 1 2-2.5h2.6a1.5 1.5 0 0 1 1.5 1.3c.1.9.3 1.7.6 2.5a1.5 1.5 0 0 1-.4 1.6l-1 1a13 13 0 0 0 5 5l1-1a1.5 1.5 0 0 1 1.6-.4c.8.3 1.6.5 2.5.6a1.5 1.5 0 0 1 1.3 1.5v2.6a2 2 0 0 1-2.5 2z"/></svg>(213) 382-5300 ・ info@scsuniversity.edu</p>
   </div>
 </section>
 
@@ -646,7 +647,7 @@
   <img class="footer-seal" src="images/scsu-seal.svg" alt="Southern California State University">
   Southern California State University<br>
   3470 Wilshire Blvd Suite 380, Los Angeles, CA 90010 ・ Tel: (213) 382-5300 ・ Email: <a href="mailto:info@scsuniversity.edu" style="color:inherit;text-decoration:underline">info@scsuniversity.edu</a><br>
-  <a class="ig" href="https://www.scsuniversity.edu" target="_blank" rel="noopener">🌐 www.scsuniversity.edu</a><br>
+  <a class="ig" href="https://www.scsuniversity.edu" target="_blank" rel="noopener"><svg class="eico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.9 5.7 3.9 9s-1.4 6.4-3.9 9c-2.5-2.6-3.9-5.7-3.9-9S9.5 5.6 12 3z"/></svg> www.scsuniversity.edu</a><br>
   <a class="ig" href="https://www.instagram.com/scsu.japan/?hl=ja" target="_blank" rel="noopener"><svg class="eico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="3.8"/><circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" stroke="none"/></svg> Instagram @scsu.japan</a><br>
   <span style="opacity:.6;display:inline-block;margin-top:10px">© Southern California State University. All rights reserved.</span>
 </footer>
