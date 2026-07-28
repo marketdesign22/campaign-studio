@@ -421,22 +421,22 @@
   </div>
 </section>
 
-<!-- CAMPUS GALLERY -->
-<section style="background:var(--cream2)">
+<!-- STUDENT GALLERY (photos: images/student-1.jpg … student-6.jpg) -->
+<section id="studentGallery" style="background:var(--cream2);display:none">
   <div class="wrap rel">
     <div class="head">
-      <span class="label" data-en="CAMPUS GALLERY">キャンパスギャラリー</span>
-      <h2 data-en="6 campuses across <span class='mk'>California.</span>">カリフォルニアに、<span class="mk">6つのキャンパス。</span></h2>
-      <p data-en="From Los Angeles to the Bay Area — study at the campus that fits your life.">ロサンゼルスからベイエリアまで。あなたの生活に合ったキャンパスで学べます。</p>
+      <span class="label" data-en="STUDENT GALLERY">学生ギャラリー</span>
+      <h2 data-en="A look <span class='mk'>inside our campus.</span>">学校の、<span class="mk">校内の様子。</span></h2>
+      <p data-en="Real learning spaces and student life at SCSU.">実際の学びの空間や、学生生活の様子をご紹介します。</p>
     </div>
     <div class="gallery">
       <div class="frame" data-slideshow data-interval="4200">
-        <div class="slide active"><img src="images/campus-la.jpg%20.jpg" alt="Los Angeles" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.closest('.slide').classList.add('noimg')}"><div class="cap" data-en="Los Angeles ・ Main campus">ロサンゼルス ・ メインキャンパス</div></div>
-        <div class="slide"><img src="images/campus-santaana.jpg" alt="Santa Ana" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.closest('.slide').classList.add('noimg')}"><div class="cap" data-en="Santa Ana ・ Orange County">サンタアナ ・ オレンジ郡</div></div>
-        <div class="slide"><img src="images/%20campus-sandiego.jpg%20.jpg" alt="San Diego" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.closest('.slide').classList.add('noimg')}"><div class="cap" data-en="San Diego">サンディエゴ</div></div>
-        <div class="slide"><img src="images/campus-oakland.jpg" alt="Oakland" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.closest('.slide').classList.add('noimg')}"><div class="cap" data-en="Oakland ・ Bay Area">オークランド ・ ベイエリア</div></div>
-        <div class="slide"><img src="images/campus-elmonte.jpg%20.jpg" alt="El Monte" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.closest('.slide').classList.add('noimg')}"><div class="cap" data-en="El Monte ・ Greater LA">エルモンテ ・ LA近郊</div></div>
-        <div class="slide"><img src="images/campus-riverside.jpg" alt="Riverside" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.closest('.slide').classList.add('noimg')}"><div class="cap" data-en="Riverside ・ Inland Empire">リバーサイド ・ インランドエンパイア</div></div>
+        <div class="slide active"><img src="images/student-1.jpg" alt="" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.closest('.slide').classList.add('noimg')}"><div class="cap" data-en="In class">授業の様子</div></div>
+        <div class="slide"><img src="images/student-2.jpg" alt="" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.closest('.slide').classList.add('noimg')}"><div class="cap" data-en="On campus">キャンパスの様子</div></div>
+        <div class="slide"><img src="images/student-3.jpg" alt="" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.closest('.slide').classList.add('noimg')}"><div class="cap" data-en="Student lounge">学生ラウンジ</div></div>
+        <div class="slide"><img src="images/student-4.jpg" alt="" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.closest('.slide').classList.add('noimg')}"><div class="cap" data-en="Student life">学生同士の交流</div></div>
+        <div class="slide"><img src="images/student-5.jpg" alt="" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.closest('.slide').classList.add('noimg')}"><div class="cap" data-en="Study space">自習・ライブラリ</div></div>
+        <div class="slide"><img src="images/student-6.jpg" alt="" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.closest('.slide').classList.add('noimg')}"><div class="cap" data-en="Campus events">キャンパスイベント</div></div>
         <button class="gnav prev" aria-label="prev">‹</button>
         <button class="gnav next" aria-label="next">›</button>
       </div>
@@ -734,6 +734,15 @@
     if(prev)prev.addEventListener('click',function(){go(i-1);reset();});
     if(next)next.addEventListener('click',function(){go(i+1);reset();});
     reset();
+  });
+
+  // Student gallery: only reveal it once at least one photo actually loads
+  window.addEventListener('load', function(){
+    var g = document.getElementById('studentGallery');
+    if(!g) return;
+    var imgs = g.querySelectorAll('.slide img');
+    var any = Array.prototype.some.call(imgs, function(im){ return im.complete && im.naturalWidth > 0; });
+    if(any) g.style.display = '';
   });
 
   // form placeholders follow the language toggle
