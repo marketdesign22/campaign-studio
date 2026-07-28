@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HEI 20周年記念 特別期間限定キャンペーン｜アメリカ語学留学 11週 $900</title>
 <meta name="description" content="ロサンゼルスの認定語学学校 HEI。20周年記念の特別期間限定キャンペーンで、スタンダードESL 11週が特別価格$900。日本人スタッフ・ビザ/転校サポート・LINE相談。2026年12月31日まで。">
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-GS4B9BMVTK"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-GS4B9BMVTK');
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet">
@@ -667,11 +677,19 @@
     try{
       var r=await fetch('https://api.web3forms.com/submit',{method:'POST',body:new FormData(form)});
       var j=await r.json();
-      if(j.success){ form.style.display='none'; document.getElementById(okId).style.display='block'; return; }
+      if(j.success){ form.style.display='none'; document.getElementById(okId).style.display='block'; if(typeof gtag==='function') gtag('event','generate_lead',{school:'HEI'}); return; }
     }catch(_){}
     if(btn) btn.disabled=false;
     alert('送信に失敗しました。お手数ですがLINEからご連絡ください。');
   }
+
+  // analytics: LINE / Instagram clicks
+  document.querySelectorAll('[data-line], .float-line, a.btn-line[href*="line"], .btn-line[data-line]').forEach(function(a){
+    a.addEventListener('click', function(){ if(typeof gtag==='function') gtag('event','line_click',{school:'HEI'}); });
+  });
+  document.querySelectorAll('.ig-hd, a.ig').forEach(function(a){
+    a.addEventListener('click', function(){ if(typeof gtag==='function') gtag('event','instagram_click',{school:'HEI', account:(a.textContent.match(/@[\w.]+/)||[''])[0]}); });
+  });
 </script>
 
 </body>
