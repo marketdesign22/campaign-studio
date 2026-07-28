@@ -171,7 +171,7 @@
   .gallery .slide{position:absolute;inset:0;opacity:0;transition:opacity .7s ease}
   .gallery .slide.active{opacity:1}
   .gallery .slide img{width:100%;height:100%;object-fit:cover}
-  .gallery .cap{position:absolute;left:0;right:0;bottom:0;padding:40px 22px 16px;color:#fff;font-weight:800;background:linear-gradient(transparent,rgba(90,61,35,.82));font-size:1rem}
+  .gallery .cap{position:absolute;left:0;right:0;bottom:0;padding:40px 22px 16px;color:#fff;font-weight:800;background:linear-gradient(transparent,rgba(12,50,74,.85));font-size:1rem}
   .slide.noimg img{display:none}
   .slide.noimg{display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,var(--cream2),var(--cream2) 18px,#cfe3f3 18px,#cfe3f3 36px)}
   .slide.noimg .cap{color:var(--orange-deep);background:none;position:static;padding:0;text-align:center}
@@ -412,12 +412,36 @@
       <h2 data-en="A clear path from Certificate <span class='mk'>to your degree and career.</span>">サーティフィケートから学位取得まで、<span class="mk">明確なキャリアパス。</span></h2>
     </div>
     <div class="path">
-      <div class="pnode"><div class="s">STEP 1</div><div class="n">Cert.</div><div class="d" data-en="Foundations">基礎から</div></div>
+      <div class="pnode"><div class="s">STEP 1</div><div class="n">Cert.</div></div>
       <div class="pnode on"><div class="s">STEP 2</div><div class="n">SCSU</div><div class="d" data-en="Degree program">学位取得</div></div>
       <div class="pnode"><div class="s">STEP 3</div><div class="n">OPT</div><div class="d" data-en="U.S. work exp.">アメリカ就労</div></div>
       <div class="pnode"><div class="s">GOAL</div><div class="n" data-en="Career">キャリア</div><div class="d" data-en="Global success">グローバル活躍</div></div>
     </div>
     <p class="path-note" data-en="SCSU offers a seamless path from Certificate through Bachelor, Master and Doctorate — all in one institution. Japanese-speaking staff are here, so you can consult in Japanese whenever you need help.">SCSUはサーティフィケートから学士・修士・博士まで、一つの大学で一貫したキャリアパス。日本人スタッフ在籍で困った時は日本語で相談できます。</p>
+  </div>
+</section>
+
+<!-- CAMPUS GALLERY -->
+<section style="background:var(--cream2)">
+  <div class="wrap rel">
+    <div class="head">
+      <span class="label" data-en="CAMPUS GALLERY">キャンパスギャラリー</span>
+      <h2 data-en="6 campuses across <span class='mk'>California.</span>">カリフォルニアに、<span class="mk">6つのキャンパス。</span></h2>
+      <p data-en="From Los Angeles to the Bay Area — study at the campus that fits your life.">ロサンゼルスからベイエリアまで。あなたの生活に合ったキャンパスで学べます。</p>
+    </div>
+    <div class="gallery">
+      <div class="frame" data-slideshow data-interval="4200">
+        <div class="slide active"><img src="images/campus-la.jpg%20.jpg" alt="Los Angeles" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.closest('.slide').classList.add('noimg')}"><div class="cap" data-en="Los Angeles ・ Main campus">ロサンゼルス ・ メインキャンパス</div></div>
+        <div class="slide"><img src="images/campus-santaana.jpg" alt="Santa Ana" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.closest('.slide').classList.add('noimg')}"><div class="cap" data-en="Santa Ana ・ Orange County">サンタアナ ・ オレンジ郡</div></div>
+        <div class="slide"><img src="images/%20campus-sandiego.jpg%20.jpg" alt="San Diego" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.closest('.slide').classList.add('noimg')}"><div class="cap" data-en="San Diego">サンディエゴ</div></div>
+        <div class="slide"><img src="images/campus-oakland.jpg" alt="Oakland" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.closest('.slide').classList.add('noimg')}"><div class="cap" data-en="Oakland ・ Bay Area">オークランド ・ ベイエリア</div></div>
+        <div class="slide"><img src="images/campus-elmonte.jpg%20.jpg" alt="El Monte" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.closest('.slide').classList.add('noimg')}"><div class="cap" data-en="El Monte ・ Greater LA">エルモンテ ・ LA近郊</div></div>
+        <div class="slide"><img src="images/campus-riverside.jpg" alt="Riverside" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.closest('.slide').classList.add('noimg')}"><div class="cap" data-en="Riverside ・ Inland Empire">リバーサイド ・ インランドエンパイア</div></div>
+        <button class="gnav prev" aria-label="prev">‹</button>
+        <button class="gnav next" aria-label="next">›</button>
+      </div>
+      <div class="dots"></div>
+    </div>
   </div>
 </section>
 
