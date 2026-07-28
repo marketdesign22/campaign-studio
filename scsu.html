@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ロサンゼルスで大学進学・学位取得｜SCSU 認定大学（日本人向け）</title>
 <meta name="description" content="Southern California State University（SCSU）。ロサンゼルスの認定大学。サーティフィケートから学士・修士・博士まで手頃な学費で学位取得。卒業後はOPTでアメリカ就労も。カリフォルニア6キャンパス・日本人サポート。">
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-GS4B9BMVTK"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-GS4B9BMVTK');
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800;900&display=swap" rel="stylesheet">
@@ -862,12 +872,20 @@
     try{
       var r=await fetch('https://api.web3forms.com/submit',{method:'POST',body:data});
       var j=await r.json();
-      if(j.success){ form.style.display='none'; document.getElementById(okId).style.display='block'; return; }
+      if(j.success){ form.style.display='none'; document.getElementById(okId).style.display='block'; if(typeof gtag==='function') gtag('event','generate_lead',{school:'SCSU'}); return; }
     }catch(_){}
     if(btn) btn.disabled=false;
     alert('送信に失敗しました。お手数ですがLINEからご連絡ください。');
   }
 
+
+  // analytics: LINE / Instagram clicks
+  document.querySelectorAll('[data-line], .float-line, a.btn-line[href*="line"], .btn-line[data-line]').forEach(function(a){
+    a.addEventListener('click', function(){ if(typeof gtag==='function') gtag('event','line_click',{school:'SCSU'}); });
+  });
+  document.querySelectorAll('.ig-hd, a.ig').forEach(function(a){
+    a.addEventListener('click', function(){ if(typeof gtag==='function') gtag('event','instagram_click',{school:'SCSU', account:(a.textContent.match(/@[\w.]+/)||[''])[0]}); });
+  });
 </script>
 </body>
 </html>

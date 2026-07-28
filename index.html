@@ -5,6 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ロサンゼルス留学・大学進学 ｜ HEI（語学学校）× SCSU（大学）日本人向け</title>
   <meta name="description" content="ロサンゼルスの語学学校HEIと認定大学SCSU。上部のボタンで切り替え。語学留学から学位取得・OPT就労まで、日本人スタッフがサポート。" />
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-GS4B9BMVTK"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-GS4B9BMVTK');
+</script>
+
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html,body{height:100%}
@@ -116,6 +126,7 @@
         : 'ロサンゼルス大学進学・学位取得 ｜ SCSU 認定大学（日本人向け）';
       // reflect selection in the URL hash (shareable deep-link)
       if(history.replaceState) history.replaceState(null, '', isHei ? '#hei' : '#scsu');
+      if(typeof gtag==='function') gtag('event','school_tab_switch',{school: isHei ? 'HEI' : 'SCSU'});
     }
     // open SCSU directly via #scsu (e.g. from an ad link)
     if(location.hash === '#scsu'){ showTab('scsu'); }
