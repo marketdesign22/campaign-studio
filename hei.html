@@ -43,12 +43,9 @@
   @keyframes stripeMove{from{background-position:0 0}to{background-position:52px 0}}
   @keyframes campIcon{0%,100%{transform:rotate(0)}20%{transform:rotate(-15deg)}60%{transform:rotate(15deg)}}
   @keyframes campShine{0%{left:-40%}60%,100%{left:120%}}
-  .topbar{color:#fff;font-size:.85rem;font-weight:700;text-align:center;padding:11px 12px;letter-spacing:.02em;position:relative;overflow:hidden;background-color:var(--orange-deep)}
-  .topbar::after{content:"";position:absolute;top:0;bottom:0;left:-40%;width:34%;pointer-events:none;
-    background:linear-gradient(100deg,transparent,rgba(255,255,255,.45),transparent);transform:skewX(-18deg);
-    animation:campShine 3.4s ease-in-out infinite}
+  .topbar{color:#fff;font-size:1.02rem;font-weight:800;text-align:center;padding:13px 14px;letter-spacing:.02em;position:relative;overflow:hidden;background-color:var(--orange-deep)}
   .topbar b{color:var(--yellow)}
-  .topbar .camp{display:inline-block;color:var(--yellow);font-weight:900;font-size:clamp(.9rem,4.3vw,1.42rem);white-space:nowrap;text-shadow:0 1px 0 rgba(0,0,0,.18)}
+  .topbar .camp{display:inline-block;color:var(--yellow);font-weight:900;font-size:clamp(1.1rem,5vw,1.75rem);white-space:nowrap;text-shadow:0 1px 0 rgba(0,0,0,.18)}
   .topbar .eico{animation:campIcon .9s ease-in-out infinite;transform-origin:center}
   .eico{width:1.15em;height:1.15em;vertical-align:-0.2em;display:inline-block;flex:none}
   @media (prefers-reduced-motion: reduce){.topbar,.topbar .camp,.topbar .eico,.topbar::after{animation:none}}
@@ -86,6 +83,10 @@
   .case .col.good .yen2{color:rgba(255,255,255,.8)}
   .yen-note{text-align:center;color:#a8916f;font-size:.82rem;margin-top:14px;font-weight:600}
   .hero-foot{position:relative;z-index:2;text-align:center;padding-bottom:34px}
+  .hero-urgent{display:inline-block;background:var(--yellow);color:var(--ink);font-weight:900;
+    font-size:clamp(1.15rem,4.8vw,1.7rem);line-height:1.5;padding:13px 24px;border-radius:16px;
+    border:3px solid var(--ink);box-shadow:5px 5px 0 var(--ink);transform:rotate(-1deg)}
+  .hero-urgent b{color:var(--orange-deep);font-size:1.12em}
   .hero-wave{display:block;width:100%;height:42px;color:var(--cream)}
 
   section{padding:62px 0;position:relative;overflow:hidden}
@@ -288,15 +289,11 @@
         </div>
         <div class="yen" data-en="approx ¥144,000">約 ¥144,000</div>
         <div class="sub" data-en="Standard ESL / 11 weeks (1 quarter)">スタンダードESL ／ <span style="display:inline-block">11週間（1クォーター・約３ヶ月）</span></div>
-        <div class="mini" data-en="22 wks $1,800 ・ 44 wks $3,600 / better value the longer you stay"><span style="display:inline-block">22週（約６ヶ月）$1,800</span> ・ <span style="display:inline-block">44週（約９ヶ月）$3,600</span> ／ <span style="display:inline-block">中長期ほどおトク</span></div>
       </div>
     </div>
   </div>
   <div class="hero-foot wrap rel">
-    <a class="btn-line" href="#cta" data-en="Chat with us on LINE">
-      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 5.69 2 10.23c0 4.07 3.58 7.48 8.42 8.12.33.07.78.22.89.5.1.26.07.66.03.92l-.14.86c-.04.26-.2 1.02.89.56 1.1-.46 5.9-3.48 8.05-5.95C21.4 13.6 22 11.99 22 10.23 22 5.69 17.52 2 12 2Z"/></svg>
-      <span data-en="Chat with us on LINE">LINEで気軽に相談する</span>
-    </a>
+    <p class="hero-urgent" data-en="Want to stay in the U.S. long-term?<br><b>This is your only chance — right now!</b>">長期滞在したい方は<br><b>今しかないチャンス！</b></p>
   </div>
   <svg class="hero-wave" viewBox="0 0 1200 42" preserveAspectRatio="none" fill="currentColor"><path d="M0 42 C150 6 300 6 450 24 C600 42 750 42 900 24 C1050 8 1150 8 1200 20 L1200 42 Z"/></svg>
 </header>
