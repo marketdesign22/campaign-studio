@@ -69,6 +69,9 @@
   .topbar b{color:#fff;text-shadow:0 1px 2px rgba(120,60,0,.25)}
   .topbar .camp{display:inline-block;color:#fff;font-weight:900;font-size:clamp(1.1rem,5vw,1.75rem);white-space:nowrap;text-shadow:0 2px 3px rgba(120,60,0,.28)}
   .topbar .eico{animation:campIcon .9s ease-in-out infinite;transform-origin:center}
+  .campline{white-space:nowrap}
+  .campline b,.campline .cu{white-space:nowrap}
+  @media(max-width:760px){.campline{white-space:normal}}
   .eico{width:1.15em;height:1.15em;vertical-align:-0.2em;display:inline-block;flex:none}
   @media (prefers-reduced-motion: reduce){.topbar,.topbar .camp,.topbar .eico,.topbar::after{animation:none}}
 
@@ -308,6 +311,12 @@
   @media(hover:hover) and (min-width:881px){ .float-line:hover .qr-pop{display:block} }
   .sched-note{max-width:820px;margin:16px auto 0;font-size:.85rem;color:#7c6648;font-weight:600;line-height:1.9}
   @media(max-width:640px){section{padding:58px 0}.head{margin-bottom:34px}.final{padding:64px 0}}
+  @media(max-width:640px){
+    table.sc{min-width:0}
+    table.sc th{padding:10px 8px;font-size:.78rem}
+    table.sc td{padding:10px 8px;font-size:.82rem}
+    table.sc tr.brk td{font-size:.76rem;padding:6px 8px}
+  }
   h2,h3{text-wrap:balance}
   p{text-wrap:pretty}
   /* Instagram box: account header + recent posts */
@@ -343,7 +352,7 @@
       </div>
     </div>
 
-    <div class="topbar"><svg class="eico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 21.5l5-13.2a1 1 0 0 1 1.6-.4l7 7a1 1 0 0 1-.4 1.6z"/><path d="M7 8.5l8 8"/><path d="M15 6.5a2 2 0 0 1 2-2M18.5 9a2 2 0 0 1 2-2"/><circle cx="14.2" cy="3.5" r=".6" fill="currentColor"/><circle cx="20.5" cy="12" r=".6" fill="currentColor"/><circle cx="21" cy="6.5" r=".6" fill="currentColor"/></svg> <span data-en="<span class='camp'>20周年記念 特別期間限定キャンペーン</span> — apply by <b>December 31, 2026</b>"><span class="camp">20周年記念 特別期間限定キャンペーン</span><span style="white-space:nowrap">｜<b>2026年12月31日まで</b> のお申し込み限定<b id="campCnt" style="color:#fff"></b></span></span></div>
+    <div class="topbar"><svg class="eico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 21.5l5-13.2a1 1 0 0 1 1.6-.4l7 7a1 1 0 0 1-.4 1.6z"/><path d="M7 8.5l8 8"/><path d="M15 6.5a2 2 0 0 1 2-2M18.5 9a2 2 0 0 1 2-2"/><circle cx="14.2" cy="3.5" r=".6" fill="currentColor"/><circle cx="20.5" cy="12" r=".6" fill="currentColor"/><circle cx="21" cy="6.5" r=".6" fill="currentColor"/></svg> <span data-en="<span class='camp'>20周年記念 特別期間限定キャンペーン</span> — apply by <b>December 31, 2026</b>"><span class="camp">20周年記念 特別期間限定キャンペーン</span><span class="campline">｜<b>2026年12月31日まで</b> <span class="cu">のお申し込み限定</span><b id="campCnt" style="color:#fff"></b></span></span></div>
 
     <div class="hero-inner">
       <span class="hero-badge" data-en="Japanese-speaking staff">日本人スタッフ在籍</span>
