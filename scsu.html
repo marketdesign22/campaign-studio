@@ -5,6 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ロサンゼルスで大学進学・学位取得｜SCSU 認定大学（日本人向け）</title>
 <meta name="description" content="Southern California State University（SCSU）。ロサンゼルスの認定大学。サーティフィケートから学士・修士・博士まで手頃な学費で学位取得。卒業後はOPTでアメリカ就労も。カリフォルニア6キャンパス・日本人サポート。">
+<!-- OGP / share preview -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="ロサンゼルス大学進学・学位取得｜SCSU 認定大学（日本人向け）">
+<meta property="og:description" content="認定大学SCSU。学士$1,500/3ヶ月〜。通学は週1日、卒業後はOPTでアメリカ就労。学内テスト合格で英語スコア不要。">
+<meta property="og:url" content="https://marketdesign22.github.io/campaign-studio/scsu.html">
+<meta property="og:image" content="https://marketdesign22.github.io/campaign-studio/images/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:site_name" content="HEI × SCSU ロサンゼルス留学">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="images/favicon.png">
+
 
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-GS4B9BMVTK"></script>
@@ -324,6 +336,20 @@
   .camp-contact{max-width:920px;margin:18px auto 0;background:var(--cream2);border:var(--bd);border-radius:16px;padding:16px 22px;text-align:center;font-weight:700;box-shadow:4px 4px 0 var(--ink)}
   @media(max-width:880px){.camps{grid-template-columns:1fr}}
 
+  /* FAQ accordion */
+  .faq{max-width:760px;margin:0 auto}
+  details.fq{background:#fff;border:var(--bd);border-radius:16px;box-shadow:4px 4px 0 var(--ink);margin-bottom:14px;overflow:hidden}
+  .fq summary{cursor:pointer;list-style:none;display:flex;align-items:flex-start;gap:10px;padding:16px 18px;font-weight:800;line-height:1.6}
+  .fq summary::-webkit-details-marker{display:none}
+  .fq summary .qm{color:var(--blue);font-weight:900;flex:none}
+  .fq summary::after{content:"＋";margin-left:auto;font-weight:900;color:var(--blue);flex:none}
+  .fq[open] summary::after{content:"−"}
+  .fq .a{padding:0 18px 16px 40px;font-weight:600;font-size:.92rem;color:#37576a;line-height:1.9}
+  /* LINE QR popup on desktop hover */
+  .qr-pop{display:none;position:absolute;right:calc(100% + 14px);top:50%;transform:translateY(-50%);width:154px;background:#fff;border:var(--bd);border-radius:14px;padding:10px 10px 6px;box-shadow:4px 4px 0 var(--ink);text-align:center}
+  .qr-pop img{width:130px;height:130px;max-width:none;display:block;margin:0 auto}
+  .qr-cap{display:block;font-size:.68rem;font-weight:800;color:var(--ink);margin-top:4px;writing-mode:horizontal-tb}
+  @media(hover:hover) and (min-width:881px){ .float-line:hover .qr-pop{display:block} }
   .contact-grid{display:grid;grid-template-columns:1fr;gap:20px;max-width:640px;margin:0 auto}
   .contact-grid .form-card{order:-1}
   /* compact stack under the form */
@@ -688,6 +714,26 @@
   </div>
 </section>
 
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="wrap rel">
+    <div class="head">
+      <span class="label" data-en="FAQ">よくある質問</span>
+      <h2 data-en="Your questions, <span class='mk'>answered.</span>">気になること、<span class="mk">先にお答えします。</span></h2>
+    </div>
+    <div class="faq">
+      <details class="fq"><summary><span class="qm">Q.</span><span data-en="Can I enroll without TOEFL or other scores?">英語力の証明（TOEFLなど）がなくても入学できる？</span></summary><p class="a" data-en="Yes — pass our in-house English test and no score is needed.">できます。学内英語テストに合格すれば、スコアの提出なしで入学できます。</p></details>
+      <details class="fq"><summary><span class="qm">Q.</span><span data-en="Can I transfer from a language school?">語学学校からの転校（トランスファー）はできる？</span></summary><p class="a" data-en="Yes — you keep your F-1 visa and the school handles the transfer. We strongly recommend completing it before Sept 15.">できます。F-1ビザのまま、トランスファー手続きは学校が行います。新ルール施行（9月15日）前の手続きを強くおすすめします。</p></details>
+      <details class="fq"><summary><span class="qm">Q.</span><span data-en="How many days a week on campus?">通学は週何日必要？</span></summary><p class="a" data-en="Just one. Everything else is online assignments.">週1日だけです。それ以外はオンライン課題なので、学校とプライベートを両立できます。</p></details>
+      <details class="fq"><summary><span class="qm">Q.</span><span data-en="What is OPT and who can use it?">OPTとは？誰でも使える？</span></summary><p class="a" data-en="Legal U.S. work after your program — up to 12 months (36 for STEM). Certificates qualify too.">学位取得後にアメリカで合法的に働ける制度です。通常最大12ヶ月、STEMプログラムなら最大36ヶ月。サーティフィケートでも申請可能です。</p></details>
+      <details class="fq"><summary><span class="qm">Q.</span><span data-en="When can I start?">入学のタイミングは？</span></summary><p class="a" data-en="Four intakes a year (Jan / Apr / Jul / Oct), starting the first Monday of each quarter.">年4回（1月・4月・7月・10月）。各クォーターの第一月曜日が開始日です。</p></details>
+      <details class="fq"><summary><span class="qm">Q.</span><span data-en="How much does it cost in total?">費用は全部でどれくらい？</span></summary><p class="a" data-en="Bachelor tuition from $1,500/quarter plus fees — see Programs & Tuition for details.">学士は1クォーター$1,500〜。ほかにアプリケーション手数料などの諸費用がかかります。詳しくは「プログラムと学費」をご覧ください。</p></details>
+      <details class="fq"><summary><span class="qm">Q.</span><span data-en="Can I consult in Japanese?">日本語で相談できる？</span></summary><p class="a" data-en="Yes — Japanese-speaking staff are here. LINE and the form both work in Japanese.">日本人スタッフが在籍しています。LINE・フォームどちらも日本語でOKです。</p></details>
+    </div>
+  </div>
+</section>
+
 <!-- CONTACT -->
 <section id="contact" style="background:var(--cream2)">
   <div class="wrap rel">
@@ -793,7 +839,9 @@
 </footer>
 
 <!-- FLOATING LINE -->
-<a class="float-line" href="#" data-line aria-label="LINE"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 5.69 2 10.23c0 4.07 3.58 7.48 8.42 8.12.33.07.78.22.89.5.1.26.07.66.03.92l-.14.86c-.04.26-.2 1.02.89.56 1.1-.46 5.9-3.48 8.05-5.95C21.4 13.6 22 11.99 22 10.23 22 5.69 17.52 2 12 2Z"/></svg><span class="flabel" data-en="Chat on LINE">LINEで相談</span></a>
+<a class="float-line" href="#" data-line aria-label="LINE"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 5.69 2 10.23c0 4.07 3.58 7.48 8.42 8.12.33.07.78.22.89.5.1.26.07.66.03.92l-.14.86c-.04.26-.2 1.02.89.56 1.1-.46 5.9-3.48 8.05-5.95C21.4 13.6 22 11.99 22 10.23 22 5.69 17.52 2 12 2Z"/></svg><span class="flabel" data-en="Chat on LINE">LINEで相談</span>
+  <span class="qr-pop" aria-hidden="true"><img src="images/line-qr.png" alt="LINE QR"><span class="qr-cap" data-en="Scan with your phone">スマホで読み取り</span></span>
+</a>
 
 <!-- FLOATING FORM BUTTON -->
 <a class="float-form" href="#contact" aria-label="お問い合わせフォーム">

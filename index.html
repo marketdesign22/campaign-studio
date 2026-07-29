@@ -6,6 +6,18 @@
   <title>ロサンゼルス留学・大学進学 ｜ HEI（語学学校）× SCSU（大学）日本人向け</title>
   <meta name="description" content="ロサンゼルスの語学学校HEIと認定大学SCSU。上部のボタンで切り替え。語学留学から学位取得・OPT就労まで、日本人スタッフがサポート。" />
 
+<!-- OGP / share preview -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="ロサンゼルス留学・大学進学｜HEI（語学学校）× SCSU（大学）">
+<meta property="og:description" content="語学留学から学位取得・OPT就労まで。日本人スタッフがビザ・転校をサポート。ビザ新ルール前の転校は今がチャンス！">
+<meta property="og:url" content="https://marketdesign22.github.io/campaign-studio/">
+<meta property="og:image" content="https://marketdesign22.github.io/campaign-studio/images/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:site_name" content="HEI × SCSU ロサンゼルス留学">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" href="images/favicon.png">
+
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-GS4B9BMVTK"></script>
 <script>
@@ -79,7 +91,7 @@
   <div id="topchrome">
     <div class="visa-alert" role="alert">
       <span class="va-ic" aria-hidden="true">⚠️</span>
-      <span>アメリカ学生ビザ <b>新ルール 9月15日</b> より施行開始。転校をお考えの方は <b>今すぐ手続きが必要です！</b></span>
+      <span>アメリカ学生ビザ <b>新ルール 9月15日</b> より施行開始<b id="visaCnt"></b>。転校をお考えの方は <b>今すぐ手続きが必要です！</b></span>
     </div>
 
     <nav class="switch-bar" role="tablist" aria-label="学校切り替え">
@@ -128,6 +140,12 @@
       if(history.replaceState) history.replaceState(null, '', isHei ? '#hei' : '#scsu');
       if(typeof gtag==='function') gtag('event','school_tab_switch',{school: isHei ? 'HEI' : 'SCSU'});
     }
+    // visa-rule countdown
+    (function(){
+      var d = Math.ceil((new Date(2026,8,15) - new Date()) / 86400000);
+      var el = document.getElementById('visaCnt');
+      if(el && d > 0) el.textContent = '（あと' + d + '日）';
+    })();
     // open SCSU directly via #scsu (e.g. from an ad link)
     if(location.hash === '#scsu'){ showTab('scsu'); }
   </script>
