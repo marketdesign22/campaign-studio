@@ -31,7 +31,7 @@ jobs:
         run: |
           mkdir -p _site
           cp index.html hei.html scsu.html _site/
-          cp -r images _site/
+          cp -r images hei scsu _site/
           # Santa Ana photo was uploaded to the repo root; publish it under images/
           [ -f campus-santaana.jpg ] && cp campus-santaana.jpg _site/images/campus-santaana.jpg || true
           touch _site/.nojekyll
