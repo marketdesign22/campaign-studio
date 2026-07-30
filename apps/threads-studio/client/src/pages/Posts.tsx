@@ -1,0 +1,313 @@
+import { useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { CheckCheck, Pencil, Plus, RotateCcw, Sparkles, Trash2, Undo2, Upload } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
+import { useI18n } from "@/i18n";
+
+const SLOT_LABELS = ["朝", "夕", "追加1", "追加2", "追加3", "追加4"];
+const STATUS_STYLES: Record<string, string> = {
+  pending: "bg-primary/10 text-primary",
+  posted: "bg-emerald-600/10 text-emerald-700",
+  error: "bg-destructive/10 text-destructive",
+};
+const STATUS_LABELS: Record<string, string> = { pending: "未投稿", posted: "投稿済み", error: "エラー" };
+
+const TONES = [
+  { value: "standard" as const, label: "いつものトーン" },
+  { value: "casual" as const, label: "カジュアル" },
+  { value: "formal" as const, label: "フォーマル" },
+  { value: "energetic" as const, label: "元気" },
+];
+
+export default function Posts() {
+  const { t, lang } = useI18n();
+  const { data: postList = [], isLoading } = trpc.posts.list.useQuery();
+  const { data: cats = [] } = trpc.categories.list.useQuery();
+  const { data: accounts = [] } = trpc.accounts.list.useQuery();
+  const { data: settings } = trpc.settings.get.useQuery();
+  const utils = trpc.useUtils();
+  const invalidate = () => { utils.posts.list.invalidate(); utils.posts.nextPreview.invalidate(); };
+
+  const createMut = trpc.posts.create.useMutation({ onSuccess: () => { toast.success(t("追加しました")); invalidate(); setOpen(false); }, onError: e => toast.error(e.message) });
+  const updateMut = trpc.posts.update.useMutation({ onSuccess: () => { toast.success(t("更新しました")); invalidate(); setOpen(false); }, onError: e => toast.error(e.message) });
+  const deleteMut = trpc.posts.delete.useMutation({ onSuccess: () => { toast.success(t("削除しました")); invalidate(); }, onError: e => toast.error(e.message) });
+  const importMut = trpc.posts.bulkImport.useMutation({ onSuccess: d => { toast.success(`${d.count}${t("件インポートしました")}`); invalidate(); setImportOpen(false); setImportText(""); }, onError: e => toast.error(e.message) });
+  const approvalMut = trpc.posts.setApproval.useMutation({ onSuccess: () => invalidate(), onError: e => toast.error(e.message) });
+  const aiGenerate = trpc.ai.generateDrafts.useMutation({ onError: e => toast.error(e.message) });
+  const aiRewrite = trpc.ai.rewrite.useMutation({
+    onSuccess: d => { setContent(d.content); toast.success(t("リライトしました")); },
+    onError: e => toast.error(e.message),
+  });
+
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<typeof postList[0] | null>(null);
+  const [content, setContent] = useState("");
+  const [slotIndex, setSlotIndex] = useState(0);
+  const [catId, setCatId] = useState<number | null>(null);
+  const [accountId, setAccountId] = useState<number | null>(null);
+  const [rewriteInstruction, setRewriteInstruction] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState("");
+  const [importCatId, setImportCatId] = useState<number | null>(null);
+
+  // AI assist dialog
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiTopic, setAiTopic] = useState("");
+  const [aiTone, setAiTone] = useState<typeof TONES[number]["value"]>("standard");
+  const [aiLang, setAiLang] = useState<"ja" | "en">(lang);
+  const [aiDrafts, setAiDrafts] = useState<string[]>([]);
+
+  function openCreate() { setEditing(null); setContent(""); setSlotIndex(0); setCatId(null); setAccountId(null); setRewriteInstruction(""); setOpen(true); }
+  function openEdit(p: typeof postList[0]) { setEditing(p); setContent(p.content); setSlotIndex(p.slotIndex); setCatId(p.categoryId); setAccountId(p.accountId ?? null); setRewriteInstruction(""); setOpen(true); }
+  function handleSave() {
+    if (editing) updateMut.mutate({ id: editing.id, content, slotIndex, categoryId: catId, accountId });
+    else createMut.mutate({ content, slotIndex, categoryId: catId, accountId });
+  }
+  function handleImport() {
+    const lines = importText.split("\n").map(l => l.trim()).filter(l => l.length > 0 && l.length <= 500);
+    if (!lines.length) { toast.error(t("有効な投稿内容がありません")); return; }
+    importMut.mutate({ lines, categoryId: importCatId, postsPerDay: 2 });
+  }
+  function handleAiGenerate() {
+    if (!aiTopic.trim()) return;
+    setAiDrafts([]);
+    aiGenerate.mutate({ topic: aiTopic.trim(), tone: aiTone, count: 3, language: aiLang }, {
+      onSuccess: d => setAiDrafts(d.drafts),
+    });
+  }
+  const catMap = Object.fromEntries(cats.map(c => [c.id, c]));
+  const accountMap = Object.fromEntries(accounts.map(a => [a.id, a]));
+  const approvalEnabled = settings?.requireApproval ?? false;
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Contents"
+        title={t("投稿原稿管理")}
+        description={approvalEnabled ? t("承認フロー有効：承認済みの原稿のみ自動投稿されます") : t("原稿の追加・編集・削除・一括インポート")}
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={() => { setAiOpen(true); }}>
+              <Sparkles className="h-4 w-4 mr-1.5 text-[var(--brand-accent-deep)]" />{t("AIアシスト")}
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4 mr-1.5" /><span className="hidden sm:inline">{t("一括インポート")}</span><span className="sm:hidden">{t("インポート")}</span></Button>
+            <Button size="sm" onClick={openCreate}><Plus className="h-4 w-4 mr-1.5" />{t("新規追加")}</Button>
+          </>
+        }
+      />
+
+      <Card className="border shadow-none">
+        <CardContent className="p-0">
+          {isLoading ? <div className="py-16 text-center text-muted-foreground text-sm">{t("読み込み中...")}</div>
+          : postList.length === 0 ? <div className="py-16 text-center text-muted-foreground text-sm">{t("原稿がありません。「新規追加」「AIアシスト」「一括インポート」から作成してください。")}</div>
+          : (
+            <div className="divide-y">
+              {postList.map(p => {
+                const cat = p.categoryId ? catMap[p.categoryId] : null;
+                const account = p.accountId ? accountMap[p.accountId] : null;
+                const isDraft = p.approvalStatus === "draft";
+                return (
+                  <div key={p.id} className="flex items-start gap-3 p-4 hover:bg-muted/30 transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLES[p.status]}`}>{t(STATUS_LABELS[p.status])}</span>
+                        {isDraft && (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-500/15 text-amber-700">{t("未承認")}</span>
+                        )}
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border">{SLOT_LABELS[p.slotIndex] ? t(SLOT_LABELS[p.slotIndex]) : `${t("スロット")}${p.slotIndex}`}</span>
+                        {p.scheduledDate && <span className="text-xs text-muted-foreground tabular-nums">{p.scheduledDate}</span>}
+                        {cat && <span className="text-xs px-2 py-0.5 rounded-full text-white font-medium" style={{ backgroundColor: cat.color }}>{cat.name}</span>}
+                        {account && accounts.length > 1 && (
+                          <span className="text-xs text-muted-foreground">@{account.name}</span>
+                        )}
+                      </div>
+                      <p className="text-sm leading-relaxed line-clamp-3">{p.content}</p>
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      {approvalEnabled && p.status === "pending" && (
+                        isDraft ? (
+                          <Button size="sm" variant="outline" className="h-8 text-xs text-emerald-700 border-emerald-600/30 hover:bg-emerald-600/5"
+                            title={t("承認")}
+                            onClick={() => approvalMut.mutate({ id: p.id, approvalStatus: "approved" })}>
+                            <CheckCheck className="h-3.5 w-3.5 mr-1" />{t("承認")}
+                          </Button>
+                        ) : (
+                          <Button size="icon" variant="ghost" className="h-8 w-8" title={t("下書きに戻す")}
+                            onClick={() => approvalMut.mutate({ id: p.id, approvalStatus: "draft" })}>
+                            <Undo2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )
+                      )}
+                      {p.status !== "pending" && <Button size="icon" variant="ghost" className="h-8 w-8" title={t("未投稿に戻す")} onClick={() => updateMut.mutate({ id: p.id, status: "pending" })}><RotateCcw className="h-3.5 w-3.5" /></Button>}
+                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => { if (confirm(t("削除しますか？"))) deleteMut.mutate({ id: p.id }); }}><Trash2 className="h-3.5 w-3.5" /></Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Edit/Create Dialog */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>{editing ? t("原稿を編集") : t("新規原稿を追加")}</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>{t("投稿内容")} <span className={`text-xs ${content.length > 480 ? "text-destructive" : "text-muted-foreground"}`}>({content.length}/500)</span></Label>
+              <Textarea rows={6} value={content} onChange={e => setContent(e.target.value)} maxLength={500} className="resize-none" />
+              {/* AI rewrite */}
+              <div className="flex gap-2 pt-1">
+                <input
+                  className="flex-1 text-xs border rounded-md px-2.5 py-1.5 bg-card focus:outline-none focus:ring-2 focus:ring-ring"
+                  placeholder={t("AIへの指示（例: もっと短く / 絵文字を入れて）")}
+                  value={rewriteInstruction}
+                  onChange={e => setRewriteInstruction(e.target.value)}
+                  maxLength={300}
+                />
+                <Button size="sm" variant="outline" className="h-8 text-xs shrink-0"
+                  disabled={!content.trim() || !rewriteInstruction.trim() || aiRewrite.isPending}
+                  onClick={() => aiRewrite.mutate({ content, instruction: rewriteInstruction })}>
+                  <Sparkles className={`h-3 w-3 mr-1 text-[var(--brand-accent-deep)] ${aiRewrite.isPending ? "animate-pulse" : ""}`} />
+                  {aiRewrite.isPending ? t("生成中...") : t("AIリライト")}
+                </Button>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>{t("投稿スロット")}</Label>
+                <Select value={String(slotIndex)} onValueChange={v => setSlotIndex(Number(v))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{SLOT_LABELS.map((l, i) => <SelectItem key={i} value={String(i)}>{t(l)}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t("カテゴリー")}</Label>
+                <Select value={catId ? String(catId) : "none"} onValueChange={v => setCatId(v === "none" ? null : Number(v))}>
+                  <SelectTrigger><SelectValue placeholder={t("なし")} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t("なし")}</SelectItem>
+                    {cats.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {accounts.length > 1 && (
+              <div className="space-y-1.5">
+                <Label>{t("投稿先アカウント")}</Label>
+                <Select value={accountId ? String(accountId) : "default"} onValueChange={v => setAccountId(v === "default" ? null : Number(v))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="default">{t("デフォルト")} ({accounts[0]?.name})</SelectItem>
+                    {accounts.map(a => <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>{t("キャンセル")}</Button>
+            <Button onClick={handleSave} disabled={!content.trim() || createMut.isPending || updateMut.isPending}>{editing ? t("更新") : t("追加")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Assist Dialog */}
+      <Dialog open={aiOpen} onOpenChange={v => { setAiOpen(v); if (!v) { setAiDrafts([]); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-[var(--brand-accent-deep)]" />{t("AIアシスト — 下書き生成")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label>{t("投稿テーマ")}</Label>
+              <Textarea rows={2} placeholder={t("例: 8月23日開催のオープンキャンパスの告知。個別相談あり。")}
+                value={aiTopic} onChange={e => setAiTopic(e.target.value)} maxLength={300} className="resize-none" />
+              <p className="text-xs text-muted-foreground">{t("過去投稿の文体を学習し、ブランドボイスに合わせた案を3つ生成します。")}</p>
+            </div>
+            <div className="flex items-end gap-3">
+              <div className="space-y-1.5 w-32">
+                <Label>{t("言語")}</Label>
+                <Select value={aiLang} onValueChange={v => setAiLang(v as "ja" | "en")}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ja">{t("日本語")}</SelectItem>
+                    <SelectItem value="en">{t("英語")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5 flex-1">
+                <Label>{t("トーン")}</Label>
+                <Select value={aiTone} onValueChange={v => setAiTone(v as typeof aiTone)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{TONES.map(tn => <SelectItem key={tn.value} value={tn.value}>{t(tn.label)}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <Button onClick={handleAiGenerate} disabled={!aiTopic.trim() || aiGenerate.isPending}>
+                {aiGenerate.isPending ? t("生成中...") : t("生成する")}
+              </Button>
+            </div>
+            {aiDrafts.length > 0 && (
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                {aiDrafts.map((d, i) => (
+                  <div key={i} className="rounded-lg border bg-card p-3 space-y-2">
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{d}</p>
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="outline" className="h-7 text-xs"
+                        onClick={() => { setAiOpen(false); setEditing(null); setContent(d); setSlotIndex(0); setCatId(null); setAccountId(null); setRewriteInstruction(""); setOpen(true); }}>
+                        {t("編集して使う")}
+                      </Button>
+                      <Button size="sm" className="h-7 text-xs" disabled={createMut.isPending}
+                        onClick={() => createMut.mutate({ content: d, slotIndex: 0, categoryId: null })}>
+                        {t("そのまま追加")}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Import Dialog */}
+      <Dialog open={importOpen} onOpenChange={setImportOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader><DialogTitle>{t("一括インポート")}</DialogTitle></DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">{t("1行1投稿でテキストを貼り付けてください。空行は無視されます。500文字超の行はスキップされます。")}</p>
+            <Textarea rows={12} placeholder={t("1行目の投稿内容\n2行目の投稿内容\n...")} value={importText} onChange={e => setImportText(e.target.value)} className="font-mono text-sm resize-none" />
+            <div className="flex items-center gap-3">
+              <div className="flex-1 space-y-1.5">
+                <Label>{t("カテゴリー（任意）")}</Label>
+                <Select value={importCatId ? String(importCatId) : "none"} onValueChange={v => setImportCatId(v === "none" ? null : Number(v))}>
+                  <SelectTrigger><SelectValue placeholder={t("なし")} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t("なし")}</SelectItem>
+                    {cats.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="text-sm text-muted-foreground pt-5">{importText.split("\n").filter(l => l.trim().length > 0).length}{t("件検出")}</div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setImportOpen(false)}>{t("キャンセル")}</Button>
+            <Button onClick={handleImport} disabled={!importText.trim() || importMut.isPending}>{importMut.isPending ? t("インポート中...") : t("インポート実行")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
