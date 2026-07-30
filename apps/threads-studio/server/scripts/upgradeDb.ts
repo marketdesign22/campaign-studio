@@ -14,8 +14,22 @@ import mysql from "mysql2/promise";
 async function main() {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is required");
-  const conn = await mysql.createConnection(url);
   const dbName = new URL(url).pathname.replace(/^\//, "");
+
+  // 新規のMySQL/TiDBインスタンスはデータベースが空なので、無ければ作る。
+  // （手動で CREATE DATABASE しなくてもデプロイが通るようにするため）
+  if (dbName) {
+    if (!/^[A-Za-z0-9_]+$/.test(dbName)) {
+      throw new Error(`Unsupported database name in DATABASE_URL: ${dbName}`);
+    }
+    const serverUrl = new URL(url);
+    serverUrl.pathname = "/";
+    const bootstrap = await mysql.createConnection(serverUrl.toString());
+    await bootstrap.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
+    await bootstrap.end();
+  }
+
+  const conn = await mysql.createConnection(url);
 
   async function hasTable(table: string): Promise<boolean> {
     const [rows] = await conn.query(
