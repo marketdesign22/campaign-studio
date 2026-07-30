@@ -368,6 +368,58 @@
   .qr-pop img{width:130px;height:130px;max-width:none;display:block;margin:0 auto}
   .qr-cap{display:block;font-size:.68rem;font-weight:800;color:var(--ink);margin-top:4px;writing-mode:horizontal-tb}
   @media(hover:hover) and (min-width:881px){ .float-line:hover .qr-pop{display:block} }
+  /* mobile: quick jump chips */
+  .jump{display:none}
+  .more-btn{display:none}
+  @media(max-width:880px){
+    .jump{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:560px;margin:0 auto;padding:0 4px}
+    .jump a{background:#fff;border:2.5px solid var(--ink);border-radius:999px;padding:8px 14px;font-size:.82rem;font-weight:800;color:var(--ink);text-decoration:none;box-shadow:2px 2px 0 var(--ink)}
+    .jump a:active{transform:translate(2px,2px);box-shadow:none}
+    .jump-wrap{padding:22px 0 4px}
+    .jump-ttl{text-align:center;font-size:.78rem;font-weight:800;color:var(--muted);margin-bottom:10px;letter-spacing:.04em}
+  }
+  /* mobile: compact heavy sections */
+  @media(max-width:640px){
+    section{padding:50px 0}
+    .head{margin-bottom:30px}
+    /* campuses: photo-left compact rows */
+    .camps{gap:14px}
+    .camp-card{display:grid;grid-template-columns:92px 1fr;column-gap:13px;padding:14px 15px}
+    .camp-card > *{grid-column:2}
+    .camp-card .camp-photo{grid-column:1;grid-row:1 / span 8;aspect-ratio:1;margin-bottom:0;align-self:start;font-size:.6rem;border-radius:12px}
+    .camp-card .camp-photo span{font-size:.6rem}
+    .camp-card h3{font-size:1rem;margin:2px 0 6px}
+    .camp-card .addr{font-size:.78rem;line-height:1.5}
+    .camp-card .note{font-size:.74rem;margin-top:4px}
+    .camp-card a.more{margin-top:8px;font-size:.8rem}
+    .camp-card .cbadge{margin-bottom:5px}
+    /* steps: two per row */
+    .steps{grid-template-columns:1fr 1fr;gap:16px}
+    .step{padding:34px 12px 20px;margin-top:16px}
+    .step .badge{width:48px;height:48px;top:-16px}
+    .step .badge .n{font-size:1.05rem}
+    .step h3{font-size:1.05rem}
+    .step .romaji{font-size:.64rem;margin-bottom:8px}
+    .step p{font-size:.82rem}
+    /* voices + reasons breathing room */
+    .voices{gap:16px}
+    .reasons{gap:14px}
+    /* campuses: main only, rest behind a tap */
+    .camps .camp-card:nth-child(n+2){display:none}
+    .camps.open .camp-card:nth-child(n+2){display:grid}
+    .more-btn{display:block;width:100%;max-width:420px;margin:16px auto 0;background:#fff;border:var(--bd);border-radius:14px;box-shadow:4px 4px 0 var(--ink);padding:13px;font-family:inherit;font-weight:900;font-size:.92rem;color:var(--blue-deep);cursor:pointer}
+    .more-btn:active{transform:translate(2px,2px);box-shadow:none}
+    /* fees: tap the heading to open */
+    .fees-card .tbl-wrap,.fees-card p,.fees-card a{display:none !important}
+    .fees-card.open .tbl-wrap,.fees-card.open p{display:block !important}
+    .fees-card.open a{display:inline-block !important}
+    .fees-ttl{cursor:pointer;margin-bottom:0 !important}
+    .fees-ttl::after{content:"　＋ タップで表示";font-size:.76rem;font-weight:800;color:var(--muted)}
+    .fees-card.open .fees-ttl{margin-bottom:12px !important}
+    .fees-card.open .fees-ttl::after{content:"　− 閉じる"}
+    /* contact: one feed is enough on a phone */
+    .contact-side .ig-box:nth-of-type(2) iframe{display:none}
+  }
   .contact-grid{display:grid;grid-template-columns:1fr;gap:20px;max-width:640px;margin:0 auto}
   .contact-grid .form-card{order:-1}
   /* compact stack under the form */
@@ -456,6 +508,19 @@
   <svg class="hero-wave" viewBox="0 0 1200 42" preserveAspectRatio="none" fill="currentColor"><path d="M0 42 C150 6 300 6 450 24 C600 42 750 42 900 24 C1050 8 1150 8 1200 20 L1200 42 Z"/></svg>
 </header>
 
+<!-- MOBILE QUICK JUMP -->
+<div class="jump-wrap">
+  <div class="jump-ttl" data-en="Jump to what you need">知りたいところへジャンプ</div>
+  <nav class="jump" aria-label="セクションへ移動">
+    <a href="#programs" data-en="Programs &amp; tuition">プログラム・学費</a>
+    <a href="#schedule" data-en="Schedule">時間割</a>
+    <a href="#admission" data-en="Requirements">入学要件</a>
+    <a href="#campuses" data-en="Campuses">キャンパス</a>
+    <a href="#faq" data-en="FAQ">よくある質問</a>
+    <a href="#contact" data-en="Contact">お問い合わせ</a>
+  </nav>
+</div>
+
 <!-- WHO IS SCSU FOR -->
 <section>
   <div class="watermark">SCSU</div>
@@ -532,8 +597,8 @@
       </table>
     </div>
     <p class="tnote" data-en="* Tuition reflects current amounts; contact us for details. STEM programs can extend OPT up to 3 years. 1 quarter = 3 months.">※学費は現時点での金額です。詳細はお問い合わせください。STEMプログラムはOPTが最大3年間延長可能です。※1クォーター＝3ヶ月。</p>
-    <div class="ocard" style="max-width:820px;margin:32px auto 0;padding:24px 22px;background:#fff">
-      <h3 style="font-size:1.15rem;font-weight:900;color:var(--blue-deep);margin-bottom:12px" data-en="Other fees (besides tuition)">授業料以外にかかる費用・手数料</h3>
+    <div class="ocard fees-card" style="max-width:820px;margin:32px auto 0;padding:24px 22px;background:#fff">
+      <h3 class="fees-ttl" style="font-size:1.15rem;font-weight:900;color:var(--blue-deep);margin-bottom:12px" onclick="this.closest('.ocard').classList.toggle('open')" data-en="Other fees (besides tuition)">授業料以外にかかる費用・手数料</h3>
       <div class="tbl-wrap"><table class="sc" style="box-shadow:none;min-width:0">
         <tr><th data-en="Fee">項目</th><th data-en="Amount">金額</th><th data-en="Notes">備考</th></tr>
         <tr><td colspan="3" style="background:#eef2f7;font-weight:800;color:var(--blue-deep)"><svg class="hi-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2.5"/><circle cx="12" cy="9.5" r="2.3"/><path d="M8.4 16c.5-1.6 1.9-2.5 3.6-2.5s3.1.9 3.6 2.5"/></svg><span data-en="For the student-visa application (applying from Japan)">学生ビザ申請時に必要（日本から申請する方）</span></td></tr>
@@ -550,7 +615,7 @@
 </section>
 
 <!-- CLASS SCHEDULE -->
-<section>
+<section id="schedule">
   <div class="wrap rel">
     <div class="head">
       <span class="label" data-en="CLASS SCHEDULE">授業時間・時間割の例</span>
@@ -604,7 +669,7 @@
 </section>
 
 <!-- ADMISSION REQUIREMENTS -->
-<section style="background:var(--cream2)">
+<section id="admission" style="background:var(--cream2)">
   <div class="wrap rel">
     <div class="head">
       <span class="label" data-en="ADMISSION REQUIREMENTS">入学要件</span>
@@ -715,6 +780,8 @@
       <div class="ocard camp-card"><div class="camp-photo"><span style="font-size:1.7rem">🏘️</span><span>El Monte</span><img src="images/campus-elmonte.jpg%20.jpg" alt="" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.remove()}"></div><div class="ccity">El Monte, CA</div><h3 data-en="El Monte (Greater LA)">エルモンテ（LA近郊）</h3><div class="addr">11100 Valley Blvd, Suite 220<br>El Monte, CA 91731</div><div class="note" data-en="BBA available; more coming soon">BBA開講中・追加準備中</div><a class="more" href="https://www.scsuniversity.edu/el-monte/" target="_blank" rel="noopener" data-en="View details →">詳細を見る →</a></div>
       <div class="ocard camp-card"><div class="camp-photo"><span style="font-size:1.7rem">🏔️</span><span>Riverside</span><img src="images/campus-riverside.jpg" alt="" onerror="if(this.src.slice(-4)==='.jpg'){this.src=this.src.slice(0,-4)+'.png'}else{this.remove()}"></div><div class="ccity">Riverside, CA</div><h3 data-en="Riverside (Inland Empire)">リバーサイド（インランドエンパイア）</h3><div class="addr">5475 Arlington Ave<br>Riverside, CA 92504</div><div class="note" data-en="BBA available; more coming soon">BBA開講中・追加準備中</div><a class="more" href="https://www.scsuniversity.edu/riverside/" target="_blank" rel="noopener" data-en="View details →">詳細を見る →</a></div>
     </div>
+    <button type="button" class="more-btn" onclick="document.querySelector('.camps').classList.add('open');this.remove();" data-en="Show the other 5 campuses ▼">他の5キャンパスを見る ▼</button>
+
     <div class="camp-contact"><svg class="hi-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.5 21a17 17 0 0 1-12.5-12.5 2 2 0 0 1 2-2.5h2.6a1.5 1.5 0 0 1 1.5 1.3c.1.9.3 1.7.6 2.5a1.5 1.5 0 0 1-.4 1.6l-1 1a13 13 0 0 0 5 5l1-1a1.5 1.5 0 0 1 1.6-.4c.8.3 1.6.5 2.5.6a1.5 1.5 0 0 1 1.3 1.5v2.6a2 2 0 0 1-2.5 2z"/></svg><span data-en="All-campus contact">全キャンパス共通連絡先</span>　(213) 382-5300 ／ info@scsuniversity.edu ／ <span data-en="Mon–Fri 9:00 AM – 5:00 PM">月〜金 9:00 AM – 5:00 PM</span></div>
 
     <!-- GOOGLE MAP (main campus) -->
