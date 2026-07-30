@@ -39,10 +39,12 @@ export function getSessionCookieOptions(
   //       ? hostname
   //       : undefined;
 
+  // Same-site app (no iframe embedding in the standalone build), so `lax` is
+  // both sufficient for the OAuth top-level redirect and safer than `none`.
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "none",
+    sameSite: "lax",
     secure: isSecureRequest(req),
   };
 }

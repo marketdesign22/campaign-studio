@@ -1,24 +1,38 @@
 import { Request, Response } from "express";
-import { sdk } from "./_core/sdk";
+import { ENV } from "./_core/env";
 import { getLocalParts, runSlotForAccount, runTick } from "./scheduler";
 import { listActiveAccounts } from "./db";
 
+/**
+ * 外部cron（Railway cron・GitHub Actions等）から叩く場合の認可。
+ * `Authorization: Bearer $CRON_SECRET` または `x-cron-secret` ヘッダーで照合する。
+ * CRON_SECRET 未設定時は外部からの起動を拒否する（内蔵スケジューラが
+ * server/cron.ts で15分ごとに runTick を直接呼ぶため、通常は設定不要）。
+ */
 async function requireCron(req: Request, res: Response): Promise<boolean> {
-  try {
-    const user = await sdk.authenticateRequest(req);
-    if (!user.isCron) { res.status(403).json({ error: "cron-only" }); return false; }
-    return true;
-  } catch {
+  if (!ENV.cronSecret) {
+    res.status(403).json({
+      error: "External cron is disabled. Set CRON_SECRET to enable, or rely on the built-in scheduler.",
+    });
+    return false;
+  }
+  const auth = req.headers.authorization;
+  const bearer = typeof auth === "string" && auth.startsWith("Bearer ") ? auth.slice(7) : undefined;
+  const headerSecret = req.headers["x-cron-secret"];
+  const provided = bearer ?? (typeof headerSecret === "string" ? headerSecret : undefined);
+  if (provided !== ENV.cronSecret) {
     res.status(403).json({ error: "unauthorized" });
     return false;
   }
+  return true;
 }
 
 /**
- * Main scheduler entry — register this as a 15-minute cron:
- *   manus-heartbeat create --name threads-tick --cron "0 *\/15 * * * *" --path /api/scheduled/tick
- * Fires each account's morning/evening slot at its configured local time,
- * refreshes tokens, and pulls analytics once a day.
+ * Main scheduler entry — the built-in scheduler (server/cron.ts) runs this
+ * every 15 minutes in-process. The HTTP endpoint remains for external cron
+ * services (guarded by CRON_SECRET). Fires each account's morning/evening
+ * slot at its configured local time, refreshes tokens, and pulls analytics
+ * once a day.
  */
 export async function tickHandler(req: Request, res: Response) {
   if (!(await requireCron(req, res))) return;

@@ -13,16 +13,6 @@ const trimValue = (value: string): string => value.trim();
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === "string" && value.trim().length > 0;
 
-const buildEndpointUrl = (baseUrl: string): string => {
-  const normalizedBase = baseUrl.endsWith("/")
-    ? baseUrl
-    : `${baseUrl}/`;
-  return new URL(
-    "webdevtoken.v1.WebDevService/SendNotification",
-    normalizedBase
-  ).toString();
-};
-
 const validatePayload = (input: NotificationPayload): NotificationPayload => {
   if (!isNonEmptyString(input.title)) {
     throw new TRPCError({
@@ -46,7 +36,6 @@ const validatePayload = (input: NotificationPayload): NotificationPayload => {
       message: `Notification title must be at most ${TITLE_MAX_LENGTH} characters.`,
     });
   }
-
   if (content.length > CONTENT_MAX_LENGTH) {
     throw new TRPCError({
       code: "BAD_REQUEST",
@@ -58,57 +47,46 @@ const validatePayload = (input: NotificationPayload): NotificationPayload => {
 };
 
 /**
- * Dispatches a project-owner notification through the Manus Notification Service.
- * Returns `true` if the request was accepted, `false` when the upstream service
- * cannot be reached (callers can fall back to email/slack). Validation errors
- * bubble up as TRPC errors so callers can fix the payload.
+ * 運用者への通知（スタンドアロン版）。
+ * RESEND_API_KEY と NOTIFY_EMAIL が設定されていれば Resend でメール送信し、
+ * 未設定ならサーバーログに出力して false を返す（トークン失効・投稿エラー等の
+ * 呼び出し元は送信失敗でも処理を続行できる設計）。
  */
 export async function notifyOwner(
   payload: NotificationPayload
 ): Promise<boolean> {
   const { title, content } = validatePayload(payload);
 
-  if (!ENV.forgeApiUrl) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Notification service URL is not configured.",
-    });
+  if (!ENV.resendApiKey || !ENV.notifyEmail) {
+    console.warn(
+      `[Notify] Email not configured (RESEND_API_KEY / NOTIFY_EMAIL) — ${title}: ${content}`
+    );
+    return false;
   }
-
-  if (!ENV.forgeApiKey) {
-    throw new TRPCError({
-      code: "INTERNAL_SERVER_ERROR",
-      message: "Notification service API key is not configured.",
-    });
-  }
-
-  const endpoint = buildEndpointUrl(ENV.forgeApiUrl);
 
   try {
-    const response = await fetch(endpoint, {
+    const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        accept: "application/json",
-        authorization: `Bearer ${ENV.forgeApiKey}`,
-        "content-type": "application/json",
-        "connect-protocol-version": "1",
+        Authorization: `Bearer ${ENV.resendApiKey}`,
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ title, content }),
+      body: JSON.stringify({
+        from: ENV.emailFrom,
+        to: [ENV.notifyEmail],
+        subject: title,
+        text: content,
+      }),
     });
-
-    if (!response.ok) {
-      const detail = await response.text().catch(() => "");
-      console.warn(
-        `[Notification] Failed to notify owner (${response.status} ${response.statusText})${
-          detail ? `: ${detail}` : ""
-        }`
+    if (!res.ok) {
+      console.error(
+        `[Notify] Resend returned ${res.status}: ${await res.text()}`
       );
       return false;
     }
-
     return true;
   } catch (error) {
-    console.warn("[Notification] Error calling notification service:", error);
+    console.error("[Notify] Failed to send email:", error);
     return false;
   }
 }

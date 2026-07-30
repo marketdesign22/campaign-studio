@@ -4,8 +4,8 @@ import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
-import { registerStorageProxy } from "./storageProxy";
 import { appRouter } from "../routers";
+import { startInternalScheduler } from "../cron";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { eveningPostHandler, morningPostHandler, tickHandler } from "../scheduledHandlers";
@@ -35,7 +35,6 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
-  registerStorageProxy(app);
   registerOAuthRoutes(app);
   // Scheduled cron handlers — must be before Vite/static fallthrough
   app.post("/api/scheduled/tick", tickHandler);
@@ -66,6 +65,11 @@ async function startServer() {
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
   });
+
+  // 内蔵スケジューラ（15分ごとのtick）。DISABLE_SCHEDULER=1 で無効化できる。
+  if (process.env.DISABLE_SCHEDULER !== "1") {
+    startInternalScheduler();
+  }
 }
 
 startServer().catch(console.error);
