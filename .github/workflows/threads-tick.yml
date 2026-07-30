@@ -1,0 +1,45 @@
+# Threads Studio の「目覚まし役」。
+# 無料ホスティング（Render等）はアクセスがないと眠るため、投稿時間帯に
+# このワークフローが /api/scheduled/tick を叩いてサーバーを起こし、投稿させる。
+#
+# 有効化するにはリポジトリの Settings → Secrets and variables → Actions に:
+#   TICK_URL    = https://<あなたのアプリ>.onrender.com  （末尾スラッシュなし）
+#   CRON_SECRET = アプリ側の CRON_SECRET と同じ値
+# ※ scheduleはデフォルトブランチ上のワークフローのみ動く点に注意
+name: threads-tick
+
+on:
+  schedule:
+    # UTC指定。LA（太平洋時間）の朝・夕スロットを夏冬両方カバーする時間帯だけ
+    # 30分おきに実行する。投稿時刻を変えたらここも合わせて調整すること。
+    - cron: "*/30 13-23 * * *" # LA 5:00-16:30 頃（朝スロット用）
+    - cron: "*/30 0-3 * * *"   # LA 16:00-20:30 頃（夕スロット用）
+  workflow_dispatch: {}
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    env:
+      TICK_URL: ${{ secrets.TICK_URL }}
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+    steps:
+      - name: Call scheduler tick
+        if: ${{ env.TICK_URL != '' && env.CRON_SECRET != '' }}
+        run: |
+          # 眠っているサーバーの起床に時間がかかるため、最大3回リトライする
+          for i in 1 2 3; do
+            code=$(curl -s -o /tmp/tick.json -w "%{http_code}" --max-time 90 \
+              -X POST "$TICK_URL/api/scheduled/tick" \
+              -H "Authorization: Bearer $CRON_SECRET" || echo 000)
+            if [ "$code" = "200" ]; then
+              cat /tmp/tick.json
+              exit 0
+            fi
+            echo "attempt $i: HTTP $code — retrying in 45s"
+            sleep 45
+          done
+          echo "tick failed after 3 attempts"
+          exit 1
+      - name: Secrets not configured (skipped)
+        if: ${{ env.TICK_URL == '' || env.CRON_SECRET == '' }}
+        run: echo "TICK_URL / CRON_SECRET が未設定のためスキップしました"

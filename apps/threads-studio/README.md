@@ -41,6 +41,12 @@ pnpm dev               # 開発サーバー
 **アクセス制御**: `ALLOWED_EMAILS`（カンマ区切り）に載っているメールだけがログインできます。
 未設定の場合は**最初にログインした人だけ**が受け入れられ、自動的に管理者になります。
 
+## デプロイ
+
+**完全無料で運用する場合**: Render＋TiDB＋GitHub Actionsの構成が使えます（投稿が数分遅れる
+トレードオフあり）。手順は [docs/free-hosting.md](docs/free-hosting.md)。
+クライアント案件では以下のRailway構成（月$5〜・遅延なし）を推奨。
+
 ## Railway へのデプロイ
 
 1. Railway で新規プロジェクトを作成し、このリポジトリ（`apps/threads-studio`）を接続

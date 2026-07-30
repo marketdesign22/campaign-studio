@@ -1,0 +1,30 @@
+# Render Blueprint — Threads Studio を無料枠でデプロイする設定。
+# Render ダッシュボード → New → Blueprint → このリポジトリを選択すると読み込まれる。
+# 無料枠はアイドル15分でスリープするが、GitHub Actions（.github/workflows/threads-tick.yml）が
+# 投稿時間帯に叩いて起こすので自動投稿は機能する。
+services:
+  - type: web
+    name: threads-studio
+    runtime: node
+    plan: free
+    branch: claude/fix-issue-th8edz
+    rootDir: apps/threads-studio
+    buildCommand: corepack enable pnpm && pnpm install --frozen-lockfile && pnpm build
+    # 無料枠には preDeploy がないため、起動時にマイグレーションを実行（冪等）
+    startCommand: pnpm db:upgrade && pnpm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL # TiDB Cloud Serverless の接続文字列（docs/free-hosting.md 参照）
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: CRON_SECRET # GitHub Actions 側の Secret と同じ値にする
+        sync: false
+      - key: ANTHROPIC_API_KEY # AIアシスト用（任意）
+        sync: false

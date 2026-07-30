@@ -7,7 +7,8 @@
 
 やることは4つのアカウント/キーの準備とデプロイ。全てREADMEに詳細手順あり。
 
-- [ ] **Railway**: プロジェクト作成 → リポジトリ接続（Root Directory: `apps/threads-studio`）→ MySQLプラグイン追加
+- [ ] **ホスティング**: 無料構成（Render＋TiDB＋GitHub Actions、`docs/free-hosting.md`）か
+      Railway（月$5〜、READMEの手順）のどちらかでデプロイ
 - [ ] **Google OAuth**: クライアントID作成、リダイレクトURI登録 → `GOOGLE_CLIENT_ID/SECRET`
 - [ ] **Meta for Developers**: Threads APIアプリ作成 → 長期トークン取得
   - 自分のアカウントだけならアプリは**開発モードのままでよい**（自分がアプリ管理者なので審査不要）
