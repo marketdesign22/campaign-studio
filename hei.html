@@ -298,7 +298,7 @@
   .form-step2{display:none;margin-top:16px}
   .step2-lead{font-weight:800;font-size:.92rem;margin-bottom:14px;line-height:1.7}
   .skip-link{display:block;width:100%;margin-top:10px;background:none;border:none;font-family:inherit;
-    font-weight:800;font-size:.86rem;color:#8aa0b0;text-decoration:underline;cursor:pointer;padding:6px}
+    font-weight:800;font-size:.86rem;color:#a08a6c;text-decoration:underline;cursor:pointer;padding:6px}
   .cform-ok{display:none;max-width:640px;margin:14px auto 0;background:#eafaf0;border:var(--bd);border-radius:16px;padding:16px;text-align:center;font-weight:800;color:#1a7a40}
   /* class schedule table */
   .tbl-wrap{max-width:820px;margin:0 auto;overflow-x:auto}
@@ -716,7 +716,7 @@
       <button type="submit" class="send" data-en="Start your free consultation →">無料相談をはじめる →</button>
       <p class="note" data-en="We usually reply within 1–2 business days.">通常1〜2営業日以内に日本語でご返信します。</p>
     </form>
-    <form id="heiForm2" class="form-step2" onsubmit="w3submit2(event,'heiOk2')">
+    <form id="heiForm2" class="cform form-step2" onsubmit="w3submit2(event,'heiOk2','heiOk')">
       <input type="hidden" name="access_key" value="a5e9b8d3-21a1-4c82-a595-d67e7df5aa06">
       <input type="hidden" name="subject" value="【HEI LP】追加情報">
       <input type="hidden" name="from_name" value="HEI Landing Page">
@@ -735,7 +735,7 @@
       </div>
       <div class="fg"><label><span data-en="Questions / message">ご質問・メッセージ</span></label><textarea name="message" placeholder="例：学費の詳細や転校について相談したいです。"></textarea></div>
       <button type="submit" class="send" data-en="Send extra details">追加情報を送る</button>
-      <button type="button" class="skip-link" onclick="document.getElementById('heiForm2').style.display='none';document.getElementById('heiOk2').style.display='block'" data-en="Skip">スキップ</button>
+      <button type="button" class="skip-link" onclick="skipStep2('heiForm2','heiOk2','heiOk')" data-en="Skip">スキップ</button>
     </form>
     <div class="cform-ok" id="heiOk2"><svg style="width:1em;height:1em;vertical-align:-.13em;margin-right:.3em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.3 12 2.6 2.6 4.8-5.2"/></svg><span data-en="All set — we'll be in touch within 1–2 business days.">ありがとうございました。1〜2営業日以内にご連絡します。</span></div>
     <div class="cform-ok" id="heiOk"><svg style="width:1em;height:1em;vertical-align:-.13em;margin-right:.3em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.3 12 2.6 2.6 4.8-5.2"/></svg><span data-en="Your inquiry has been received. We'll reply within 1–2 business days.">お問い合わせを受け付けました。1〜2営業日以内にご連絡します。</span></div>
@@ -899,10 +899,19 @@
     }
   }
 
-  // STEP 2 — everything optional
-  async function w3submit2(e, okId){
+  // STEP 2 — everything optional. Replaces the step-1 message so only one shows.
+  async function w3submit2(e, okId, hideId){
     e.preventDefault();
-    await sendForm(e.target, okId, 2, 'HEI');
+    if(await sendForm(e.target, okId, 2, 'HEI')) hideOk(hideId);
+  }
+  function hideOk(id){
+    var el = id && document.getElementById(id);
+    if(el) el.style.display = 'none';
+  }
+  function skipStep2(formId, okId, hideId){
+    document.getElementById(formId).style.display = 'none';
+    document.getElementById(okId).style.display = 'block';
+    hideOk(hideId);
   }
 
   // campaign countdown

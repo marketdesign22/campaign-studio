@@ -935,7 +935,7 @@
           <button type="submit" class="form-submit" data-en="Start your free consultation →">無料相談をはじめる →</button>
           <p class="form-note" data-en="We usually reply within 1–2 business days.">通常1〜2営業日以内に日本語でご返信します。</p>
         </form>
-        <form id="scsuForm2" class="form-step2" onsubmit="w3submit2(event,'scsuOk2')">
+        <form id="scsuForm2" class="form-step2" onsubmit="w3submit2(event,'scsuOk2','scsuOk')">
           <input type="hidden" name="access_key" value="a5e9b8d3-21a1-4c82-a595-d67e7df5aa06">
           <input type="hidden" name="subject" value="【SCSU LP】追加情報">
           <input type="hidden" name="from_name" value="SCSU Landing Page">
@@ -957,7 +957,7 @@
           </div>
           <div class="fg"><label data-en="Questions / message">ご質問・メッセージ</label><textarea name="message" placeholder="例：MBAの詳細とOPTの手続きについて相談したいです。" data-en-ph="e.g. I'd like to know more about the MBA program and OPT."></textarea></div>
           <button type="submit" class="form-submit" data-en="Send extra details">追加情報を送る</button>
-          <button type="button" class="skip-link" onclick="document.getElementById('scsuForm2').style.display='none';document.getElementById('scsuOk2').style.display='block'" data-en="Skip">スキップ</button>
+          <button type="button" class="skip-link" onclick="skipStep2('scsuForm2','scsuOk2','scsuOk')" data-en="Skip">スキップ</button>
         </form>
         <div class="form-ok" id="scsuOk2"><svg class="hi-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.3 12 2.6 2.6 4.8-5.2"/></svg><span data-en="All set — we'll be in touch within 1–2 business days.">ありがとうございました。1〜2営業日以内にご連絡します。</span></div>
         <div class="form-ok" id="scsuOk"><svg class="hi-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.3 12 2.6 2.6 4.8-5.2"/></svg><span data-en="Your inquiry has been received. We'll contact you within 1–2 business days.">お問い合わせを受け付けました。1〜2営業日以内にご連絡します。</span></div>
@@ -1130,10 +1130,19 @@
     }
   }
 
-  // STEP 2 — everything optional
-  async function w3submit2(e, okId){
+  // STEP 2 — everything optional. Replaces the step-1 message so only one shows.
+  async function w3submit2(e, okId, hideId){
     e.preventDefault();
-    await sendForm(e.target, okId, 2, 'SCSU');
+    if(await sendForm(e.target, okId, 2, 'SCSU')) hideOk(hideId);
+  }
+  function hideOk(id){
+    var el = id && document.getElementById(id);
+    if(el) el.style.display = 'none';
+  }
+  function skipStep2(formId, okId, hideId){
+    document.getElementById(formId).style.display = 'none';
+    document.getElementById(okId).style.display = 'block';
+    hideOk(hideId);
   }
 
 
