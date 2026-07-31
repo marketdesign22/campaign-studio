@@ -597,6 +597,8 @@
         <div class="slide"><img src="images/02.jpg" alt="Field trip" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap" data-en="Field trips around the city of LA">校外学習で、LAの街へ</div></div>
         <div class="slide"><img src="images/08.jpg" alt="Weekend outing" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap" data-en="Weekend outings with classmates">週末は、みんなでおでかけ</div></div>
         <div class="slide"><img src="images/05.jpg" alt="Class" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap" data-en="Small-class lessons">少人数クラスの授業風景</div></div>
+        <!-- 未アップロードの間はスライドごと自動的に外れる（プレースホルダを出さない） -->
+        <div class="slide"><img src="images/09.jpg" alt="Reading lesson" onerror="this.closest('.slide').remove()"><div class="cap" data-en="Reading together on the big screen">スクリーンを使って、みんなでリーディング</div></div>
         <div class="slide"><img src="images/07.jpg" alt="Between classes" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap" data-en="A fun snap between classes">先生と楽しく授業</div></div>
         <div class="slide"><img src="images/01.jpg" alt="Campus" onerror="this.closest('.slide').classList.add('noimg')"><div class="cap" data-en="Friendly and close-knit">アットホームで、みんな仲良し</div></div>
         <button class="gnav prev" aria-label="prev">‹</button>
@@ -837,9 +839,12 @@
     btn.addEventListener('click', function(){ setLang(lang === 'ja' ? 'en' : 'ja'); });
   })();
 
-  // Slideshow
+  // Slideshow — started after load so slides whose photo is missing are already
+  // dropped and never appear as a blank frame in the rotation.
+  function initSlideshows(){
   document.querySelectorAll('[data-slideshow]').forEach(function(box){
     var slides = box.querySelectorAll('.slide'); if(!slides.length) return;
+    if(!box.querySelector('.slide.active')) slides[0].classList.add('active');
     var i=0, interval=parseInt(box.getAttribute('data-interval'))||4000;
     var dotsWrap=box.parentElement.querySelector('.dots'), dots=[];
     if(dotsWrap){ slides.forEach(function(_,idx){ var d=document.createElement('button'); if(idx===0)d.className='active'; d.addEventListener('click',function(){go(idx);reset();}); dotsWrap.appendChild(d); dots.push(d); }); }
@@ -850,6 +855,9 @@
     if(next)next.addEventListener('click',function(){go(i+1);reset();});
     reset();
   });
+  }
+  if(document.readyState === 'complete') initSlideshows();
+  else window.addEventListener('load', initSlideshows);
 
   var GS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzAoktNEyV4OiX-Jqes83omcj8oEbq03joIM-NARhJ_Slm3OFK-Yvbbpps7-pGB2YCZAQ/exec"; // also logs each submission to a Google Sheet
 
