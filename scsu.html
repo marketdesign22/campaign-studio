@@ -452,21 +452,7 @@
     /* contact: one feed is enough on a phone */
     .contact-side .ig-box:nth-of-type(2) iframe{display:none}
   }
-  /* accreditation */
-  .accreds{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;max-width:900px;margin:0 auto}
-  .ac-card{background:#fff;padding:24px 22px;display:flex;flex-direction:column;gap:12px}
-  .ac-logo{height:72px;display:flex;align-items:center;justify-content:center}
-  .ac-logo img{max-height:72px;max-width:210px;width:auto;object-fit:contain}
-  .ac-logo .ac-txt{display:none}
-  /* ロゴ画像が未配置のうちは枠ごと出さない（画像を入れれば自動で表示される） */
-  .ac-logo.noimg{display:none}
-  .ac-card h3{font-size:1.02rem;font-weight:900;color:var(--blue-deep)}
-  .ac-card p{font-size:.86rem;font-weight:600;color:#37576a;line-height:1.85}
-  .ac-src{text-align:center;margin-top:24px}
-  .ac-src a{color:var(--blue);font-weight:800;font-size:.9rem;text-decoration:none;border-bottom:2px solid var(--blue)}
   @media(max-width:640px){
-    .accreds{grid-template-columns:1fr;gap:14px}
-    .ac-card{padding:18px 16px}
   }
   .contact-grid{display:grid;grid-template-columns:1fr;gap:20px;max-width:640px;margin:0 auto}
   .contact-grid .form-card{order:-1}
@@ -821,39 +807,6 @@
   </div>
 </section>
 
-<!-- ACCREDITATION & APPROVAL -->
-<section id="accreditation" style="background:var(--cream2)">
-  <div class="wrap rel">
-    <div class="head">
-      <span class="label" data-en="ACCREDITATION &amp; APPROVAL">認定・認可</span>
-      <h2 data-en="Accreditation <span class='mk'>&amp; Approval.</span>">認定・<span class="mk">認可について。</span></h2>
-      <p data-en="SCSU is accredited and approved by U.S. accrediting bodies and state authorities.">SCSUは米国の認定機関・州当局の認定/認可を受けた大学です。</p>
-    </div>
-    <div class="accreds">
-      <div class="ocard ac-card">
-        <span class="ac-logo"><img src="images/accred-tracs.png" alt="TRACS" onerror="this.parentNode.classList.add('noimg')"><span class="ac-txt">TRACS</span></span>
-        <h3>TRACS</h3>
-        <p data-en="Accredited by TRACS (recognized by the U.S. Department of Education, CHEA, and INQAAHE). Reaffirmed in October 2025; accreditation valid through December 31, 2035.">米国教育省（ED）・CHEA・INQAAHEが承認する認定機関 TRACS（Transnational Association of Christian Colleges and Schools）の認定校。2025年10月に再認定され、認定は2035年12月31日まで有効です。</p>
-      </div>
-      <div class="ocard ac-card">
-        <span class="ac-logo"><img src="images/accred-chea.webp" alt="CHEA" onerror="this.parentNode.classList.add('noimg')"><span class="ac-txt">CHEA</span></span>
-        <h3>CHEA</h3>
-        <p data-en="Member of the Council for Higher Education Accreditation (CHEA).">米国高等教育認定協議会（CHEA）メンバー校。</p>
-      </div>
-      <div class="ocard ac-card">
-        <span class="ac-logo"><img src="images/accred-bppe.png" alt="BPPE" onerror="this.parentNode.classList.add('noimg')"><span class="ac-txt">BPPE</span></span>
-        <h3>BPPE</h3>
-        <p data-en="Approved to operate by the California Bureau for Private Postsecondary Education (BPPE).">カリフォルニア州私立高等教育局（BPPE）の認可を受けて運営しています。</p>
-      </div>
-      <div class="ocard ac-card">
-        <span class="ac-logo"><img src="images/accred-dhs.png" alt="U.S. Department of Homeland Security" onerror="this.parentNode.classList.add('noimg')"><span class="ac-txt">DHS</span></span>
-        <h3 data-en="U.S. Department of Homeland Security (DHS/SEVP)">米国国土安全保障省（DHS/SEVP）</h3>
-        <p data-en="Authorized by the U.S. Department of Homeland Security to issue Form I-20 for F-1 student visas.">米国国土安全保障省よりI-20発行（F-1学生ビザ）の認可を受けた学校です。</p>
-      </div>
-    </div>
-    <p class="ac-src"><a href="https://www.scsuniversity.edu/accreditation-and-approval/" target="_blank" rel="noopener" data-en="Accreditation details (official) →">認定の詳細（公式）→</a></p>
-  </div>
-</section>
 
 <!-- CAMPUSES -->
 <section id="campuses">
