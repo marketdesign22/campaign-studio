@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ロサンゼルス留学・大学進学 ｜ HEI（語学学校）× SCSU（大学）日本人向け</title>
-  <meta name="description" content="ロサンゼルスの語学学校HEIと認定大学SCSU。上部のボタンで切り替え。語学留学から学位取得・OPT就労まで、日本人スタッフがサポート。" />
+  <meta name="description" content="ロサンゼルスの語学学校HEIとTRACS認定大学SCSU。上部のボタンで切り替え。語学留学から学位取得・OPT就労まで、日本人スタッフがサポート。" />
 
 <!-- OGP / share preview -->
 <meta property="og:type" content="website">
@@ -25,6 +25,15 @@
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
   gtag('config', 'G-GS4B9BMVTK');
+</script>
+
+<!-- Microsoft Clarity -->
+<script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "xuxel65w5r");
 </script>
 
   <style>
@@ -135,7 +144,7 @@
       fScsu.classList.toggle('active', !isHei);
       document.title = isHei
         ? 'ロサンゼルス語学留学 ｜ HEI 語学学校（日本人向け）'
-        : 'ロサンゼルス大学進学・学位取得 ｜ SCSU 認定大学（日本人向け）';
+        : 'ロサンゼルス大学進学・学位取得 ｜ SCSU TRACS認定大学（日本人向け）';
       // reflect selection in the URL hash (shareable deep-link)
       if(history.replaceState) history.replaceState(null, '', isHei ? '#hei' : '#scsu');
       if(typeof gtag==='function') gtag('event','school_tab_switch',{school: isHei ? 'HEI' : 'SCSU'});
