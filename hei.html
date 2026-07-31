@@ -295,6 +295,10 @@
   .cform .send{width:100%;background:var(--orange);color:#fff;border:var(--bd);border-radius:999px;padding:15px;font-weight:900;font-size:1.05rem;font-family:inherit;cursor:pointer;box-shadow:5px 5px 0 var(--ink);transition:transform .12s,box-shadow .12s}
   .cform .send:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
   .cform .note{text-align:center;font-size:.8rem;color:#8a7558;font-weight:600;margin-top:10px}
+  .form-step2{display:none;margin-top:16px}
+  .step2-lead{font-weight:800;font-size:.92rem;margin-bottom:14px;line-height:1.7}
+  .skip-link{display:block;width:100%;margin-top:10px;background:none;border:none;font-family:inherit;
+    font-weight:800;font-size:.86rem;color:#8aa0b0;text-decoration:underline;cursor:pointer;padding:6px}
   .cform-ok{display:none;max-width:640px;margin:14px auto 0;background:#eafaf0;border:var(--bd);border-radius:16px;padding:16px;text-align:center;font-weight:800;color:#1a7a40}
   /* class schedule table */
   .tbl-wrap{max-width:820px;margin:0 auto;overflow-x:auto}
@@ -685,6 +689,7 @@
       <input type="hidden" name="access_key" value="a5e9b8d3-21a1-4c82-a595-d67e7df5aa06">
       <input type="hidden" name="subject" value="【HEI LP】新規お問い合わせ">
       <input type="hidden" name="from_name" value="HEI Landing Page">
+      <input type="hidden" name="form_step" value="1">
       <input type="checkbox" name="botcheck" style="display:none" tabindex="-1" autocomplete="off">
       <div class="fg"><label><span data-en="Full name">お名前</span><span class="req">*</span></label><input type="text" name="name" placeholder="例：山田 太郎" required></div>
       <div class="fg"><label><span data-en="Email">メールアドレス</span><span class="req">*</span></label><input type="email" name="email" placeholder="例：taro@example.com" required></div>
@@ -698,15 +703,6 @@
         </select>
               <input type="text" class="other-in" name="status_other" placeholder="例：ワーキングホリデーで滞在中" data-en-ph="e.g. here on a working holiday">
       </div>
-      <div class="fg"><label><span data-en="Preferred length">ご希望の期間</span><span class="req">*</span></label>
-        <select name="duration" required>
-          <option value="" data-en="Please select">選択してください</option>
-          <option data-en="11 weeks (approx. 3 months)">11週間（約3ヶ月）</option>
-          <option data-en="22 weeks (approx. 6 months)">22週間（約6ヶ月）</option>
-          <option data-en="44 weeks (approx. 9 months)">44週間（約9ヶ月）</option>
-          <option data-en="Undecided / want advice">未定・相談したい</option>
-        </select>
-      </div>
       <div class="fg"><label><span data-en="How did you hear about us?">当校をどこで知りましたか？</span><span class="req">*</span></label>
         <select name="referral" required>
           <option value="" data-en="Please select">選択してください</option>
@@ -717,10 +713,31 @@
         </select>
               <input type="text" class="other-in" name="referral_other" placeholder="例：友人のSNS投稿を見て" data-en-ph="e.g. saw a friend's post">
       </div>
-      <div class="fg"><label><span data-en="Questions / message">ご質問・メッセージ</span><span class="req">*</span></label><textarea name="message" placeholder="例：学費の詳細や転校について相談したいです。" required></textarea></div>
-      <button type="submit" class="send" data-en="Submit →">送信する →</button>
+      <button type="submit" class="send" data-en="Start your free consultation →">無料相談をはじめる →</button>
       <p class="note" data-en="We usually reply within 1–2 business days.">通常1〜2営業日以内に日本語でご返信します。</p>
     </form>
+    <form id="heiForm2" class="form-step2" onsubmit="w3submit2(event,'heiOk2')">
+      <input type="hidden" name="access_key" value="a5e9b8d3-21a1-4c82-a595-d67e7df5aa06">
+      <input type="hidden" name="subject" value="【HEI LP】追加情報">
+      <input type="hidden" name="from_name" value="HEI Landing Page">
+      <input type="hidden" name="form_step" value="2">
+      <input type="hidden" name="email" value="">
+      <input type="hidden" name="name" value="">
+      <p class="step2-lead" data-en="Thank you! If you don't mind, tell us a little more (optional).">ありがとうございます！よろしければ、もう少しだけ教えてください（任意）</p>
+      <div class="fg"><label><span data-en="Preferred length">ご希望の期間</span></label>
+        <select name="duration">
+          <option value="" data-en="Please select">選択してください</option>
+          <option data-en="11 weeks (approx. 3 months)">11週間（約3ヶ月）</option>
+          <option data-en="22 weeks (approx. 6 months)">22週間（約6ヶ月）</option>
+          <option data-en="44 weeks (approx. 9 months)">44週間（約9ヶ月）</option>
+          <option data-en="Undecided / want advice">未定・相談したい</option>
+        </select>
+      </div>
+      <div class="fg"><label><span data-en="Questions / message">ご質問・メッセージ</span></label><textarea name="message" placeholder="例：学費の詳細や転校について相談したいです。"></textarea></div>
+      <button type="submit" class="send" data-en="Send extra details">追加情報を送る</button>
+      <button type="button" class="skip-link" onclick="document.getElementById('heiForm2').style.display='none';document.getElementById('heiOk2').style.display='block'" data-en="Skip">スキップ</button>
+    </form>
+    <div class="cform-ok" id="heiOk2"><svg style="width:1em;height:1em;vertical-align:-.13em;margin-right:.3em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.3 12 2.6 2.6 4.8-5.2"/></svg><span data-en="All set — we'll be in touch within 1–2 business days.">ありがとうございました。1〜2営業日以内にご連絡します。</span></div>
     <div class="cform-ok" id="heiOk"><svg style="width:1em;height:1em;vertical-align:-.13em;margin-right:.3em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.3 12 2.6 2.6 4.8-5.2"/></svg><span data-en="Your inquiry has been received. We'll reply within 1–2 business days.">お問い合わせを受け付けました。1〜2営業日以内にご連絡します。</span></div>
 
     <div class="ig-box">
@@ -834,12 +851,13 @@
     reset();
   });
 
-  async function w3submit(e, okId){
-    e.preventDefault();
-    var form=e.target, btn=form.querySelector('button[type="submit"]');
-    if(btn) btn.disabled=true;
-    var data=new FormData(form);
-    // fold each "その他" detail into its answer so the sheet stays one column
+  var GS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzAoktNEyV4OiX-Jqes83omcj8oEbq03joIM-NARhJ_Slm3OFK-Yvbbpps7-pGB2YCZAQ/exec"; // also logs each submission to a Google Sheet
+
+  // shared submit: Web3Forms + Google Sheet, with the "その他" details folded in
+  async function sendForm(form, okId, step, school){
+    var btn = form.querySelector('button[type="submit"]');
+    if(btn) btn.disabled = true;
+    var data = new FormData(form);
     form.querySelectorAll('.other-in').forEach(function(box){
       var key = box.name.replace(/_other$/, '');
       var val = (data.get(key) || '') + '';
@@ -847,15 +865,44 @@
       if(txt && /その他|Other/.test(val)) data.set(key, val + '（' + txt + '）');
       data.delete(box.name);
     });
-    var GS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzAoktNEyV4OiX-Jqes83omcj8oEbq03joIM-NARhJ_Slm3OFK-Yvbbpps7-pGB2YCZAQ/exec";
-    try{ var ps=new URLSearchParams(); data.forEach(function(v,k){ ps.append(k,v); }); fetch(GS_ENDPOINT,{method:'POST',mode:'no-cors',body:ps}); }catch(_){}
+    if(GS_ENDPOINT){ try{ var ps=new URLSearchParams(); data.forEach(function(v,k){ ps.append(k,v); }); fetch(GS_ENDPOINT,{method:'POST',mode:'no-cors',body:ps}); }catch(_){} }
     try{
-      var r=await fetch('https://api.web3forms.com/submit',{method:'POST',body:data});
-      var j=await r.json();
-      if(j.success){ form.style.display='none'; document.getElementById(okId).style.display='block'; if(typeof gtag==='function') gtag('event','generate_lead',{school:'HEI'}); return; }
+      var r = await fetch('https://api.web3forms.com/submit', {method:'POST', body:data});
+      var j = await r.json();
+      if(j.success){
+        form.style.display = 'none';
+        document.getElementById(okId).style.display = 'block';
+        if(typeof gtag === 'function'){
+          gtag('event', step === 1 ? 'form_step1_submit' : 'form_step2_submit', {school: school});
+          if(step === 1) gtag('event', 'generate_lead', {school: school});
+        }
+        return true;
+      }
     }catch(_){}
-    if(btn) btn.disabled=false;
+    if(btn) btn.disabled = false;
     alert('送信に失敗しました。お手数ですがLINEからご連絡ください。');
+    return false;
+  }
+
+  // STEP 1 — required fields only; on success we ask for the optional extras
+  async function w3submit(e, okId){
+    e.preventDefault();
+    var form = e.target;
+    var email = (form.querySelector('[name="email"]') || {}).value || '';
+    var name  = (form.querySelector('[name="name"]')  || {}).value || '';
+    if(!await sendForm(form, okId, 1, 'HEI')) return;
+    var f2 = document.getElementById('heiForm2');
+    if(f2){
+      f2.querySelector('input[name="email"]').value = email;   // ties step 2 to the same person
+      f2.querySelector('input[name="name"]').value  = name;
+      f2.style.display = 'block';
+    }
+  }
+
+  // STEP 2 — everything optional
+  async function w3submit2(e, okId){
+    e.preventDefault();
+    await sendForm(e.target, okId, 2, 'HEI');
   }
 
   // campaign countdown

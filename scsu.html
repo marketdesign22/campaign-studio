@@ -490,6 +490,10 @@
   .form-submit:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
   .other-in{display:none;margin-top:8px}
   .form-note{text-align:center;font-size:.8rem;color:var(--muted);font-weight:600;margin-top:10px}
+  .form-step2{display:none;margin-top:16px}
+  .step2-lead{font-weight:800;font-size:.92rem;margin-bottom:14px;line-height:1.7}
+  .skip-link{display:block;width:100%;margin-top:10px;background:none;border:none;font-family:inherit;
+    font-weight:800;font-size:.86rem;color:#8aa0b0;text-decoration:underline;cursor:pointer;padding:6px}
   .form-ok{display:none;background:#e3f6ea;border:var(--bd);border-radius:14px;padding:14px;text-align:center;font-weight:800;color:#1a7a40;margin-top:14px}
   .hero-seal{height:66px;width:auto}
   .hero-brand{display:flex;align-items:center;gap:16px;min-width:0;text-decoration:none;color:inherit}
@@ -903,22 +907,11 @@
           <input type="hidden" name="access_key" value="a5e9b8d3-21a1-4c82-a595-d67e7df5aa06">
           <input type="hidden" name="subject" value="【SCSU LP】新規お問い合わせ">
           <input type="hidden" name="from_name" value="SCSU Landing Page">
+          <input type="hidden" name="form_step" value="1">
           <input type="checkbox" name="botcheck" style="display:none" tabindex="-1" autocomplete="off">
           <div class="fg"><label data-en="Full name">お名前<span class="req">*</span></label><input type="text" name="name" placeholder="例：山田 太郎" data-en-ph="e.g. Taro Yamada" required></div>
           <div class="fg"><label data-en="Email">メールアドレス<span class="req">*</span></label><input type="email" name="email" placeholder="例：taro@example.com" data-en-ph="e.g. taro@example.com" required></div>
           <div class="fg"><label data-en="Phone (optional)">電話番号（任意）</label><input type="tel" name="phone" placeholder="例：090-1234-5678" data-en-ph="e.g. +1-213-000-0000"></div>
-          <div class="fg"><label data-en="Program of interest">ご希望のプログラム<span class="req">*</span></label>
-            <select name="program" required>
-              <option value="" data-en="Please select">選択してください</option>
-              <option data-en="Certificate">Certificate（証明書）</option>
-              <option data-en="Associate">Associate（準学士）</option>
-              <option data-en="Bachelor / BBA">Bachelor（学士・BBA）</option>
-              <option data-en="Master / MBA">Master（修士・MBA）</option>
-              <option data-en="MBA Business Statistics (STEM)">MBA Business Statistics（STEM）</option>
-              <option data-en="Doctorate / DBA">Doctorate（博士・DBA）</option>
-              <option data-en="Undecided / want advice">まだ決まっていない／相談したい</option>
-            </select>
-          </div>
           <div class="fg"><label><span data-en="Current status">現在の状況</span><span class="req">*</span></label>
             <select name="status" required>
               <option value="" data-en="Please select">選択してください</option>
@@ -939,10 +932,34 @@
             </select>
               <input type="text" class="other-in" name="referral_other" placeholder="例：友人のSNS投稿を見て" data-en-ph="e.g. saw a friend's post">
           </div>
-          <div class="fg"><label data-en="Questions / message">ご質問・メッセージ<span class="req">*</span></label><textarea name="message" placeholder="例：MBAの詳細とOPTの手続きについて相談したいです。" data-en-ph="e.g. I'd like to know more about the MBA program and OPT." required></textarea></div>
-          <button type="submit" class="form-submit" data-en="Submit →">送信する →</button>
+          <button type="submit" class="form-submit" data-en="Start your free consultation →">無料相談をはじめる →</button>
           <p class="form-note" data-en="We usually reply within 1–2 business days.">通常1〜2営業日以内に日本語でご返信します。</p>
         </form>
+        <form id="scsuForm2" class="form-step2" onsubmit="w3submit2(event,'scsuOk2')">
+          <input type="hidden" name="access_key" value="a5e9b8d3-21a1-4c82-a595-d67e7df5aa06">
+          <input type="hidden" name="subject" value="【SCSU LP】追加情報">
+          <input type="hidden" name="from_name" value="SCSU Landing Page">
+          <input type="hidden" name="form_step" value="2">
+          <input type="hidden" name="email" value="">
+          <input type="hidden" name="name" value="">
+          <p class="step2-lead" data-en="Thank you! If you don't mind, tell us a little more (optional).">ありがとうございます！よろしければ、もう少しだけ教えてください（任意）</p>
+          <div class="fg"><label data-en="Program of interest">ご希望のプログラム</label>
+            <select name="program">
+              <option value="" data-en="Please select">選択してください</option>
+              <option data-en="Certificate">Certificate（証明書）</option>
+              <option data-en="Associate">Associate（準学士）</option>
+              <option data-en="Bachelor / BBA">Bachelor（学士・BBA）</option>
+              <option data-en="Master / MBA">Master（修士・MBA）</option>
+              <option data-en="MBA Business Statistics (STEM)">MBA Business Statistics（STEM）</option>
+              <option data-en="Doctorate / DBA">Doctorate（博士・DBA）</option>
+              <option data-en="Undecided / want advice">まだ決まっていない／相談したい</option>
+            </select>
+          </div>
+          <div class="fg"><label data-en="Questions / message">ご質問・メッセージ</label><textarea name="message" placeholder="例：MBAの詳細とOPTの手続きについて相談したいです。" data-en-ph="e.g. I'd like to know more about the MBA program and OPT."></textarea></div>
+          <button type="submit" class="form-submit" data-en="Send extra details">追加情報を送る</button>
+          <button type="button" class="skip-link" onclick="document.getElementById('scsuForm2').style.display='none';document.getElementById('scsuOk2').style.display='block'" data-en="Skip">スキップ</button>
+        </form>
+        <div class="form-ok" id="scsuOk2"><svg class="hi-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.3 12 2.6 2.6 4.8-5.2"/></svg><span data-en="All set — we'll be in touch within 1–2 business days.">ありがとうございました。1〜2営業日以内にご連絡します。</span></div>
         <div class="form-ok" id="scsuOk"><svg class="hi-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8.3 12 2.6 2.6 4.8-5.2"/></svg><span data-en="Your inquiry has been received. We'll contact you within 1–2 business days.">お問い合わせを受け付けました。1〜2営業日以内にご連絡します。</span></div>
       </div>
     </div>
@@ -1067,12 +1084,11 @@
     btn.addEventListener('click', function(){ setTimeout(apply,0); });
   })();
   var GS_ENDPOINT = "https://script.google.com/macros/s/AKfycbzAoktNEyV4OiX-Jqes83omcj8oEbq03joIM-NARhJ_Slm3OFK-Yvbbpps7-pGB2YCZAQ/exec"; // also logs each submission to a Google Sheet
-  async function w3submit(e, okId){
-    e.preventDefault();
-    var form=e.target, btn=form.querySelector('button[type="submit"]');
-    if(btn) btn.disabled=true;
-    var data=new FormData(form);
-    // fold each "その他" detail into its answer so the sheet stays one column
+  // shared submit: Web3Forms + Google Sheet, with the "その他" details folded in
+  async function sendForm(form, okId, step, school){
+    var btn = form.querySelector('button[type="submit"]');
+    if(btn) btn.disabled = true;
+    var data = new FormData(form);
     form.querySelectorAll('.other-in').forEach(function(box){
       var key = box.name.replace(/_other$/, '');
       var val = (data.get(key) || '') + '';
@@ -1082,12 +1098,42 @@
     });
     if(GS_ENDPOINT){ try{ var ps=new URLSearchParams(); data.forEach(function(v,k){ ps.append(k,v); }); fetch(GS_ENDPOINT,{method:'POST',mode:'no-cors',body:ps}); }catch(_){} }
     try{
-      var r=await fetch('https://api.web3forms.com/submit',{method:'POST',body:data});
-      var j=await r.json();
-      if(j.success){ form.style.display='none'; document.getElementById(okId).style.display='block'; if(typeof gtag==='function') gtag('event','generate_lead',{school:'SCSU'}); return; }
+      var r = await fetch('https://api.web3forms.com/submit', {method:'POST', body:data});
+      var j = await r.json();
+      if(j.success){
+        form.style.display = 'none';
+        document.getElementById(okId).style.display = 'block';
+        if(typeof gtag === 'function'){
+          gtag('event', step === 1 ? 'form_step1_submit' : 'form_step2_submit', {school: school});
+          if(step === 1) gtag('event', 'generate_lead', {school: school});
+        }
+        return true;
+      }
     }catch(_){}
-    if(btn) btn.disabled=false;
+    if(btn) btn.disabled = false;
     alert('送信に失敗しました。お手数ですがLINEからご連絡ください。');
+    return false;
+  }
+
+  // STEP 1 — required fields only; on success we ask for the optional extras
+  async function w3submit(e, okId){
+    e.preventDefault();
+    var form = e.target;
+    var email = (form.querySelector('[name="email"]') || {}).value || '';
+    var name  = (form.querySelector('[name="name"]')  || {}).value || '';
+    if(!await sendForm(form, okId, 1, 'SCSU')) return;
+    var f2 = document.getElementById('scsuForm2');
+    if(f2){
+      f2.querySelector('input[name="email"]').value = email;   // ties step 2 to the same person
+      f2.querySelector('input[name="name"]').value  = name;
+      f2.style.display = 'block';
+    }
+  }
+
+  // STEP 2 — everything optional
+  async function w3submit2(e, okId){
+    e.preventDefault();
+    await sendForm(e.target, okId, 2, 'SCSU');
   }
 
 
