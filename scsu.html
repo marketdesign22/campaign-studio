@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ロサンゼルスで大学進学・学位取得｜SCSU 認定大学（日本人向け）</title>
-<meta name="description" content="Southern California State University（SCSU）。ロサンゼルスの認定大学。サーティフィケートから学士・修士・博士まで手頃な学費で学位取得。卒業後はOPTでアメリカ就労も。カリフォルニア6キャンパス・日本人サポート。">
+<title>ロサンゼルスで大学進学・学位取得｜SCSU TRACS認定大学（日本人向け）</title>
+<meta name="description" content="Southern California State University（SCSU）。ロサンゼルスのTRACS認定大学。サーティフィケートから学士・修士・博士まで手頃な学費で学位取得。卒業後はOPTでアメリカ就労も。カリフォルニア6キャンパス・日本人サポート。">
 <!-- OGP / share preview -->
 <meta property="og:type" content="website">
 <meta property="og:title" content="ロサンゼルス大学進学・学位取得｜SCSU 認定大学（日本人向け）">
@@ -443,6 +443,38 @@
     /* contact: one feed is enough on a phone */
     .contact-side .ig-box:nth-of-type(2) iframe{display:none}
   }
+  /* accreditation */
+  .accreds{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;max-width:900px;margin:0 auto}
+  .ac-card{background:#fff;padding:24px 22px;display:flex;flex-direction:column;gap:12px}
+  .ac-logo{height:72px;display:flex;align-items:center;justify-content:center}
+  .ac-logo img{max-height:72px;max-width:210px;width:auto;object-fit:contain}
+  .ac-logo .ac-txt{display:none;font-weight:900;font-size:1.15rem;color:var(--blue-deep);letter-spacing:.04em;
+    border:2.5px dashed #b8cfe2;border-radius:12px;padding:12px 20px;text-align:center;line-height:1.3}
+  .ac-logo.noimg img{display:none}
+  .ac-logo.noimg .ac-txt{display:block}
+  .ac-card h3{font-size:1.02rem;font-weight:900;color:var(--blue-deep)}
+  .ac-card p{font-size:.86rem;font-weight:600;color:#37576a;line-height:1.85}
+  .ac-src{text-align:center;margin-top:24px}
+  .ac-src a{color:var(--blue);font-weight:800;font-size:.9rem;text-decoration:none;border-bottom:2px solid var(--blue)}
+  /* hero trust bar */
+  .trustbar{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:20px 30px;
+    max-width:760px;margin:22px auto 0;padding:14px 18px;background:rgba(255,255,255,.94);
+    border:2.5px solid var(--ink);border-radius:16px;text-decoration:none}
+  .trustbar .tb-lb{width:100%;text-align:center;font-size:.7rem;font-weight:800;color:var(--muted);letter-spacing:.06em}
+  .trustbar .tb-i{height:34px;display:flex;align-items:center}
+  .trustbar img{max-height:34px;max-width:120px;width:auto;object-fit:contain;filter:grayscale(1);opacity:.72}
+  .trustbar:hover img{filter:none;opacity:1}
+  .trustbar .tb-t{display:none;font-weight:900;font-size:.82rem;color:#5b7688;letter-spacing:.05em}
+  .trustbar .tb-i.noimg img{display:none}
+  .trustbar .tb-i.noimg .tb-t{display:block}
+  @media(max-width:640px){
+    .accreds{grid-template-columns:1fr;gap:14px}
+    .ac-card{padding:18px 16px}
+    .trustbar{gap:12px 18px;padding:12px 12px;margin-top:16px}
+    .trustbar .tb-i{height:26px}
+    .trustbar img{max-height:26px;max-width:86px}
+    .trustbar .tb-t{font-size:.72rem}
+  }
   .contact-grid{display:grid;grid-template-columns:1fr;gap:20px;max-width:640px;margin:0 auto}
   .contact-grid .form-card{order:-1}
   /* compact stack under the form */
@@ -522,16 +554,21 @@
     </div>
 
     <div class="hero-inner">
-      <span class="hero-badge"><svg class="hi-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5"/></svg><span data-en="6 campuses across California ・ accredited ・ <b class='optword'>OPT</b> work">カリフォルニアに6つのキャンパス ・ 認定大学 ・ <b class="optword">OPT</b>就労対応</span></span>
+      <span class="hero-badge"><svg class="hi-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.66 2.69 3 6 3s6-1.34 6-3v-5"/></svg><span data-en="6 campuses across California ・ TRACS-accredited ・ <b class='optword'>OPT</b> work">カリフォルニアに6つのキャンパス ・ TRACS認定大学 ・ <b class="optword">OPT</b>就労対応</span></span>
       <div class="offer-card">
         <span class="wow" data-en="<span class='wln'>from around</span><span class='wln'>the world —</span><span class='wln'><span class='wowem'>650+</span> students!</span>"><span class="wln">世界各国から</span><span class="wln"><span class="wowem">約650名</span>の学生が</span><span class="wln">在籍中！</span></span>
         <div class="lede" data-en="Earn a U.S. degree in California —<br>and build your career with OPT.">カリフォルニアで学位取得。<br>卒業後はOPTでアメリカ就労へ。</div>
         <div class="pricetag" data-en="Bachelor's degree (4-year)">学士号（4年制）</div>
         <div class="big"><span class="cur">$</span>1,500<span style="font-size:.4em;vertical-align:.35em">〜</span><span class="unit" data-en="/3 months">/3ヶ月</span></div>
         <div class="yen" data-en="per quarter (3 months) ・ approx ¥240,000~">1クォーター（3ヶ月）あたり ・ 約 ¥240,000〜</div>
-        <div class="sub" data-en="From Certificate to Doctorate ・ accredited university SCSU">サーティフィケートから博士号まで ・ 認定大学 SCSU</div>
+        <div class="sub" data-en="From Certificate to Doctorate ・ TRACS-accredited university SCSU">サーティフィケートから博士号まで ・ TRACS認定大学 SCSU</div>
       </div>
     </div>
+
+    <a class="trustbar" href="#accreditation">
+      <span class="tb-lb" data-en="Accredited &amp; approved by">認定・認可</span>
+      <span class="tb-i"><img src="images/accred-tracs.png" alt="TRACS" onerror="this.parentNode.classList.add('noimg')"><span class="tb-t">TRACS</span></span><span class="tb-i"><img src="images/accred-chea.webp" alt="CHEA" onerror="this.parentNode.classList.add('noimg')"><span class="tb-t">CHEA</span></span><span class="tb-i"><img src="images/accred-bppe.png" alt="BPPE" onerror="this.parentNode.classList.add('noimg')"><span class="tb-t">BPPE</span></span><span class="tb-i"><img src="images/accred-dhs.png" alt="DHS" onerror="this.parentNode.classList.add('noimg')"><span class="tb-t">DHS</span></span>
+    </a>
   </div>
   <svg class="hero-wave" viewBox="0 0 1200 42" preserveAspectRatio="none" fill="currentColor"><path d="M0 42 C150 6 300 6 450 24 C600 42 750 42 900 24 C1050 8 1150 8 1200 20 L1200 42 Z"/></svg>
 </header>
@@ -795,6 +832,40 @@
   </div>
 </section>
 
+<!-- ACCREDITATION & APPROVAL -->
+<section id="accreditation" style="background:var(--cream2)">
+  <div class="wrap rel">
+    <div class="head">
+      <span class="label" data-en="ACCREDITATION &amp; APPROVAL">認定・認可</span>
+      <h2 data-en="Accreditation <span class='mk'>&amp; Approval.</span>">認定・<span class="mk">認可について。</span></h2>
+      <p data-en="SCSU is accredited and approved by U.S. accrediting bodies and state authorities.">SCSUは米国の認定機関・州当局の認定/認可を受けた大学です。</p>
+    </div>
+    <div class="accreds">
+      <div class="ocard ac-card">
+        <span class="ac-logo"><img src="images/accred-tracs.png" alt="TRACS" onerror="this.parentNode.classList.add('noimg')"><span class="ac-txt">TRACS</span></span>
+        <h3>TRACS</h3>
+        <p data-en="Accredited by TRACS (recognized by the U.S. Department of Education, CHEA, and INQAAHE). Reaffirmed in October 2025; accreditation valid through December 31, 2035.">米国教育省（ED）・CHEA・INQAAHEが承認する認定機関 TRACS（Transnational Association of Christian Colleges and Schools）の認定校。2025年10月に再認定され、認定は2035年12月31日まで有効です。</p>
+      </div>
+      <div class="ocard ac-card">
+        <span class="ac-logo"><img src="images/accred-chea.webp" alt="CHEA" onerror="this.parentNode.classList.add('noimg')"><span class="ac-txt">CHEA</span></span>
+        <h3>CHEA</h3>
+        <p data-en="Member of the Council for Higher Education Accreditation (CHEA).">米国高等教育認定協議会（CHEA）メンバー校。</p>
+      </div>
+      <div class="ocard ac-card">
+        <span class="ac-logo"><img src="images/accred-bppe.png" alt="BPPE" onerror="this.parentNode.classList.add('noimg')"><span class="ac-txt">BPPE</span></span>
+        <h3>BPPE</h3>
+        <p data-en="Approved to operate by the California Bureau for Private Postsecondary Education (BPPE).">カリフォルニア州私立高等教育局（BPPE）の認可を受けて運営しています。</p>
+      </div>
+      <div class="ocard ac-card">
+        <span class="ac-logo"><img src="images/accred-dhs.png" alt="U.S. Department of Homeland Security" onerror="this.parentNode.classList.add('noimg')"><span class="ac-txt">DHS</span></span>
+        <h3 data-en="U.S. Department of Homeland Security (DHS/SEVP)">米国国土安全保障省（DHS/SEVP）</h3>
+        <p data-en="Authorized by the U.S. Department of Homeland Security to issue Form I-20 for F-1 student visas.">米国国土安全保障省よりI-20発行（F-1学生ビザ）の認可を受けた学校です。</p>
+      </div>
+    </div>
+    <p class="ac-src"><a href="https://www.scsuniversity.edu/accreditation-and-approval/" target="_blank" rel="noopener" data-en="Accreditation details (official) →">認定の詳細（公式）→</a></p>
+  </div>
+</section>
+
 <!-- CAMPUSES -->
 <section id="campuses">
   <div class="wrap rel">
@@ -949,7 +1020,7 @@
 <footer>
   <img class="footer-seal" src="images/scsu-logo.png" alt="Southern California State University">
   Southern California State University<br>
-  <span data-en="Accredited by 【Accrediting body】">【認定機関名】認定校</span><br>
+  <span data-en="Accredited by TRACS ・ Approved to operate by BPPE">TRACS認定校 ・ BPPE認可校</span><br>
   3470 Wilshire Blvd Suite 380, Los Angeles, CA 90010 ・ Tel: (213) 382-5300 ・ Email: <a href="mailto:info@scsuniversity.edu" style="color:inherit;text-decoration:underline">info@scsuniversity.edu</a><br>
   <a class="ig" href="https://www.scsuniversity.edu" target="_blank" rel="noopener"><svg class="eico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.9 5.7 3.9 9s-1.4 6.4-3.9 9c-2.5-2.6-3.9-5.7-3.9-9S9.5 5.6 12 3z"/></svg> www.scsuniversity.edu</a><br>
   <span style="opacity:.6;display:inline-block;margin-top:10px">© Southern California State University. All rights reserved.</span>
