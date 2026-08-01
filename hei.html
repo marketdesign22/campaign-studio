@@ -377,14 +377,23 @@
   @media(max-width:640px){
     /* minmax(0,…) so a long unbroken run of Japanese can't widen the track */
     .pains,.grid3{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-    .pain,.reasons .ocard,.voices .ocard,.grid3 .ocard,.plan,.optpts > *{min-width:0;overflow-wrap:anywhere}
+    /* each card hugs its own text instead of stretching to the row height */
+    .pains{align-items:start}
+    /* .reason is a flex row — keep overflow-wrap off the flex container itself
+       and put it on the text inside, which is what actually needs to wrap */
+    .reasons .ocard{min-width:0}
+    .reason h3,.reason p{overflow-wrap:anywhere}
+    .voices .ocard,.grid3 .ocard,.plan,.optpts > *{min-width:0;overflow-wrap:anywhere}
     /* numbers and prices must never break mid-token */
     .plan .pr,.plan .yen{white-space:nowrap;overflow-wrap:normal}
     /* break Japanese at phrase boundaries rather than mid-word (Chrome/Android;
        ignored elsewhere, which just falls back to today's behaviour) */
-    h2,h3,.pain,.pcard p,.reason p,.voice p,.head p,.lede{word-break:auto-phrase}
+    h2,h3,.pcard p,.reason p,.voice p,.head p,.lede{word-break:auto-phrase}
     .ocard{box-shadow:4px 4px 0 var(--ink)}
-    .pain{padding:15px 14px 15px 38px;font-size:.8rem;line-height:1.7;min-height:0;box-shadow:3px 3px 0 var(--ink)}
+    /* block, not flex: a centred flex card gets stretched to the grid row and
+       leaves a large empty gap above and below the text in Safari */
+    .pain{display:block;padding:15px 14px 15px 38px;font-size:.8rem;line-height:1.7;
+      min-height:0;box-shadow:3px 3px 0 var(--ink);overflow-wrap:break-word}
     .pain::before{left:13px;width:15px;height:15px;border-width:2px}
     .pcard{padding:24px 15px}
     .pcard .num{width:44px;height:44px;font-size:1.1rem;margin-bottom:13px}
