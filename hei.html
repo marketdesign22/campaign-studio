@@ -373,6 +373,47 @@
     table.sc td{padding:10px 8px;font-size:.82rem}
     table.sc tr.brk td{font-size:.76rem;padding:6px 8px}
   }
+  /* Phones: two cards per row instead of one, with type stepped down to match.
+     Halves the number of rows in the longest sections. */
+  @media(max-width:640px){
+    /* minmax(0,…) so a long unbroken run of Japanese can't widen the track */
+    .pains,.grid3,.reasons,.voices{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    .pain,.grid3 .ocard,.reasons .ocard,.voices .ocard,.plan,.optpts > *{
+      min-width:0;overflow-wrap:anywhere}
+    /* numbers and prices must never break mid-token */
+    .plan .pr,.plan .yen{white-space:nowrap;overflow-wrap:normal}
+    /* break Japanese at phrase boundaries in the narrow columns (Chrome/Android;
+       ignored elsewhere, which just falls back to today's behaviour) */
+    .pain,.pcard h3,.pcard p,.reason h3,.reason p,.voice p{word-break:auto-phrase}
+    .ocard{box-shadow:4px 4px 0 var(--ink)}
+    .pain{padding:12px 12px 12px 34px;font-size:.78rem;line-height:1.6;min-height:0;box-shadow:3px 3px 0 var(--ink)}
+    .pain::before{left:11px;width:14px;height:14px;border-width:2px}
+    .pcard{padding:20px 13px}
+    .pcard .num{width:40px;height:40px;font-size:1.05rem;margin-bottom:10px}
+    .pcard h3{font-size:.95rem;margin-bottom:7px}
+    .pcard p{font-size:.79rem;line-height:1.7}
+    .reason{flex-direction:column;gap:10px;padding:17px 14px}
+    .reason .ic{width:38px;height:38px;border-radius:11px}
+    .reason .ic svg{width:20px;height:20px}
+    .reason h3{font-size:.95rem}
+    .reason p{font-size:.79rem;line-height:1.7}
+    .voice{padding:17px 14px}
+    .voice .stars{font-size:.82rem;margin-bottom:7px;letter-spacing:1px}
+    .voice p{font-size:.79rem;line-height:1.75;margin-bottom:12px}
+    .voice .who{gap:8px;padding-top:10px}
+    .voice .ava{width:32px;height:32px;font-size:.85rem}
+    .voice .who b{font-size:.82rem}
+    .voice .who span{font-size:.68rem}
+    /* keep the three prices on one row so they can still be compared at a glance */
+    .plans{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+    .plan{padding:20px 5px 15px;border-radius:15px;box-shadow:3px 3px 0 var(--ink)}
+    .plan .wk{font-size:.87rem}
+    .plan .q{font-size:.63rem;margin-bottom:7px}
+    .plan .pr{font-size:1.5rem}
+    .plan .yen{font-size:.63rem;margin-top:3px}
+    .plan .stay{font-size:.61rem;margin-top:6px;line-height:1.5}
+    .plan .ribbon{font-size:.57rem;padding:3px 7px;top:-11px}
+  }
   h2,h3{text-wrap:balance}
   p{text-wrap:pretty}
   /* Instagram box: account header + recent posts */
