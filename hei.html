@@ -376,7 +376,7 @@
      one per row — their text needs the full width to read comfortably. */
   @media(max-width:640px){
     /* minmax(0,…) so a long unbroken run of Japanese can't widen the track */
-    .pains,.grid3{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    .pains,.grid3{grid-template-columns:repeat(2,minmax(0,1fr))}
     /* each card hugs its own text instead of stretching to the row height */
     .pains{align-items:start}
     /* .reason is a flex row — keep overflow-wrap off the flex container itself
@@ -400,6 +400,20 @@
     .pcard h3{font-size:1rem;margin-bottom:9px}
     .pcard p{font-size:.82rem;line-height:1.8}
     .reasons,.voices{gap:16px}
+    /* Square-ish cards: widen the columns a little, then take the height out —
+       number sits beside the heading instead of stacked above it. */
+    .pains,.grid3,.steps{gap:10px}
+    .pcard{display:grid;grid-template-columns:auto 1fr;column-gap:10px;align-items:center;
+      text-align:left;padding:15px 12px}
+    .pcard .num{width:34px;height:34px;font-size:.95rem;margin:0;border-width:2.5px}
+    .pcard h3{grid-column:2;font-size:.92rem;margin:0;line-height:1.45}
+    .pcard p{grid-column:1 / -1;margin-top:9px;font-size:.8rem;line-height:1.7}
+    .step{padding:28px 12px 15px;margin-top:15px}
+    .step .badge{width:42px;height:42px;top:-14px}
+    .step .badge .n{font-size:.95rem}
+    .step h3{font-size:.95rem}
+    .step .romaji{display:none}          /* decorative romaji costs a whole line here */
+    .step p{font-size:.8rem;line-height:1.7;margin-top:8px;text-align:left}
     /* keep the three prices on one row so they can still be compared at a glance */
     .plans{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
     .plan{padding:20px 5px 15px;border-radius:15px;box-shadow:3px 3px 0 var(--ink)}
@@ -417,7 +431,7 @@
     .head{margin-bottom:40px}
     .head h2{line-height:1.45}
     .head p{margin-top:16px;line-height:1.95;font-size:.92rem}
-    .wrap{padding:0 26px}
+    .wrap{padding:0 22px}
     .pains,.grid3{gap:14px}
     .steps{gap:20px}
     .plans{margin-top:4px}
