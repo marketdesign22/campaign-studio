@@ -329,6 +329,52 @@
   .ig-tx b{font-weight:900;font-size:.84rem}
   .ig-tx small{font-size:.64rem;color:#a08560;font-weight:700}
   .ig-go{margin-left:auto;flex:none;font-weight:900;font-size:.7rem;color:var(--orange-deep);border-bottom:2px solid var(--orange-deep);white-space:nowrap}
+
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  body{overflow-x:hidden}
+  /* ===== mobile compact tuning (small screens) ===== */
+  @media(max-width:640px){
+    body{line-height:1.62}
+    section{padding:38px 0}
+    .head{margin-bottom:22px}
+    .head h2{font-size:1.4rem;line-height:1.38}
+    .head p{font-size:.88rem;margin-top:8px}
+    .label{font-size:.76rem}
+    .topbar{padding:16px 0 0;font-size:.86rem}
+    .topbar .camp{font-size:1rem}
+    .hero-inner{padding:16px 0 26px}
+    .hero-badge{font-size:.72rem;padding:4px 12px;margin-bottom:10px}
+    .offer-card{padding:20px 14px 18px;border-radius:20px;border-width:3px;box-shadow:5px 5px 0 var(--ink)}
+    .offer-card .big{font-size:clamp(3.4rem,16vw,4.2rem);text-shadow:3px 3px 0 var(--cream2)}
+    .offer-card .lede{font-size:.9rem}
+    .offer-card .pricetag{font-size:.72rem;padding:5px 12px;margin:8px 0 2px}
+    .offer-card .yen{font-size:.76rem}
+    .offer-card .sub{font-size:.78rem}
+    .hero-urgent{font-size:.98rem;padding:10px 18px}
+    .btn-line{font-size:.98rem;padding:14px 24px;box-shadow:4px 4px 0 var(--ink)}
+    .rbadge{width:94px;height:94px;font-size:.68rem}
+    .rbadge b{font-size:1rem}
+    .ocard{border-radius:18px}
+    .pcard{padding:20px 16px}
+    .pcard .num{width:44px;height:44px;font-size:1.1rem;margin-bottom:12px}
+    .pcard h3{font-size:1.02rem;margin-bottom:8px}
+    .pcard p{font-size:.86rem}
+    .plan{padding:18px 16px}
+    .plan .pr{font-size:2.05rem}
+    .deadline{padding:13px 16px;font-size:.85rem;margin-top:20px}
+    .why-price{padding:13px 16px;font-size:.85rem}
+    .punch{font-size:.9rem;padding:14px 16px;margin-top:16px}
+    .case .col .p{font-size:1.6rem}
+    .step{padding:30px 16px 20px}
+    .pains{gap:10px}
+    .pain{justify-content:center;text-align:center;font-size:.9rem;line-height:1.55;padding:12px 14px 12px 44px;min-height:0}
+    .fq summary{padding:12px 14px;font-size:.88rem;line-height:1.5}
+    .cform{padding:20px 14px;border-radius:18px}
+    .cform input,.cform select,.cform textarea{padding:10px 12px;font-size:.9rem}
+    .final{padding:44px 0}
+    .final h2{font-size:1.45rem}
+    .final p{font-size:.9rem}
+  }
 </style>
 </head>
 <body>
@@ -352,7 +398,7 @@
       </div>
     </div>
 
-    <div class="topbar"><svg class="eico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 21.5l5-13.2a1 1 0 0 1 1.6-.4l7 7a1 1 0 0 1-.4 1.6z"/><path d="M7 8.5l8 8"/><path d="M15 6.5a2 2 0 0 1 2-2M18.5 9a2 2 0 0 1 2-2"/><circle cx="14.2" cy="3.5" r=".6" fill="currentColor"/><circle cx="20.5" cy="12" r=".6" fill="currentColor"/><circle cx="21" cy="6.5" r=".6" fill="currentColor"/></svg> <span data-en="<span class='camp'>20周年記念 特別期間限定キャンペーン</span> — apply by <b>December 31, 2026</b>"><span class="camp">20周年記念 特別期間限定キャンペーン</span><span class="campline">｜<b>2026年12月31日まで</b> <span class="cu">のお申し込み限定</span><b id="campCnt" style="color:#fff"></b></span></span></div>
+    <div class="topbar"><a href="#price" style="color:inherit;text-decoration:none" onclick="if(typeof gtag==='function')gtag('event','cta_click',{school:'HEI',pos:'topbar'})"><svg class="eico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 21.5l5-13.2a1 1 0 0 1 1.6-.4l7 7a1 1 0 0 1-.4 1.6z"/><path d="M7 8.5l8 8"/><path d="M15 6.5a2 2 0 0 1 2-2M18.5 9a2 2 0 0 1 2-2"/><circle cx="14.2" cy="3.5" r=".6" fill="currentColor"/><circle cx="20.5" cy="12" r=".6" fill="currentColor"/><circle cx="21" cy="6.5" r=".6" fill="currentColor"/></svg> <span data-en="<span class='camp'>20周年記念 特別期間限定キャンペーン</span> — apply by <b>December 31, 2026</b>"><span class="camp">20周年記念 特別期間限定キャンペーン</span><span class="campline">｜<b>2026年12月31日まで</b> <span class="cu">のお申し込み限定</span><b id="campCnt" style="color:#fff"></b></span></span></a></div>
 
     <div class="hero-inner">
       <span class="hero-badge" data-en="Japanese-speaking staff">日本人スタッフ在籍</span>
@@ -366,6 +412,7 @@
         <div class="yen" data-en="approx ¥144,000">約 ¥144,000</div>
         <div class="sub" data-en="Standard ESL / 11 weeks (1 quarter)">スタンダードESL ／ <span style="display:inline-block">11週間（1クォーター・約３ヶ月）</span></div>
       </div>
+      <div style="text-align:center;margin-top:22px"><a class="btn-line" href="#contact" style="background:#fff;color:var(--orange-deep)" onclick="if(typeof gtag==='function')gtag('event','cta_click',{school:'HEI',pos:'hero'})"><span data-en="Ask about this price — free &amp; 30 sec →">この価格で相談してみる（無料・30秒）→</span></a></div>
     </div>
   </div>
   <div class="hero-foot wrap rel">
@@ -379,7 +426,7 @@
   <div class="watermark">HOLLYWOOD</div>
   <div class="wrap rel" style="text-align:center">
     <span class="label" data-en="Perfect for budget-minded students &amp; working pros">節約したい留学生・社会人にピッタリ</span>
-    <h2 style="font-size:clamp(1.8rem,5vw,2.6rem);font-weight:900;line-height:1.4;margin:14px 0 18px" data-en="Study English in the U.S.<br>at a <span class='mk'>top-value price.</span>">最安値クラスで、<br><span class="mk">アメリカ語学留学。</span></h2>
+    <h2 style="font-size:clamp(1.4rem,5vw,2.6rem);font-weight:900;line-height:1.4;margin:12px 0 14px" data-en="Study English in the U.S.<br>at a <span class='mk'>top-value price.</span>">最安値クラスで、<br><span class="mk">アメリカ語学留学。</span></h2>
     <p style="max-width:620px;margin:0 auto;color:#7c6648;font-weight:600" data-en="HEI is an accredited school in Los Angeles. Our Japanese-speaking staff support you with admissions, visas, transfers and daily life. Start your journey with confidence at our 20th-anniversary special price.">ロサンゼルスの 認定校 HEI。日本人スタッフが、入学・ビザ・転校・生活まで全部おとなりでサポート。20周年だけの特別価格で、安心して “はじめの一歩” を踏み出せます。</p>
     <div class="round-badges">
       <div class="rbadge" data-en="<b>LINE</b><br>welcome"><b>LINE</b>でも<br>相談OK</div>
@@ -458,6 +505,7 @@
     <p class="yen-note" data-en="*Yen amounts are reference values calculated at $1 = ¥160 and vary with the exchange rate.">※円表記は1ドル160円で計算した参考額です（為替により変動します）。</p>
     <div class="deadline" data-en="⏳ <b>Apply by December 31, 2026 only.</b> The longer you plan to stay, the more you save at this special price.">⏳ <b>2026年12月31日まで のお申し込み限定。</b> 中長期で滞在予定の方ほど、この特別価格で超お得に長く滞在できます。</div>
     <div class="why-price" data-en="<b>Worried that cheap means low quality?</b> This is a limited 20th-anniversary campaign from an accredited school. The quality stays the same — only the price is special.">「安いと、質が心配…」という方へ。 これは 認定校 が20周年を記念して実施する特別期間限定キャンペーン。授業の質はそのまま、価格だけが特別です。</div>
+    <div style="text-align:center;margin-top:26px"><a class="btn-line" href="#contact" style="background:var(--orange-deep)" onclick="if(typeof gtag==='function')gtag('event','cta_click',{school:'HEI',pos:'price'})"><span data-en="Lock in this price — ask us free →">この価格のうちに相談する（無料）→</span></a></div>
   </div>
 </section>
 
