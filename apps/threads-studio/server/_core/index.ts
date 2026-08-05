@@ -7,7 +7,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { startInternalScheduler } from "../cron";
 import { createContext } from "./context";
-import { serveStatic, setupVite } from "./vite";
+import { serveStatic } from "./static";
 import { eveningPostHandler, morningPostHandler, tickHandler } from "../scheduledHandlers";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -48,8 +48,11 @@ async function startServer() {
       createContext,
     })
   );
-  // development mode uses Vite, production mode uses static files
+  // development mode uses Vite, production mode uses static files.
+  // viteは動的importにしてある（本番バンドルからは除外されるので、
+  // 本番環境にdevDependenciesが無くても起動できる）。
   if (process.env.NODE_ENV === "development") {
+    const { setupVite } = await import("./vite");
     await setupVite(app, server);
   } else {
     serveStatic(app);

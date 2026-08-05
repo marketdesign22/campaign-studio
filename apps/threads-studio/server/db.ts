@@ -1,5 +1,7 @@
 import { and, desc, eq, gte, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
+import { createPool } from "mysql2";
+import { buildDbConfig } from "./dbConfig";
 import {
   InsertAccount, InsertPost, InsertUser,
   accounts, categories, postAnalytics, postLogs, posts, settings, users,
@@ -10,7 +12,10 @@ let _db: ReturnType<typeof drizzle> | null = null;
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
-    try { _db = drizzle(process.env.DATABASE_URL); }
+    try {
+      // TLS設定はURLのクエリ文字列ではなくコード側で決める（server/dbConfig.ts）
+      _db = drizzle(createPool(buildDbConfig(process.env.DATABASE_URL)));
+    }
     catch (error) { console.warn("[Database] Failed to connect:", error); _db = null; }
   }
   return _db;

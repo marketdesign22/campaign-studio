@@ -13,13 +13,19 @@ Railway（月$5〜）への引っ越しを推奨。
 1. [tidbcloud.com](https://tidbcloud.com) にGoogleアカウントでサインアップ
 2. **Serverless** クラスターを作成（リージョンは us-west-2 が無難）→ 永久無料枠
 3. クラスター画面の **Connect** → Connect With: `General` → パスワードを生成
-4. 表示された接続情報から `DATABASE_URL` を組み立てる（TLS必須）:
+4. 表示された接続情報から `DATABASE_URL` を組み立てる:
 
 ```
-mysql://<user>:<pass>@<host>:4000/threads_studio?ssl={"minVersion":"TLSv1.2","rejectUnauthorized":true}
+mysql://<user>:<pass>@<host>:4000/threads_studio
 ```
 
-5. SQL Editor で `CREATE DATABASE threads_studio;` を実行しておく
+TLSはアプリ側で自動的に有効になる（`server/dbConfig.ts`。localhost以外は常にTLS）ため、
+`?ssl={...}` のようなクエリ文字列は**付けない**こと。付いていても無視される。
+
+5. データベースはアプリの起動時に自動作成されるので、手動のSQL実行は不要
+   （手動で作りたい場合は SQL Editor で `CREATE DATABASE threads_studio;`）
+6. TiDB側のIP許可リストがある場合は `0.0.0.0/0` を許可する
+   （Renderのサーバーは固定IPではないため。TLS＋パスワード必須なので安全性は保たれる）
 
 ## 2. Render（無料アプリサーバー）— 10分
 

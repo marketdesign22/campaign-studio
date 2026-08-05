@@ -10,11 +10,13 @@
  */
 import "dotenv/config";
 import mysql from "mysql2/promise";
+import { buildDbConfig, describeDbTarget } from "../dbConfig";
 
 async function main() {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is required");
   const dbName = new URL(url).pathname.replace(/^\//, "");
+  console.log(`[upgrade] 接続先: ${describeDbTarget(url)}`);
 
   // 新規のMySQL/TiDBインスタンスはデータベースが空なので、無ければ作る。
   // （手動で CREATE DATABASE しなくてもデプロイが通るようにするため）
@@ -22,14 +24,15 @@ async function main() {
     if (!/^[A-Za-z0-9_]+$/.test(dbName)) {
       throw new Error(`Unsupported database name in DATABASE_URL: ${dbName}`);
     }
-    const serverUrl = new URL(url);
-    serverUrl.pathname = "/";
-    const bootstrap = await mysql.createConnection(serverUrl.toString());
+    const bootstrap = await mysql.createConnection({
+      ...buildDbConfig(url),
+      database: undefined,
+    });
     await bootstrap.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
     await bootstrap.end();
   }
 
-  const conn = await mysql.createConnection(url);
+  const conn = await mysql.createConnection(buildDbConfig(url));
 
   async function hasTable(table: string): Promise<boolean> {
     const [rows] = await conn.query(
@@ -140,6 +143,18 @@ async function main() {
 }
 
 main().catch((e) => {
-  console.error(e);
+  console.error("[upgrade] 失敗:", e);
+  const code = (e as { code?: string })?.code;
+  // よくある失敗の原因をログに添える（Renderのデプロイログだけで切り分けられるように）
+  if (code === "ETIMEDOUT" || code === "ECONNREFUSED" || code === "ENOTFOUND") {
+    console.error(
+      "[upgrade] DBに接続できません。DATABASE_URL のホスト/ポート、" +
+        "およびDB側のIP許可リスト（TiDB Cloudなら 0.0.0.0/0 の追加）を確認してください。"
+    );
+  } else if (code === "ER_ACCESS_DENIED_ERROR") {
+    console.error("[upgrade] 認証に失敗しました。DATABASE_URL のユーザー名/パスワードを確認してください。");
+  } else if (code === "HANDSHAKE_SSL_ERROR" || String(e).includes("SSL")) {
+    console.error("[upgrade] TLSハンドシェイクに失敗しました。DB_SSL=insecure で再試行できます。");
+  }
   process.exit(1);
 });
