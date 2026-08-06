@@ -56,6 +56,102 @@ async function main() {
     await conn.query(`ALTER TABLE \`${table}\` ADD COLUMN ${ddl}`);
   }
 
+  // ── 基本テーブル（空のDBへの初回デプロイ用。drizzle/schema.ts と揃えること） ──
+  async function createTable(table: string, ddl: string) {
+    if (await hasTable(table)) return;
+    console.log(`[upgrade] ${table} テーブルを作成`);
+    await conn.query(ddl);
+  }
+
+  await createTable("users", `
+    CREATE TABLE \`users\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`openId\` varchar(64) NOT NULL UNIQUE,
+      \`name\` text NULL,
+      \`email\` varchar(320) NULL,
+      \`loginMethod\` varchar(64) NULL,
+      \`role\` enum('user','admin') NOT NULL DEFAULT 'user',
+      \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      \`lastSignedIn\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await createTable("settings", `
+    CREATE TABLE \`settings\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`threadsAccessToken\` text NULL,
+      \`threadsUserId\` varchar(64) NULL,
+      \`morningCronTaskUid\` varchar(65) NULL,
+      \`eveningCronTaskUid\` varchar(65) NULL,
+      \`morningHour\` int NOT NULL DEFAULT 8,
+      \`morningMinute\` int NOT NULL DEFAULT 0,
+      \`eveningHour\` int NOT NULL DEFAULT 18,
+      \`eveningMinute\` int NOT NULL DEFAULT 0,
+      \`timezone\` enum('LA','JP','ET','CT','MT') NOT NULL DEFAULT 'LA',
+      \`postsPerDay\` int NOT NULL DEFAULT 2,
+      \`extraSlots\` text NOT NULL,
+      \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  await createTable("categories", `
+    CREATE TABLE \`categories\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`name\` varchar(64) NOT NULL,
+      \`color\` varchar(16) NOT NULL DEFAULT '#335B82',
+      \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await createTable("posts", `
+    CREATE TABLE \`posts\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`content\` text NOT NULL,
+      \`status\` enum('pending','posted','error') NOT NULL DEFAULT 'pending',
+      \`slotIndex\` int NOT NULL DEFAULT 0,
+      \`scheduledDate\` varchar(10) NULL,
+      \`categoryId\` int NULL,
+      \`sortOrder\` int NOT NULL DEFAULT 0,
+      \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  await createTable("post_logs", `
+    CREATE TABLE \`post_logs\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`postId\` int NULL,
+      \`content\` text NOT NULL,
+      \`status\` enum('posted','error') NOT NULL,
+      \`threadsPostId\` varchar(128) NULL,
+      \`errorMessage\` text NULL,
+      \`slotIndex\` int NOT NULL DEFAULT 0,
+      \`categoryId\` int NULL,
+      \`postedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  await createTable("post_analytics", `
+    CREATE TABLE \`post_analytics\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`postLogId\` int NOT NULL,
+      \`threadsPostId\` varchar(128) NOT NULL,
+      \`likes\` int NOT NULL DEFAULT 0,
+      \`replies\` int NOT NULL DEFAULT 0,
+      \`reposts\` int NOT NULL DEFAULT 0,
+      \`views\` bigint NOT NULL DEFAULT 0,
+      \`fetchedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // settings.extraSlots は TEXT のため DEFAULT が付けられない。初期行を1行入れておく
+  const [settingsCount] = await conn.query("SELECT COUNT(*) AS c FROM `settings`");
+  if (((settingsCount as { c: number }[])[0]?.c ?? 0) === 0) {
+    console.log("[upgrade] settings 初期行を作成");
+    await conn.query("INSERT INTO `settings` (`extraSlots`) VALUES ('[]')");
+  }
+
   // ── accounts table ──────────────────────────────────────────────────────────
   if (!(await hasTable("accounts"))) {
     console.log("[upgrade] accounts テーブルを作成");
