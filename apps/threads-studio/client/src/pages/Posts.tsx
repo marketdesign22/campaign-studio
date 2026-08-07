@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { CheckCheck, FileUp, Pencil, Plus, RotateCcw, Send, Sparkles, Trash2, Undo2, Upload } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
@@ -121,6 +122,10 @@ export default function Posts() {
   });
   const updateMut = trpc.posts.update.useMutation({ onSuccess: () => { toast.success(t("更新しました")); invalidate(); setOpen(false); }, onError: e => toast.error(e.message) });
   const deleteMut = trpc.posts.delete.useMutation({ onSuccess: () => { toast.success(t("削除しました")); invalidate(); }, onError: e => toast.error(e.message) });
+  const bulkDeleteMut = trpc.posts.bulkDelete.useMutation({
+    onSuccess: d => { toast.success(`${d.count}${t("件削除しました")}`); setSelected(new Set()); invalidate(); },
+    onError: e => toast.error(e.message),
+  });
   const importMut = trpc.posts.bulkImport.useMutation({ onSuccess: d => { toast.success(`${d.count}${t("件インポートしました")}`); invalidate(); setImportOpen(false); setImportText(""); }, onError: e => toast.error(e.message) });
   const approvalMut = trpc.posts.setApproval.useMutation({ onSuccess: () => invalidate(), onError: e => toast.error(e.message) });
   const aiGenerate = trpc.ai.generateDrafts.useMutation({ onError: e => toast.error(e.message) });
@@ -138,6 +143,7 @@ export default function Posts() {
   const [rewriteInstruction, setRewriteInstruction] = useState("");
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
+  const [selected, setSelected] = useState<Set<number>>(new Set());
   const importFileRef = useRef<HTMLInputElement>(null);
 
   async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -227,12 +233,34 @@ export default function Posts() {
           : postList.length === 0 ? <div className="py-16 text-center text-muted-foreground text-sm">{t("原稿がありません。「新規追加」「AIアシスト」「一括インポート」から作成してください。")}</div>
           : (
             <div className="divide-y">
+              {/* 選択ツールバー */}
+              <div className="flex items-center gap-3 px-4 py-2.5 bg-muted/30">
+                <Checkbox
+                  checked={selected.size > 0 && selected.size === postList.length}
+                  onCheckedChange={v => setSelected(v ? new Set(postList.map(p => p.id)) : new Set())}
+                  aria-label={t("すべて選択")}
+                />
+                <span className="text-xs text-muted-foreground">
+                  {selected.size > 0 ? `${selected.size}${t("件選択中")}` : t("すべて選択")}
+                </span>
+                {selected.size > 0 && (
+                  <Button size="sm" variant="destructive" className="h-7 text-xs ml-auto"
+                    disabled={bulkDeleteMut.isPending}
+                    onClick={() => { if (confirm(`${selected.size}${t("件の原稿を削除しますか？この操作は取り消せません。")}`)) bulkDeleteMut.mutate({ ids: Array.from(selected) }); }}>
+                    <Trash2 className="h-3.5 w-3.5 mr-1" />{bulkDeleteMut.isPending ? t("削除中...") : t("選択を削除")}
+                  </Button>
+                )}
+              </div>
               {postList.map(p => {
                 const cat = p.categoryId ? catMap[p.categoryId] : null;
                 const account = p.accountId ? accountMap[p.accountId] : null;
                 const isDraft = p.approvalStatus === "draft";
                 return (
-                  <div key={p.id} className="flex items-start gap-3 p-4 hover:bg-muted/30 transition-colors">
+                  <div key={p.id} className={`flex items-start gap-3 p-4 transition-colors ${selected.has(p.id) ? "bg-primary/5" : "hover:bg-muted/30"}`}>
+                    <Checkbox className="mt-1" checked={selected.has(p.id)}
+                      onCheckedChange={v => setSelected(prev => { const next = new Set(prev); if (v) next.add(p.id); else next.delete(p.id); return next; })}
+                      aria-label={t("選択")}
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                         <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLES[p.status]}`}>{t(STATUS_LABELS[p.status])}</span>

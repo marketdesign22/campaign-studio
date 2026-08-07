@@ -108,6 +108,13 @@ const en: Record<string, string> = {
   "複数行の投稿は「---」だけの行で区切ってください。": "Separate multi-line posts with a line containing only \"---\".",
   "件は500文字を超えているためスキップされます": " posts exceed 500 characters and will be skipped",
   "追加して今すぐ投稿": "Add & post now",
+  "すべて選択": "Select all",
+  "件選択中": " selected",
+  "選択": "Select",
+  "選択を削除": "Delete selected",
+  "削除中...": "Deleting...",
+  "件削除しました": " posts deleted",
+  "件の原稿を削除しますか？この操作は取り消せません。": " posts will be deleted. This cannot be undone. Continue?",
   "今すぐThreadsに投稿しますか？": "Post to Threads right now?",
   "Threadsに投稿しました": "Posted to Threads",
   "対応形式: Excel (.xlsx) / CSV / TSV / テキスト / Markdown (.md)。Markdownは```で囲まれたブロックを1投稿として読み込みます。Googleスプレッドシート・ドキュメントは「ファイル → ダウンロード」で保存してから読み込んでください（コピー&ペーストでもOK）。":

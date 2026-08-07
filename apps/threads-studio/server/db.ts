@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { createPool } from "mysql2";
 import { buildDbConfig } from "./dbConfig";
@@ -191,6 +191,13 @@ export async function deletePost(id: number) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   await db.delete(posts).where(eq(posts.id, id));
+}
+
+export async function deletePostsByIds(ids: number[]) {
+  if (ids.length === 0) return;
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.delete(posts).where(inArray(posts.id, ids));
 }
 
 /**

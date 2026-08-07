@@ -1,6 +1,6 @@
 import { z } from "zod";
 import {
-  bulkCreatePosts, createPost, deletePost, getNextPendingPostAny,
+  bulkCreatePosts, createPost, deletePost, deletePostsByIds, getNextPendingPostAny,
   getSettings, listActiveAccounts, listPosts, updatePost,
 } from "../db";
 import { getLocalParts } from "../scheduler";
@@ -98,6 +98,14 @@ export const postsRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.number().int() }))
     .mutation(async ({ input }) => { await deletePost(input.id); return { ok: true }; }),
+
+  /** 選択した原稿をまとめて削除する */
+  bulkDelete: protectedProcedure
+    .input(z.object({ ids: z.array(z.number().int()).min(1).max(500) }))
+    .mutation(async ({ input }) => {
+      await deletePostsByIds(input.ids);
+      return { ok: true, count: input.ids.length };
+    }),
 
   nextPreview: protectedProcedure.query(async () => {
     // デフォルトアカウントのローカル日付基準で「今日投稿可能な」原稿のみ返す
