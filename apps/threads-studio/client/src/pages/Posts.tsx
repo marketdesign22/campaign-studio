@@ -415,7 +415,7 @@ export default function Posts() {
 
       {/* Bulk Import Dialog */}
       <Dialog open={importOpen} onOpenChange={setImportOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{t("一括インポート")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm text-muted-foreground">{t("1行1投稿でテキストを貼り付けてください。空行は無視されます。500文字超の行はスキップされます。")} {t("複数行の投稿は「---」だけの行で区切ってください。")}</p>
@@ -426,7 +426,8 @@ export default function Posts() {
               </Button>
               <p className="text-xs text-muted-foreground">{t("対応形式: Excel (.xlsx) / CSV / TSV / テキスト / Markdown (.md)。Markdownは```で囲まれたブロックを1投稿として読み込みます。Googleスプレッドシート・ドキュメントは「ファイル → ダウンロード」で保存してから読み込んでください（コピー&ペーストでもOK）。")}</p>
             </div>
-            <Textarea rows={12} placeholder={t("1行目の投稿内容\n2行目の投稿内容\n...")} value={importText} onChange={e => setImportText(e.target.value)} className="font-mono text-sm resize-none" />
+            {/* field-sizing-fixed: 大量テキスト読込時にダイアログが画面外まで伸びるのを防ぐ */}
+            <Textarea rows={12} placeholder={t("1行目の投稿内容\n2行目の投稿内容\n...")} value={importText} onChange={e => setImportText(e.target.value)} className="font-mono text-sm resize-none field-sizing-fixed h-[40vh] max-h-[40vh] overflow-y-auto" />
             <div className="flex items-center gap-3">
               <div className="flex-1 space-y-1.5">
                 <Label>{t("カテゴリー（任意）")}</Label>
