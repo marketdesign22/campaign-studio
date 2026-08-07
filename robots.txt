@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://marketdesign22.github.io/campaign-studio/sitemap.xml

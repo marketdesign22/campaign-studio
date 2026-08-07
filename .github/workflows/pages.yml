@@ -35,7 +35,7 @@ jobs:
       - name: Assemble site (publish only the LP files)
         run: |
           mkdir -p _site
-          cp index.html hei.html scsu.html _site/
+          cp index.html hei.html scsu.html sitemap.xml robots.txt _site/
           cp -r images hei scsu _site/
           touch _site/.nojekyll
 
