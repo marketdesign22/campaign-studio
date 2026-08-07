@@ -24,8 +24,13 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # Always publish the LP branch, whatever ref this run was started from.
+      # "Run workflow" from another branch would otherwise deploy that branch's
+      # (older) copy of the site over the live one.
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: claude/run-setup-script-VvTnV
 
       - name: Assemble site (publish only the LP files)
         run: |
