@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,9 +7,59 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { CheckCheck, Pencil, Plus, RotateCcw, Sparkles, Trash2, Undo2, Upload } from "lucide-react";
+import { CheckCheck, FileUp, Pencil, Plus, RotateCcw, Sparkles, Trash2, Undo2, Upload } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useI18n } from "@/i18n";
+
+/**
+ * インポート用ファイルを投稿行の配列に変換する。
+ * - .txt はそのまま行分割
+ * - .csv / .tsv / .xlsx / .xls は SheetJS（動的import・初回のみ読込）で解析し、
+ *   「文字量が最も多い列」を本文列とみなして抽出する（No.列や日付列を自動で除外）
+ */
+async function parseImportFile(file: File): Promise<string[]> {
+  const clean = (lines: string[]) =>
+    lines.map(l => l.trim()).filter(l => l.length > 0);
+
+  const name = file.name.toLowerCase();
+  if (name.endsWith(".txt")) {
+    return clean((await file.text()).split(/\r?\n/));
+  }
+
+  const XLSX = await import("xlsx");
+  // CSV/TSVはUTF-8テキストとして読む（バイト列で渡すと日本語が文字化けする）
+  const wb =
+    name.endsWith(".csv") || name.endsWith(".tsv")
+      ? XLSX.read(await file.text(), { type: "string" })
+      : XLSX.read(await file.arrayBuffer(), { type: "array" });
+  const rows: unknown[][] = [];
+  for (const sheetName of wb.SheetNames) {
+    rows.push(
+      ...XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[sheetName], {
+        header: 1,
+        raw: false,
+      })
+    );
+  }
+
+  const cellText = (c: unknown) => (c == null ? "" : String(c).trim());
+  const colScore = new Map<number, number>();
+  for (const row of rows) {
+    row.forEach((c, i) => {
+      const s = cellText(c);
+      if (s) colScore.set(i, (colScore.get(i) ?? 0) + s.length);
+    });
+  }
+  const bestCol =
+    Array.from(colScore.entries()).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 0;
+
+  const lines = clean(rows.map(row => cellText(row[bestCol])));
+  // 先頭行がヘッダーらしければ除外
+  if (lines.length > 1 && /^(内容|本文|投稿(内容|文)?|posts?|contents?|texts?|captions?)$/i.test(lines[0])) {
+    lines.shift();
+  }
+  return lines;
+}
 
 const SLOT_LABELS = ["朝", "夕", "追加1", "追加2", "追加3", "追加4"];
 const STATUS_STYLES: Record<string, string> = {
@@ -55,6 +105,26 @@ export default function Posts() {
   const [rewriteInstruction, setRewriteInstruction] = useState("");
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
+  const importFileRef = useRef<HTMLInputElement>(null);
+
+  async function handleImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const lines = await parseImportFile(file);
+      if (lines.length === 0) {
+        toast.error(t("ファイルから投稿を検出できませんでした"));
+        return;
+      }
+      setImportText(prev =>
+        (prev.trim() ? prev.replace(/\s+$/, "") + "\n" : "") + lines.join("\n")
+      );
+      toast.success(`${lines.length}${t("件読み込みました")}`);
+    } catch {
+      toast.error(t("ファイルの読み込みに失敗しました"));
+    }
+  }
   const [importCatId, setImportCatId] = useState<number | null>(null);
 
   // AI assist dialog
@@ -287,6 +357,13 @@ export default function Posts() {
           <DialogHeader><DialogTitle>{t("一括インポート")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <p className="text-sm text-muted-foreground">{t("1行1投稿でテキストを貼り付けてください。空行は無視されます。500文字超の行はスキップされます。")}</p>
+            <div className="space-y-1.5">
+              <input ref={importFileRef} type="file" accept=".csv,.tsv,.txt,.xlsx,.xls" className="hidden" onChange={handleImportFile} />
+              <Button type="button" variant="outline" size="sm" onClick={() => importFileRef.current?.click()}>
+                <FileUp className="h-4 w-4 mr-1.5" />{t("ファイルから読み込み")}
+              </Button>
+              <p className="text-xs text-muted-foreground">{t("対応形式: Excel (.xlsx) / CSV / TSV / テキスト。Googleスプレッドシート・ドキュメントは「ファイル → ダウンロード」でCSVやテキストとして保存してから読み込んでください（コピー&ペーストでもOK）。")}</p>
+            </div>
             <Textarea rows={12} placeholder={t("1行目の投稿内容\n2行目の投稿内容\n...")} value={importText} onChange={e => setImportText(e.target.value)} className="font-mono text-sm resize-none" />
             <div className="flex items-center gap-3">
               <div className="flex-1 space-y-1.5">
