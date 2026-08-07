@@ -105,11 +105,13 @@ const en: Record<string, string> = {
     "Paste text, one post per line. Empty lines are ignored; lines over 500 characters are skipped.",
   "1行目の投稿内容\n2行目の投稿内容\n...": "First post\nSecond post\n...",
   "ファイルから読み込み": "Load from file",
+  "複数行の投稿は「---」だけの行で区切ってください。": "Separate multi-line posts with a line containing only \"---\".",
+  "件は500文字を超えているためスキップされます": " posts exceed 500 characters and will be skipped",
   "追加して今すぐ投稿": "Add & post now",
   "今すぐThreadsに投稿しますか？": "Post to Threads right now?",
   "Threadsに投稿しました": "Posted to Threads",
-  "対応形式: Excel (.xlsx) / CSV / TSV / テキスト。Googleスプレッドシート・ドキュメントは「ファイル → ダウンロード」でCSVやテキストとして保存してから読み込んでください（コピー&ペーストでもOK）。":
-    "Supported: Excel (.xlsx) / CSV / TSV / plain text. For Google Sheets/Docs, use File → Download to save as CSV or text first (copy & paste also works).",
+  "対応形式: Excel (.xlsx) / CSV / TSV / テキスト / Markdown (.md)。Markdownは```で囲まれたブロックを1投稿として読み込みます。Googleスプレッドシート・ドキュメントは「ファイル → ダウンロード」で保存してから読み込んでください（コピー&ペーストでもOK）。":
+    "Supported: Excel (.xlsx) / CSV / TSV / plain text / Markdown (.md). In Markdown, each ``` fenced block becomes one post. For Google Sheets/Docs, use File → Download first (copy & paste also works).",
   "件読み込みました": "lines loaded",
   "ファイルから投稿を検出できませんでした": "No posts detected in the file",
   "ファイルの読み込みに失敗しました": "Failed to read the file",

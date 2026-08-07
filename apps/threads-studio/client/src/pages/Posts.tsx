@@ -12,7 +12,20 @@ import { PageHeader } from "@/components/PageHeader";
 import { useI18n } from "@/i18n";
 
 /**
- * インポート用ファイルを投稿行の配列に変換する。
+ * インポート欄のテキストを投稿の配列に分割する。
+ * `---` だけの行があればそれを区切りとした複数行投稿、なければ1行1投稿。
+ */
+function splitImportPosts(text: string): string[] {
+  const hasDelimiter = text.split("\n").some(l => l.trim() === "---");
+  const parts = hasDelimiter
+    ? text.split(/^\s*---\s*$/m)
+    : text.split("\n");
+  return parts.map(p => p.trim()).filter(p => p.length > 0);
+}
+
+/**
+ * インポート用ファイルを投稿の配列に変換する。
+ * - .md はコードブロック（``` 〜 ```）を1投稿として抽出。無ければ空行区切り
  * - .txt はそのまま行分割
  * - .csv / .tsv / .xlsx / .xls は SheetJS（動的import・初回のみ読込）で解析し、
  *   「文字量が最も多い列」を本文列とみなして抽出する（No.列や日付列を自動で除外）
@@ -22,6 +35,22 @@ async function parseImportFile(file: File): Promise<string[]> {
     lines.map(l => l.trim()).filter(l => l.length > 0);
 
   const name = file.name.toLowerCase();
+  if (name.endsWith(".md") || name.endsWith(".markdown")) {
+    const text = await file.text();
+    const blocks: string[] = [];
+    const re = /```[^\n]*\n([\s\S]*?)```/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text)) !== null) {
+      const block = m[1].trim();
+      if (block) blocks.push(block);
+    }
+    if (blocks.length > 0) return blocks;
+    // コードブロックが無いMarkdownは空行区切りの段落を投稿とみなす
+    return text
+      .split(/\n\s*\n/)
+      .map(p => p.replace(/^#+\s.*$/gm, "").trim())
+      .filter(p => p.length > 0);
+  }
   if (name.endsWith(".txt")) {
     return clean((await file.text()).split(/\r?\n/));
   }
@@ -116,15 +145,18 @@ export default function Posts() {
     e.target.value = "";
     if (!file) return;
     try {
-      const lines = await parseImportFile(file);
-      if (lines.length === 0) {
+      const posts = await parseImportFile(file);
+      if (posts.length === 0) {
         toast.error(t("ファイルから投稿を検出できませんでした"));
         return;
       }
+      // 複数行の投稿が1つでもあれば `---` 区切り形式でテキスト欄に流し込む
+      const multiline = posts.some(p => p.includes("\n"));
+      const joined = multiline ? posts.join("\n---\n") : posts.join("\n");
       setImportText(prev =>
-        (prev.trim() ? prev.replace(/\s+$/, "") + "\n" : "") + lines.join("\n")
+        (prev.trim() ? prev.replace(/\s+$/, "") + (multiline ? "\n---\n" : "\n") : "") + joined
       );
-      toast.success(`${lines.length}${t("件読み込みました")}`);
+      toast.success(`${posts.length}${t("件読み込みました")}`);
     } catch {
       toast.error(t("ファイルの読み込みに失敗しました"));
     }
@@ -153,8 +185,12 @@ export default function Posts() {
     }
   }
   function handleImport() {
-    const lines = importText.split("\n").map(l => l.trim()).filter(l => l.length > 0 && l.length <= 500);
+    const all = splitImportPosts(importText);
+    const lines = all.filter(l => l.length <= 500);
     if (!lines.length) { toast.error(t("有効な投稿内容がありません")); return; }
+    if (all.length > lines.length) {
+      toast.warning(`${all.length - lines.length}${t("件は500文字を超えているためスキップされます")}`);
+    }
     importMut.mutate({ lines, categoryId: importCatId, postsPerDay: 2 });
   }
   function handleAiGenerate() {
@@ -382,13 +418,13 @@ export default function Posts() {
         <DialogContent className="max-w-2xl">
           <DialogHeader><DialogTitle>{t("一括インポート")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
-            <p className="text-sm text-muted-foreground">{t("1行1投稿でテキストを貼り付けてください。空行は無視されます。500文字超の行はスキップされます。")}</p>
+            <p className="text-sm text-muted-foreground">{t("1行1投稿でテキストを貼り付けてください。空行は無視されます。500文字超の行はスキップされます。")} {t("複数行の投稿は「---」だけの行で区切ってください。")}</p>
             <div className="space-y-1.5">
-              <input ref={importFileRef} type="file" accept=".csv,.tsv,.txt,.xlsx,.xls" className="hidden" onChange={handleImportFile} />
+              <input ref={importFileRef} type="file" accept=".csv,.tsv,.txt,.xlsx,.xls,.md,.markdown" className="hidden" onChange={handleImportFile} />
               <Button type="button" variant="outline" size="sm" onClick={() => importFileRef.current?.click()}>
                 <FileUp className="h-4 w-4 mr-1.5" />{t("ファイルから読み込み")}
               </Button>
-              <p className="text-xs text-muted-foreground">{t("対応形式: Excel (.xlsx) / CSV / TSV / テキスト。Googleスプレッドシート・ドキュメントは「ファイル → ダウンロード」でCSVやテキストとして保存してから読み込んでください（コピー&ペーストでもOK）。")}</p>
+              <p className="text-xs text-muted-foreground">{t("対応形式: Excel (.xlsx) / CSV / TSV / テキスト / Markdown (.md)。Markdownは```で囲まれたブロックを1投稿として読み込みます。Googleスプレッドシート・ドキュメントは「ファイル → ダウンロード」で保存してから読み込んでください（コピー&ペーストでもOK）。")}</p>
             </div>
             <Textarea rows={12} placeholder={t("1行目の投稿内容\n2行目の投稿内容\n...")} value={importText} onChange={e => setImportText(e.target.value)} className="font-mono text-sm resize-none" />
             <div className="flex items-center gap-3">
@@ -402,7 +438,7 @@ export default function Posts() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="text-sm text-muted-foreground pt-5">{importText.split("\n").filter(l => l.trim().length > 0).length}{t("件検出")}</div>
+              <div className="text-sm text-muted-foreground pt-5">{splitImportPosts(importText).length}{t("件検出")}</div>
             </div>
           </div>
           <DialogFooter>
