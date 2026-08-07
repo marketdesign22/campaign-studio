@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { CheckCheck, FileUp, Pencil, Plus, RotateCcw, Sparkles, Trash2, Undo2, Upload } from "lucide-react";
+import { CheckCheck, FileUp, Pencil, Plus, RotateCcw, Send, Sparkles, Trash2, Undo2, Upload } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useI18n } from "@/i18n";
 
@@ -86,6 +86,10 @@ export default function Posts() {
   const invalidate = () => { utils.posts.list.invalidate(); utils.posts.nextPreview.invalidate(); };
 
   const createMut = trpc.posts.create.useMutation({ onSuccess: () => { toast.success(t("追加しました")); invalidate(); setOpen(false); }, onError: e => toast.error(e.message) });
+  const postNowMut = trpc.manualPost.post.useMutation({
+    onSuccess: () => { toast.success(t("Threadsに投稿しました")); invalidate(); },
+    onError: e => { toast.error(e.message); invalidate(); },
+  });
   const updateMut = trpc.posts.update.useMutation({ onSuccess: () => { toast.success(t("更新しました")); invalidate(); setOpen(false); }, onError: e => toast.error(e.message) });
   const deleteMut = trpc.posts.delete.useMutation({ onSuccess: () => { toast.success(t("削除しました")); invalidate(); }, onError: e => toast.error(e.message) });
   const importMut = trpc.posts.bulkImport.useMutation({ onSuccess: d => { toast.success(`${d.count}${t("件インポートしました")}`); invalidate(); setImportOpen(false); setImportText(""); }, onError: e => toast.error(e.message) });
@@ -139,6 +143,14 @@ export default function Posts() {
   function handleSave() {
     if (editing) updateMut.mutate({ id: editing.id, content, slotIndex, categoryId: catId, accountId });
     else createMut.mutate({ content, slotIndex, categoryId: catId, accountId });
+  }
+  async function handleSaveAndPostNow() {
+    try {
+      const created = await createMut.mutateAsync({ content, slotIndex, categoryId: catId, accountId });
+      postNowMut.mutate({ postId: created.id });
+    } catch {
+      // createMut.onError already surfaced the toast
+    }
   }
   function handleImport() {
     const lines = importText.split("\n").map(l => l.trim()).filter(l => l.length > 0 && l.length <= 500);
@@ -215,6 +227,13 @@ export default function Posts() {
                           </Button>
                         )
                       )}
+                      {p.status === "pending" && !isDraft && (
+                        <Button size="icon" variant="ghost" className="h-8 w-8 text-primary" title={t("今すぐ投稿")}
+                          disabled={postNowMut.isPending}
+                          onClick={() => { if (confirm(t("今すぐThreadsに投稿しますか？"))) postNowMut.mutate({ postId: p.id }); }}>
+                          <Send className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                       {p.status !== "pending" && <Button size="icon" variant="ghost" className="h-8 w-8" title={t("未投稿に戻す")} onClick={() => updateMut.mutate({ id: p.id, status: "pending" })}><RotateCcw className="h-3.5 w-3.5" /></Button>}
                       <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>
                       <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => { if (confirm(t("削除しますか？"))) deleteMut.mutate({ id: p.id }); }}><Trash2 className="h-3.5 w-3.5" /></Button>
@@ -286,6 +305,13 @@ export default function Posts() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>{t("キャンセル")}</Button>
+            {!editing && (
+              <Button variant="outline" onClick={handleSaveAndPostNow}
+                disabled={!content.trim() || createMut.isPending || postNowMut.isPending}>
+                <Send className="h-3.5 w-3.5 mr-1.5" />
+                {postNowMut.isPending ? t("投稿中...") : t("追加して今すぐ投稿")}
+              </Button>
+            )}
             <Button onClick={handleSave} disabled={!content.trim() || createMut.isPending || updateMut.isPending}>{editing ? t("更新") : t("追加")}</Button>
           </DialogFooter>
         </DialogContent>

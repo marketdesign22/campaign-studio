@@ -105,6 +105,9 @@ const en: Record<string, string> = {
     "Paste text, one post per line. Empty lines are ignored; lines over 500 characters are skipped.",
   "1行目の投稿内容\n2行目の投稿内容\n...": "First post\nSecond post\n...",
   "ファイルから読み込み": "Load from file",
+  "追加して今すぐ投稿": "Add & post now",
+  "今すぐThreadsに投稿しますか？": "Post to Threads right now?",
+  "Threadsに投稿しました": "Posted to Threads",
   "対応形式: Excel (.xlsx) / CSV / TSV / テキスト。Googleスプレッドシート・ドキュメントは「ファイル → ダウンロード」でCSVやテキストとして保存してから読み込んでください（コピー&ペーストでもOK）。":
     "Supported: Excel (.xlsx) / CSV / TSV / plain text. For Google Sheets/Docs, use File → Download to save as CSV or text first (copy & paste also works).",
   "件読み込みました": "lines loaded",

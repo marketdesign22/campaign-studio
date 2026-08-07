@@ -61,13 +61,13 @@ export const postsRouter = router({
       sortOrder: z.number().int().default(0),
     }))
     .mutation(async ({ input }) => {
-      await createPost({
+      const id = await createPost({
         content: input.content, slotIndex: input.slotIndex,
         categoryId: input.categoryId ?? null, accountId: input.accountId ?? null,
         scheduledDate: input.scheduledDate ?? null, sortOrder: input.sortOrder,
         status: "pending", approvalStatus: await initialApprovalStatus(),
       });
-      return { ok: true };
+      return { ok: true, id };
     }),
 
   update: protectedProcedure

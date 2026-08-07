@@ -167,10 +167,11 @@ export async function getPostById(id: number) {
   return rows[0];
 }
 
-export async function createPost(data: InsertPost) {
+export async function createPost(data: InsertPost): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
-  await db.insert(posts).values(data);
+  const [result] = await db.insert(posts).values(data);
+  return result.insertId;
 }
 
 export async function bulkCreatePosts(items: InsertPost[]) {
