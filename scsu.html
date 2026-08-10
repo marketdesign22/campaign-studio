@@ -922,11 +922,8 @@
   </div>
 </section>
 
-<!-- STUDENT GALLERY (photos: images/student-1.jpg … student-7.jpg)
-     display:none は意図的。ページ末尾のスクリプトが「写真が1枚でも読み込めたか」を
-     判定し、読み込めた場合のみ表示する（写真未配置のとき空枠が公開されるのを防ぐため）。
-     現在は student-1〜7.jpg が存在するため、実際のページでは表示される。 -->
-<section id="studentGallery" style="display:none">
+<!-- STUDENT GALLERY (photos: images/student-1.jpg … student-7.jpg) -->
+<section id="studentGallery">
   <div class="wrap rel">
     <div class="head">
       <span class="label" data-en="STUDENT GALLERY">学生ギャラリー</span>
@@ -1217,15 +1214,6 @@
     if(prev)prev.addEventListener('click',function(){go(i-1);reset();});
     if(next)next.addEventListener('click',function(){go(i+1);reset();});
     reset();
-  });
-
-  // Student gallery: only reveal it once at least one photo actually loads
-  window.addEventListener('load', function(){
-    var g = document.getElementById('studentGallery');
-    if(!g) return;
-    var imgs = g.querySelectorAll('.slide img');
-    var any = Array.prototype.some.call(imgs, function(im){ return im.complete && im.naturalWidth > 0; });
-    if(any) g.style.display = '';
   });
 
   // form placeholders follow the language toggle
