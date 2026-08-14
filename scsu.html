@@ -1099,15 +1099,32 @@
           <div class="fg"><label data-en="Program of interest">ご希望のプログラム</label>
             <select name="program">
               <option value="" data-en="Please select">選択してください</option>
-              <option data-en="Certificate">Certificate（証明書）</option>
-              <option data-en="Associate">Associate（準学士）</option>
-              <option data-en="Bachelor / BBA">Bachelor（学士・BBA）</option>
-              <option data-en="Master / MBA">Master（修士・MBA）</option>
-              <option data-en="MBA Business Statistics (STEM)">MBA Business Statistics（STEM）</option>
-              <option data-en="Doctorate / DBA">Doctorate（博士・DBA）</option>
+              <optgroup label="Doctorate">
+                <option data-en="Doctor of Business Administration (DBA)">DBA（経営学博士）</option>
+                <option data-en="DBA – Business Statistics concentration (STEM)">DBA ビジネス統計専攻（STEM）</option>
+              </optgroup>
+              <optgroup label="Master">
+                <option data-en="Master of Business Administration (MBA)">MBA（経営学修士）</option>
+                <option data-en="MBA – Business Statistics concentration (STEM)">MBA ビジネス統計専攻（STEM）</option>
+              </optgroup>
+              <optgroup label="Bachelor">
+                <option data-en="Bachelor of Business Administration (BBA)">BBA（経営学学士）</option>
+                <option data-en="BBA – Business Statistics concentration (STEM)">BBA ビジネス統計専攻（STEM）</option>
+                <option data-en="Bachelor of Arts in Intercultural Studies (BA)">異文化研究学士（BA）</option>
+              </optgroup>
+              <optgroup label="Associate">
+                <option data-en="Associate of Arts in English Communication and Management (AA)">英語コミュニケーション&amp;マネジメント準学士（AA）</option>
+              </optgroup>
+              <optgroup label="Certificate">
+                <option data-en="Digital Business (Certificate)">デジタルビジネス（証明書）</option>
+                <option data-en="Health Management (Certificate)">ヘルスマネジメント（証明書）</option>
+                <option data-en="English Communication and Management (Certificate)">英語コミュニケーション&amp;マネジメント（証明書）</option>
+              </optgroup>
+              <option data-en="English as a Second Language (ESL)">ESL（英語集中コース）</option>
               <option data-en="Undecided / want advice">まだ決まっていない／相談したい</option>
             </select>
           </div>
+          <div class="fg"><label data-en="Which school are you attending right now? (if any)">現在通っている学校（あれば）</label><input type="text" name="current_school" placeholder="例：〇〇語学学校" data-en-ph="e.g. XYZ Language School"></div>
           <div class="fg"><label data-en="Questions / message">ご質問・メッセージ</label><textarea name="message" placeholder="例：MBAの詳細とOPTの手続きについて相談したいです。" data-en-ph="e.g. I'd like to know more about the MBA program and OPT."></textarea></div>
           <button type="submit" class="form-submit" data-en="Send extra details">追加情報を送る</button>
           <button type="button" class="skip-link" onclick="skipStep2('scsuForm2','scsuOk2','scsuOk')" data-en="Skip">スキップ</button>
