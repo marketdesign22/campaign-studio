@@ -1120,6 +1120,17 @@
               <option data-en="Undecided / want advice">まだ決まっていない／相談したい</option>
             </select>
           </div>
+          <div class="fg"><label data-en="When would you like to start?">いつから入学したいですか？</label>
+            <select name="desired_start">
+              <option value="" data-en="Please select">選択してください</option>
+              <option data-en="Oct 2026 (Fall)">2026年10月（Fall）</option>
+              <option data-en="Jan 2027 (Winter)">2027年1月（Winter）</option>
+              <option data-en="Apr 2027 (Spring)">2027年4月（Spring）</option>
+              <option data-en="Jul 2027 (Summer)">2027年7月（Summer）</option>
+              <option data-en="Oct 2027 (Fall)">2027年10月（Fall）</option>
+              <option data-en="Undecided / want advice">まだ決まっていない／相談したい</option>
+            </select>
+          </div>
           <div class="fg"><label data-en="Which school are you attending right now? (if any)">現在通っている学校（あれば）</label><input type="text" name="current_school" placeholder="例：〇〇語学学校" data-en-ph="e.g. XYZ Language School"></div>
           <div class="fg"><label data-en="Questions / message">ご質問・メッセージ</label><textarea name="message" placeholder="例：MBAの詳細とOPTの手続きについて相談したいです。" data-en-ph="e.g. I'd like to know more about the MBA program and OPT."></textarea></div>
           <button type="submit" class="form-submit" data-en="Send extra details">追加情報を送る</button>
@@ -1174,7 +1185,7 @@
 
 <script>
 
-  var LINE_URL = "https://lin.ee/twwFAjn";   // SCSU 専用アカウント（HEI とは別）
+  var LINE_URL = "https://line.me/R/ti/p/@101krkod?oat__id=6991371";   // SCSU 専用アカウント（HEI とは別）
   document.querySelectorAll('[data-line]').forEach(function(a){ a.href = LINE_URL; a.target="_blank"; a.rel="noopener"; });
 
   // Highlighter pens: draw the marker as each one scrolls into view
