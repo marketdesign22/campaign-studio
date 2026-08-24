@@ -108,6 +108,18 @@ const en: Record<string, string> = {
   "複数行の投稿は「---」だけの行で区切ってください。": "Separate multi-line posts with a line containing only \"---\".",
   "件は500文字を超えているためスキップされます": " posts exceed 500 characters and will be skipped",
   "追加して今すぐ投稿": "Add & post now",
+  "再投稿": "Repost",
+  "再投稿コンテンツにする": "Save as repost content",
+  "再投稿コンテンツから外す": "Remove from repost content",
+  "再投稿コンテンツに登録しました": "Saved as repost content",
+  "再投稿コンテンツの設定を更新しました": "Repost setting updated",
+  "空き枠を再投稿コンテンツで埋める": "Fill empty slots with repost content",
+  "予約原稿が尽きた投稿枠を、「再投稿コンテンツ」に登録した過去の投稿で自動的に埋めます。":
+    "When no scheduled draft is left for a slot, automatically post one of your saved repost items.",
+  "AIで言い回しを変える": "Reword with AI",
+  "内容・数字・固有名詞はそのままに、言い回しと絵文字だけを変えて再投稿します（APIキー未設定時は原文のまま）。":
+    "Keeps the facts, numbers and names intact and varies only the wording and emoji (posts the original text if no API key is set).",
+  "同じ投稿を再利用するまでの間隔（日）": "Days before reusing the same post",
   "すべて選択": "Select all",
   "件選択中": " selected",
   "選択": "Select",

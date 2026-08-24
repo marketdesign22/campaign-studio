@@ -53,6 +53,12 @@ export const settings = mysqlTable("settings", {
   brandAccent: varchar("brandAccent", { length: 16 }),
   /** 日次メンテナンス（トークン更新・分析取得）を最後に実行したUTC日付 YYYY-MM-DD */
   lastMaintenanceDate: varchar("lastMaintenanceDate", { length: 10 }),
+  /** 予約原稿が尽きたスロットを、再投稿コンテンツで自動的に埋める */
+  autoFillEvergreen: boolean("autoFillEvergreen").default(false).notNull(),
+  /** 再投稿時にAIで言い回し・絵文字を変える（APIキー未設定時は原文のまま） */
+  recycleRewrite: boolean("recycleRewrite").default(true).notNull(),
+  /** 同じ再投稿コンテンツを再利用するまでの最低日数 */
+  recycleCooldownDays: int("recycleCooldownDays").default(30).notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
@@ -112,6 +118,12 @@ export const posts = mysqlTable("posts", {
   /** category id */
   categoryId: int("categoryId"),
   sortOrder: int("sortOrder").default(0).notNull(),
+  /** 再投稿コンテンツ: 投稿後も残しておき、空きスロットで言い回しを変えて再利用する */
+  evergreen: boolean("evergreen").default(false).notNull(),
+  /** 再投稿として最後に配信した日時（クールダウン判定に使う） */
+  lastRecycledAt: timestamp("lastRecycledAt"),
+  /** 再投稿として配信した回数 */
+  recycleCount: int("recycleCount").default(0).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -130,6 +142,8 @@ export const postLogs = mysqlTable("post_logs", {
   errorMessage: text("errorMessage"),
   slotIndex: int("slotIndex").default(0).notNull(),
   categoryId: int("categoryId"),
+  /** 再投稿コンテンツから自動生成された投稿かどうか */
+  recycled: boolean("recycled").default(false).notNull(),
   postedAt: timestamp("postedAt").defaultNow().notNull(),
 });
 

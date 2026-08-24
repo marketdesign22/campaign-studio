@@ -179,8 +179,14 @@ async function main() {
   await addColumn("posts", "approvalStatus", "`approvalStatus` enum('draft','approved') NOT NULL DEFAULT 'approved'");
   await addColumn("posts", "accountId", "`accountId` int NULL");
 
+  // ── posts: 再投稿コンテンツ ──────────────────────────────────────────────────
+  await addColumn("posts", "evergreen", "`evergreen` boolean NOT NULL DEFAULT false");
+  await addColumn("posts", "lastRecycledAt", "`lastRecycledAt` timestamp NULL");
+  await addColumn("posts", "recycleCount", "`recycleCount` int NOT NULL DEFAULT 0");
+
   // ── post_logs ───────────────────────────────────────────────────────────────
   await addColumn("post_logs", "accountId", "`accountId` int NULL");
+  await addColumn("post_logs", "recycled", "`recycled` boolean NOT NULL DEFAULT false");
 
   // ── settings ────────────────────────────────────────────────────────────────
   await addColumn("settings", "requireApproval", "`requireApproval` boolean NOT NULL DEFAULT false");
@@ -188,6 +194,9 @@ async function main() {
   await addColumn("settings", "brandName", "`brandName` varchar(64) NULL");
   await addColumn("settings", "brandAccent", "`brandAccent` varchar(16) NULL");
   await addColumn("settings", "lastMaintenanceDate", "`lastMaintenanceDate` varchar(10) NULL");
+  await addColumn("settings", "autoFillEvergreen", "`autoFillEvergreen` boolean NOT NULL DEFAULT false");
+  await addColumn("settings", "recycleRewrite", "`recycleRewrite` boolean NOT NULL DEFAULT true");
+  await addColumn("settings", "recycleCooldownDays", "`recycleCooldownDays` int NOT NULL DEFAULT 30");
 
   // ── timezone enum拡張（米国タイムゾーン ET/CT/MT を追加） ────────────────────
   async function widenTimezoneEnum(table: string) {

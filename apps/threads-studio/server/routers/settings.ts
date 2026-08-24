@@ -19,6 +19,9 @@ export const settingsRouter = router({
       notifyOnError: true,
       brandName: null as string | null,
       brandAccent: null as string | null,
+      autoFillEvergreen: false,
+      recycleRewrite: true,
+      recycleCooldownDays: 30,
     };
     return {
       threadsAccessToken: s.threadsAccessToken ? "***saved***" : null,
@@ -32,6 +35,9 @@ export const settingsRouter = router({
       notifyOnError: s.notifyOnError,
       brandName: s.brandName,
       brandAccent: s.brandAccent,
+      autoFillEvergreen: s.autoFillEvergreen,
+      recycleRewrite: s.recycleRewrite,
+      recycleCooldownDays: s.recycleCooldownDays,
     };
   }),
 
@@ -42,6 +48,9 @@ export const settingsRouter = router({
       notifyOnError: z.boolean().optional(),
       brandName: z.string().max(64).nullable().optional(),
       brandAccent: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable().optional(),
+      autoFillEvergreen: z.boolean().optional(),
+      recycleRewrite: z.boolean().optional(),
+      recycleCooldownDays: z.number().int().min(1).max(365).optional(),
     }))
     .mutation(async ({ input }) => {
       await upsertSettings(input);

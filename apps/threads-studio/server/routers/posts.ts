@@ -1,7 +1,7 @@
 import { z } from "zod";
 import {
   bulkCreatePosts, createPost, deletePost, deletePostsByIds, getNextPendingPostAny,
-  getSettings, listActiveAccounts, listPosts, updatePost,
+  getSettings, listActiveAccounts, listPosts, saveAsEvergreen, updatePost,
 } from "../db";
 import { getLocalParts } from "../scheduler";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -80,6 +80,7 @@ export const postsRouter = router({
       scheduledDate: z.string().nullable().optional(),
       sortOrder: z.number().int().optional(),
       status: z.enum(["pending", "posted", "error"]).optional(),
+      evergreen: z.boolean().optional(),
     }))
     .mutation(async ({ input }) => {
       const { id, ...data } = input;
@@ -98,6 +99,17 @@ export const postsRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.number().int() }))
     .mutation(async ({ input }) => { await deletePost(input.id); return { ok: true }; }),
+
+  /** 再投稿コンテンツとして保存する（投稿履歴からも呼べる） */
+  saveAsEvergreen: protectedProcedure
+    .input(z.object({
+      content: z.string().min(1).max(500),
+      postId: z.number().int().nullable().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const id = await saveAsEvergreen(input.content, input.postId ?? null);
+      return { ok: true, id };
+    }),
 
   /** 選択した原稿をまとめて削除する */
   bulkDelete: protectedProcedure

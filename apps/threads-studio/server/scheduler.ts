@@ -14,11 +14,13 @@
  */
 import {
   createPostLog,
+  getEvergreenCandidate,
   getNextPendingPost,
   getSettings,
   hasSlotLogInRange,
   listActiveAccounts,
   listLogsForAnalytics,
+  markPostRecycled,
   updateAccount,
   updatePost,
   upsertAnalytics,
@@ -26,6 +28,7 @@ import {
 } from "./db";
 import { Account } from "../drizzle/schema";
 import { fetchPostInsights, publishTextPost, refreshLongLivedToken } from "./threadsApi";
+import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 
 // ── Timezone helpers (pure, unit-tested) ─────────────────────────────────────
@@ -99,12 +102,48 @@ async function maybeNotifyError(title: string, content: string) {
   }
 }
 
+/**
+ * 再投稿コンテンツを配信する際に、内容は変えずに言い回しと絵文字だけを変える。
+ * AI未設定・失敗・不正な出力のときは原文をそのまま返す（投稿は必ず行われる）。
+ */
+export async function rewordForRecycle(content: string): Promise<string> {
+  const system = [
+    "あなたは公式SNSアカウントの編集者です。過去に投稿した文章を、もう一度出しても新鮮に読めるように書き直します。",
+    "厳守事項:",
+    "- 伝える情報・事実・数字・固有名詞・URLは一切変えない（追加も削除もしない）",
+    "- 変えてよいのは言い回し、語順、文の区切り、絵文字だけ",
+    "- 元の投稿と同じ言語で書く",
+    "- 500文字以内。絵文字は0〜2個",
+    "- 出力は書き直した本文のみ（前置き・説明・引用符は不要）",
+    "/ You are an editor for an official social account. Rewrite a past post so it reads fresh, changing only wording and emoji — never the facts, numbers, names, or URLs. Keep the original language, stay under 500 characters, and output only the rewritten text.",
+  ].join("\n");
+
+  try {
+    const result = await invokeLLM({
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content },
+      ],
+      maxTokens: 1200,
+    });
+    const text = (result.choices[0]?.message?.content ?? "").trim();
+    if (!text || text.length > 500) return content;
+    return text;
+  } catch (e) {
+    console.warn(
+      "[scheduler] recycle reword skipped:",
+      e instanceof Error ? e.message : String(e)
+    );
+    return content;
+  }
+}
+
 /** 1アカウント・1スロット分の投稿を試みる。発火しなかった場合は null */
 export async function runSlotForAccount(
   account: Account,
   slotIndex: number,
   now: Date
-): Promise<{ posted?: string; error?: string } | null> {
+): Promise<{ posted?: string; error?: string; recycled?: boolean } | null> {
   const local = getLocalParts(now, account.timezone);
   const slotHour = slotIndex === 0 ? account.morningHour : account.eveningHour;
   const slotMinute = slotIndex === 0 ? account.morningMinute : account.eveningMinute;
@@ -114,23 +153,46 @@ export async function runSlotForAccount(
   const { start, end } = localDayUtcRange(local.dateStr, account.timezone);
   if (await hasSlotLogInRange(account.id, slotIndex, start, end)) return null;
 
-  const post = await getNextPendingPost(slotIndex, local.dateStr, account.id);
-  if (!post) return null;
+  let post = await getNextPendingPost(slotIndex, local.dateStr, account.id);
+  let recycled = false;
+  let content: string;
+
+  if (post) {
+    content = post.content;
+  } else {
+    // 予約原稿が尽きたスロットを、再投稿コンテンツで埋める（設定で有効化した場合のみ）
+    const cfg = await getSettings();
+    if (!cfg?.autoFillEvergreen) return null;
+    const candidate = await getEvergreenCandidate(
+      account.id,
+      cfg.recycleCooldownDays ?? 30,
+      now
+    );
+    if (!candidate) return null;
+    post = candidate;
+    recycled = true;
+    content = cfg.recycleRewrite ? await rewordForRecycle(candidate.content) : candidate.content;
+  }
 
   try {
-    const result = await publishTextPost(account.threadsAccessToken, account.threadsUserId, post.content);
+    const result = await publishTextPost(account.threadsAccessToken, account.threadsUserId, content);
+    // 再投稿でも status を posted にしておく（未投稿のまま残ると通常枠で二重投稿になるため）
     await updatePost(post.id, { status: "posted" });
+    if (recycled) await markPostRecycled(post.id, now);
     await createPostLog({
-      postId: post.id, accountId: account.id, content: post.content,
+      postId: post.id, accountId: account.id, content,
       status: "posted", threadsPostId: result.postId, slotIndex, categoryId: post.categoryId,
+      recycled,
     });
-    return { posted: result.postId };
+    return { posted: result.postId, ...(recycled ? { recycled: true } : {}) };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    await updatePost(post.id, { status: "error" });
+    // 再投稿の失敗では元の原稿を error にしない（原稿自体は健全なので再投稿プールに残す）
+    if (!recycled) await updatePost(post.id, { status: "error" });
     await createPostLog({
-      postId: post.id, accountId: account.id, content: post.content,
+      postId: post.id, accountId: account.id, content,
       status: "error", errorMessage: msg, slotIndex, categoryId: post.categoryId,
+      recycled,
     });
     await maybeNotifyError(
       `【${account.name}】Threads自動投稿に失敗しました`,

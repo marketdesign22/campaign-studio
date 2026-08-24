@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { CheckCheck, FileUp, Pencil, Plus, RotateCcw, Send, Sparkles, Trash2, Undo2, Upload } from "lucide-react";
+import { CheckCheck, FileUp, Pencil, Plus, Repeat, RotateCcw, Send, Sparkles, Trash2, Undo2, Upload } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useI18n } from "@/i18n";
 
@@ -122,6 +122,10 @@ export default function Posts() {
   });
   const updateMut = trpc.posts.update.useMutation({ onSuccess: () => { toast.success(t("更新しました")); invalidate(); setOpen(false); }, onError: e => toast.error(e.message) });
   const deleteMut = trpc.posts.delete.useMutation({ onSuccess: () => { toast.success(t("削除しました")); invalidate(); }, onError: e => toast.error(e.message) });
+  const evergreenMut = trpc.posts.update.useMutation({
+    onSuccess: () => { toast.success(t("再投稿コンテンツの設定を更新しました")); invalidate(); },
+    onError: e => toast.error(e.message),
+  });
   const bulkDeleteMut = trpc.posts.bulkDelete.useMutation({
     onSuccess: d => { toast.success(`${d.count}${t("件削除しました")}`); setSelected(new Set()); invalidate(); },
     onError: e => toast.error(e.message),
@@ -267,6 +271,11 @@ export default function Posts() {
                         {isDraft && (
                           <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-amber-500/15 text-amber-700">{t("未承認")}</span>
                         )}
+                        {p.evergreen && (
+                          <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-sky-500/15 text-sky-700 inline-flex items-center gap-1">
+                            <Repeat className="h-3 w-3" />{t("再投稿")}{p.recycleCount > 0 ? ` ×${p.recycleCount}` : ""}
+                          </span>
+                        )}
                         <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border">{SLOT_LABELS[p.slotIndex] ? t(SLOT_LABELS[p.slotIndex]) : `${t("スロット")}${p.slotIndex}`}</span>
                         {p.scheduledDate && <span className="text-xs text-muted-foreground tabular-nums">{p.scheduledDate}</span>}
                         {cat && <span className="text-xs px-2 py-0.5 rounded-full text-white font-medium" style={{ backgroundColor: cat.color }}>{cat.name}</span>}
@@ -299,6 +308,12 @@ export default function Posts() {
                         </Button>
                       )}
                       {p.status !== "pending" && <Button size="icon" variant="ghost" className="h-8 w-8" title={t("未投稿に戻す")} onClick={() => updateMut.mutate({ id: p.id, status: "pending" })}><RotateCcw className="h-3.5 w-3.5" /></Button>}
+                      <Button size="icon" variant="ghost"
+                        className={`h-8 w-8 ${p.evergreen ? "text-sky-600" : ""}`}
+                        title={p.evergreen ? t("再投稿コンテンツから外す") : t("再投稿コンテンツにする")}
+                        onClick={() => evergreenMut.mutate({ id: p.id, evergreen: !p.evergreen })}>
+                        <Repeat className="h-3.5 w-3.5" />
+                      </Button>
                       <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>
                       <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => { if (confirm(t("削除しますか？"))) deleteMut.mutate({ id: p.id }); }}><Trash2 className="h-3.5 w-3.5" /></Button>
                     </div>

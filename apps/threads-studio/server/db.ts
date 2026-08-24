@@ -82,6 +82,9 @@ export async function upsertSettings(data: {
   brandName?: string | null;
   brandAccent?: string | null;
   lastMaintenanceDate?: string | null;
+  autoFillEvergreen?: boolean;
+  recycleRewrite?: boolean;
+  recycleCooldownDays?: number;
 }) {
   const db = await getDb();
   if (!db) return;
@@ -246,6 +249,69 @@ export async function getNextPendingPostAny(todayLocal: string, accountId?: numb
 }
 
 /**
+ * 再投稿コンテンツの中から、次に使うものを1件選ぶ。
+ * 「最後に使ったのが古い順（未使用が最優先）」で、クールダウン期間内のものは除外する。
+ */
+export async function getEvergreenCandidate(
+  accountId: number | undefined,
+  cooldownDays: number,
+  now: Date = new Date()
+) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const cooldownBefore = new Date(now.getTime() - cooldownDays * 24 * 60 * 60 * 1000);
+  const conds = [
+    eq(posts.evergreen, true),
+    eq(posts.approvalStatus, "approved"),
+    or(isNull(posts.lastRecycledAt), lt(posts.lastRecycledAt, cooldownBefore)),
+  ];
+  if (accountId !== undefined) {
+    conds.push(or(isNull(posts.accountId), eq(posts.accountId, accountId)));
+  }
+  const rows = await db
+    .select()
+    .from(posts)
+    .where(and(...conds))
+    // MySQLはASCでNULLが先に来るため、未使用の原稿が自然に最優先になる
+    .orderBy(posts.lastRecycledAt, posts.recycleCount, posts.updatedAt)
+    .limit(1);
+  return rows[0];
+}
+
+/** 再投稿として配信したことを記録する */
+export async function markPostRecycled(id: number, at: Date) {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(posts)
+    .set({ lastRecycledAt: at, recycleCount: sql`${posts.recycleCount} + 1` })
+    .where(eq(posts.id, id));
+}
+
+/** 履歴などから再投稿コンテンツを登録する（既存原稿があればフラグを立てるだけ） */
+export async function saveAsEvergreen(content: string, postId?: number | null): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  if (postId) {
+    const existing = await getPostById(postId);
+    if (existing) {
+      await db.update(posts).set({ evergreen: true }).where(eq(posts.id, postId));
+      return postId;
+    }
+  }
+  // 元の原稿が消えている場合は、投稿済み扱いの原稿として復元する
+  // （status="posted" なので通常の予約投稿には拾われず、再投稿プールにだけ入る）
+  return createPost({
+    content,
+    status: "posted",
+    approvalStatus: "approved",
+    evergreen: true,
+    slotIndex: 0,
+    sortOrder: 0,
+  });
+}
+
+/**
  * このアカウント・スロットについて、ローカル日付の当日分ログ（成功/失敗問わず）が
  * 既にあるか。tick が15分ごとに走っても同じ枠を二重投稿しないためのロック。
  */
@@ -303,6 +369,7 @@ export async function createPostLog(data: {
   errorMessage?: string | null;
   slotIndex?: number;
   categoryId?: number | null;
+  recycled?: boolean;
 }) {
   const db = await getDb();
   if (!db) return;

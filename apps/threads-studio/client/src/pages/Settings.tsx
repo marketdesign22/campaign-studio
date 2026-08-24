@@ -195,11 +195,17 @@ export default function Settings() {
   const [notifyOnError, setNotifyOnError] = useState(true);
   const [brandName, setBrandName] = useState("");
   const [brandAccent, setBrandAccent] = useState("#ff9800");
+  const [autoFillEvergreen, setAutoFillEvergreen] = useState(false);
+  const [recycleRewrite, setRecycleRewrite] = useState(true);
+  const [recycleCooldownDays, setRecycleCooldownDays] = useState(30);
 
   useEffect(() => {
     if (settings) {
       setRequireApproval(settings.requireApproval ?? false);
       setNotifyOnError(settings.notifyOnError ?? true);
+      setAutoFillEvergreen(settings.autoFillEvergreen ?? false);
+      setRecycleRewrite(settings.recycleRewrite ?? true);
+      setRecycleCooldownDays(settings.recycleCooldownDays ?? 30);
       setBrandName(settings.brandName ?? "");
       setBrandAccent(settings.brandAccent ?? "#ff9800");
     }
@@ -295,8 +301,35 @@ export default function Settings() {
             </div>
             <Switch checked={notifyOnError} onCheckedChange={setNotifyOnError} />
           </div>
+          <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-muted/50 border">
+            <div>
+              <p className="text-sm font-medium">{t("空き枠を再投稿コンテンツで埋める")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {t("予約原稿が尽きた投稿枠を、「再投稿コンテンツ」に登録した過去の投稿で自動的に埋めます。")}
+              </p>
+            </div>
+            <Switch checked={autoFillEvergreen} onCheckedChange={setAutoFillEvergreen} />
+          </div>
+          {autoFillEvergreen && (
+            <div className="space-y-4 pl-3 border-l-2 border-primary/20">
+              <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-muted/50 border">
+                <div>
+                  <p className="text-sm font-medium">{t("AIで言い回しを変える")}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {t("内容・数字・固有名詞はそのままに、言い回しと絵文字だけを変えて再投稿します（APIキー未設定時は原文のまま）。")}
+                  </p>
+                </div>
+                <Switch checked={recycleRewrite} onCheckedChange={setRecycleRewrite} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="cooldown">{t("同じ投稿を再利用するまでの間隔（日）")}</Label>
+                <Input id="cooldown" type="number" min={1} max={365} value={recycleCooldownDays}
+                  onChange={(e) => setRecycleCooldownDays(Number(e.target.value))} className="max-w-[140px]" />
+              </div>
+            </div>
+          )}
           <Button className="w-full" disabled={saveOpsMut.isPending}
-            onClick={() => saveOpsMut.mutate({ requireApproval, notifyOnError })}>
+            onClick={() => saveOpsMut.mutate({ requireApproval, notifyOnError, autoFillEvergreen, recycleRewrite, recycleCooldownDays })}>
             {saveOpsMut.isPending ? t("保存中...") : t("運用ルールを保存")}
           </Button>
         </CardContent>

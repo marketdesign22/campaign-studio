@@ -2,7 +2,9 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageHeader } from "@/components/PageHeader";
-import { AlertCircle, CheckCircle2, Inbox, Sunrise, Sunset, Send } from "lucide-react";
+import { AlertCircle, CheckCircle2, Inbox, Repeat, Send, Sunrise, Sunset } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { useI18n } from "@/i18n";
 
 const slotLabel: Record<number, string> = { 0: "朝", 1: "夕", 99: "手動" };
@@ -17,6 +19,11 @@ const FILTERS: { value: FilterType; label: string }[] = [
 export default function History() {
   const { t, locale } = useI18n();
   const { data: logs, isLoading } = trpc.postLogs.list.useQuery({ limit: 100 });
+  const utils = trpc.useUtils();
+  const saveEvergreenMut = trpc.posts.saveAsEvergreen.useMutation({
+    onSuccess: () => { toast.success(t("再投稿コンテンツに登録しました")); utils.posts.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
   const [filter, setFilter] = useState<FilterType>("all");
 
   const filtered = logs?.filter((l) => filter === "all" || l.status === filter) ?? [];
@@ -76,6 +83,13 @@ export default function History() {
                       </span>
                     </div>
                     <p className="text-sm leading-relaxed whitespace-pre-wrap line-clamp-4">{log.content}</p>
+                    {log.status === "posted" && (
+                      <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-sky-700 hover:bg-sky-500/10 -ml-2"
+                        disabled={saveEvergreenMut.isPending}
+                        onClick={() => saveEvergreenMut.mutate({ content: log.content, postId: log.postId ?? null })}>
+                        <Repeat className="h-3.5 w-3.5 mr-1" />{t("再投稿コンテンツにする")}
+                      </Button>
+                    )}
                     {log.threadsPostId && (
                       <p className="text-xs text-muted-foreground/70 tabular-nums">Threads ID: {log.threadsPostId}</p>
                     )}
