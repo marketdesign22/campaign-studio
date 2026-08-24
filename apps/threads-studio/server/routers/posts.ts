@@ -4,6 +4,7 @@ import {
   getSettings, listActiveAccounts, listPosts, saveAsEvergreen, updatePost,
 } from "../db";
 import { getLocalParts } from "../scheduler";
+import { planSchedule, slotKey, summarizeRunway } from "../schedulePlanner";
 import { protectedProcedure, router } from "../_core/trpc";
 
 /** 承認フロー有効時は新規原稿を draft で作成する */
@@ -26,25 +27,37 @@ async function getCalendarView(year: number, month: number) {
   return byDate;
 }
 
-/** Auto-assign scheduledDate and slotIndex to pending posts */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function autoSchedule(postsPerDay: number, _items: any[], startDate?: string) {
+/** アカウントのローカル日付（YYYY-MM-DD）。アカウント未登録時はサーバー日付 */
+async function localToday(): Promise<string> {
+  const accounts = await listActiveAccounts();
+  const tz = accounts[0]?.timezone ?? "LA";
+  return getLocalParts(new Date(), tz).dateStr;
+}
+
+/**
+ * 未割り当ての原稿に予約日・スロットを割り当てる。
+ * 既に埋まっている枠は飛ばすので、実行しても既存の予定は動かない
+ * （＝何度押しても安全で、投稿が途切れた日から順に埋まっていく）。
+ */
+async function autoSchedule(postsPerDay: number, _items: unknown[], startDate?: string) {
   const db = await import("../db");
-  const allPending = (await db.listPosts()).filter(p => p.status === "pending" && !p.scheduledDate);
-  if (allPending.length === 0) return;
-  const base = startDate ? new Date(startDate) : new Date();
-  base.setHours(0, 0, 0, 0);
-  let dayOffset = 0;
-  let slotIdx = 0;
-  for (const p of allPending) {
-    const d = new Date(base);
-    d.setDate(d.getDate() + dayOffset);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    await db.updatePost(p.id, { scheduledDate: `${yyyy}-${mm}-${dd}`, slotIndex: slotIdx });
-    slotIdx++;
-    if (slotIdx >= postsPerDay) { slotIdx = 0; dayOffset++; }
+  const all = await db.listPosts();
+  const unscheduled = all.filter(p => p.status === "pending" && !p.scheduledDate);
+  if (unscheduled.length === 0) return;
+
+  const start = startDate ?? (await localToday());
+  const occupied = all
+    .filter(p => p.scheduledDate && p.scheduledDate >= start)
+    .map(p => slotKey(p.scheduledDate as string, p.slotIndex));
+
+  const plan = planSchedule({
+    ids: unscheduled.map(p => p.id),
+    occupied,
+    startDate: start,
+    postsPerDay,
+  });
+  for (const a of plan) {
+    await db.updatePost(a.id, { scheduledDate: a.scheduledDate, slotIndex: a.slotIndex });
   }
 }
 
@@ -118,6 +131,15 @@ export const postsRouter = router({
       await deletePostsByIds(input.ids);
       return { ok: true, count: input.ids.length };
     }),
+
+  /** 配信の在庫状況（何日分の予約が残っているか・途切れる日はあるか） */
+  runway: protectedProcedure.query(async () => {
+    const today = await localToday();
+    const all = await listPosts();
+    const { days, lastDate, gapDates } = summarizeRunway(all, today);
+    const unscheduled = all.filter(p => p.status === "pending" && !p.scheduledDate).length;
+    return { today, days, lastDate, gapDates, unscheduled };
+  }),
 
   nextPreview: protectedProcedure.query(async () => {
     // デフォルトアカウントのローカル日付基準で「今日投稿可能な」原稿のみ返す

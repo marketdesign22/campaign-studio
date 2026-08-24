@@ -6,9 +6,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { CheckCheck, FileUp, Pencil, Plus, Repeat, RotateCcw, Send, Sparkles, Trash2, Undo2, Upload } from "lucide-react";
+import { CalendarPlus, CheckCheck, FileUp, Pencil, Plus, Repeat, RotateCcw, Send, Sparkles, Trash2, Undo2, Upload } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useI18n } from "@/i18n";
 
@@ -113,7 +114,7 @@ export default function Posts() {
   const { data: accounts = [] } = trpc.accounts.list.useQuery();
   const { data: settings } = trpc.settings.get.useQuery();
   const utils = trpc.useUtils();
-  const invalidate = () => { utils.posts.list.invalidate(); utils.posts.nextPreview.invalidate(); };
+  const invalidate = () => { utils.posts.list.invalidate(); utils.posts.nextPreview.invalidate(); utils.posts.runway.invalidate(); };
 
   const createMut = trpc.posts.create.useMutation({ onSuccess: () => { toast.success(t("追加しました")); invalidate(); setOpen(false); }, onError: e => toast.error(e.message) });
   const postNowMut = trpc.manualPost.post.useMutation({
@@ -130,6 +131,11 @@ export default function Posts() {
     onSuccess: d => { toast.success(`${d.count}${t("件削除しました")}`); setSelected(new Set()); invalidate(); },
     onError: e => toast.error(e.message),
   });
+  const { data: runway } = trpc.posts.runway.useQuery();
+  const autoScheduleMut = trpc.posts.autoSchedule.useMutation({
+    onSuccess: () => { toast.success(t("空き枠に割り当てました")); invalidate(); },
+    onError: e => toast.error(e.message),
+  });
   const importMut = trpc.posts.bulkImport.useMutation({ onSuccess: d => { toast.success(`${d.count}${t("件インポートしました")}`); invalidate(); setImportOpen(false); setImportText(""); }, onError: e => toast.error(e.message) });
   const approvalMut = trpc.posts.setApproval.useMutation({ onSuccess: () => invalidate(), onError: e => toast.error(e.message) });
   const aiGenerate = trpc.ai.generateDrafts.useMutation({ onError: e => toast.error(e.message) });
@@ -144,6 +150,7 @@ export default function Posts() {
   const [slotIndex, setSlotIndex] = useState(0);
   const [catId, setCatId] = useState<number | null>(null);
   const [accountId, setAccountId] = useState<number | null>(null);
+  const [scheduledDate, setScheduledDate] = useState("");
   const [rewriteInstruction, setRewriteInstruction] = useState("");
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
@@ -180,15 +187,16 @@ export default function Posts() {
   const [aiLang, setAiLang] = useState<"ja" | "en">(lang);
   const [aiDrafts, setAiDrafts] = useState<string[]>([]);
 
-  function openCreate() { setEditing(null); setContent(""); setSlotIndex(0); setCatId(null); setAccountId(null); setRewriteInstruction(""); setOpen(true); }
-  function openEdit(p: typeof postList[0]) { setEditing(p); setContent(p.content); setSlotIndex(p.slotIndex); setCatId(p.categoryId); setAccountId(p.accountId ?? null); setRewriteInstruction(""); setOpen(true); }
+  function openCreate() { setEditing(null); setContent(""); setSlotIndex(0); setCatId(null); setAccountId(null); setScheduledDate(""); setRewriteInstruction(""); setOpen(true); }
+  function openEdit(p: typeof postList[0]) { setEditing(p); setContent(p.content); setSlotIndex(p.slotIndex); setCatId(p.categoryId); setAccountId(p.accountId ?? null); setScheduledDate(p.scheduledDate ?? ""); setRewriteInstruction(""); setOpen(true); }
   function handleSave() {
-    if (editing) updateMut.mutate({ id: editing.id, content, slotIndex, categoryId: catId, accountId });
-    else createMut.mutate({ content, slotIndex, categoryId: catId, accountId });
+    const date = scheduledDate || null;
+    if (editing) updateMut.mutate({ id: editing.id, content, slotIndex, categoryId: catId, accountId, scheduledDate: date });
+    else createMut.mutate({ content, slotIndex, categoryId: catId, accountId, scheduledDate: date });
   }
   async function handleSaveAndPostNow() {
     try {
-      const created = await createMut.mutateAsync({ content, slotIndex, categoryId: catId, accountId });
+      const created = await createMut.mutateAsync({ content, slotIndex, categoryId: catId, accountId, scheduledDate: scheduledDate || null });
       postNowMut.mutate({ postId: created.id });
     } catch {
       // createMut.onError already surfaced the toast
@@ -230,6 +238,41 @@ export default function Posts() {
           </>
         }
       />
+
+      {runway && (
+        <Card className="border shadow-none">
+          <CardContent className="py-4 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <div>
+              <p className="text-xs text-muted-foreground">{t("予約済みの配信")}</p>
+              <p className="text-lg font-semibold tabular-nums">
+                {runway.days}{t("日分")}
+                {runway.lastDate && <span className="text-xs font-normal text-muted-foreground ml-2">{t("〜")}{runway.lastDate}</span>}
+              </p>
+            </div>
+            {runway.gapDates.length > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground">{t("投稿が途切れる日")}</p>
+                <p className="text-lg font-semibold tabular-nums text-amber-600">
+                  {runway.gapDates.length}{t("日")}
+                  <span className="text-xs font-normal text-muted-foreground ml-2">{runway.gapDates.slice(0, 3).join(", ")}{runway.gapDates.length > 3 ? "…" : ""}</span>
+                </p>
+              </div>
+            )}
+            {runway.unscheduled > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground">{t("日付未定の原稿")}</p>
+                <p className="text-lg font-semibold tabular-nums">{runway.unscheduled}{t("件")}</p>
+              </div>
+            )}
+            <Button size="sm" variant="outline" className="ml-auto"
+              disabled={autoScheduleMut.isPending || !runway.unscheduled}
+              onClick={() => autoScheduleMut.mutate({ postsPerDay: 2 })}>
+              <CalendarPlus className="h-4 w-4 mr-1.5" />
+              {autoScheduleMut.isPending ? t("割り当て中...") : t("空き枠に自動割り当て")}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="border shadow-none">
         <CardContent className="p-0">
@@ -351,6 +394,13 @@ export default function Posts() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>{t("投稿日")}</Label>
+                <Input type="date" value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} />
+                <p className="text-xs text-muted-foreground">
+                  {scheduledDate ? t("この日の指定スロットに投稿されます。") : t("空欄なら「空き枠に自動割り当て」で最短の空きに入ります。")}
+                </p>
+              </div>
               <div className="space-y-1.5">
                 <Label>{t("投稿スロット")}</Label>
                 <Select value={String(slotIndex)} onValueChange={v => setSlotIndex(Number(v))}>
