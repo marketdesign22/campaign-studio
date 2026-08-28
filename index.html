@@ -42,8 +42,9 @@
     html,body{height:100%}
     body{font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:#fff;overflow:hidden}
 
-    /* ===== TOP CHROME (fixed) ===== */
-    #topchrome{position:fixed;top:0;left:0;right:0;z-index:1000}
+    /* ===== TOP CHROME (fixed, slides away on scroll-down) ===== */
+    #topchrome{position:fixed;top:0;left:0;right:0;z-index:1000;transition:transform .25s ease}
+    #topchrome.hide{transform:translateY(-100%)}
 
     /* --- visa alert --- */
     .visa-alert{
@@ -93,7 +94,7 @@
     .switch-btn .sb{font-size:10.5px;font-weight:500;color:#b3b3b3}
 
     /* ===== FRAMES ===== */
-    .frame-wrap{position:fixed;top:120px;left:0;right:0;bottom:0;overflow:auto;-webkit-overflow-scrolling:touch}
+    .frame-wrap{position:fixed;top:120px;left:0;right:0;bottom:0;overflow:auto;-webkit-overflow-scrolling:touch;transition:top .25s ease}
     /* iOS Safari: iframeの幅暴走/スクロール未描画対策（width:1px+min-width:100%＋親スクロール） */
     .frame-wrap iframe{position:absolute;inset:0;width:1px;min-width:100%;height:100%;border:0;display:none}
     .frame-wrap iframe.active{display:block}
@@ -151,13 +152,54 @@
 
   <script>
     // keep the frames flush beneath the (variable-height) top chrome
+    var chromeEl = document.getElementById('topchrome');
+    var wrapEl = document.querySelector('.frame-wrap');
+    var chromeHidden = false;
+
     function syncTop(){
-      var h = document.getElementById('topchrome').offsetHeight;
-      document.querySelector('.frame-wrap').style.top = h + 'px';
+      if(chromeHidden) return;
+      wrapEl.style.top = chromeEl.offsetHeight + 'px';
+    }
+    function setChromeHidden(hidden){
+      if(hidden === chromeHidden) return;
+      chromeHidden = hidden;
+      chromeEl.classList.toggle('hide', hidden);
+      if(hidden){ wrapEl.style.top = '0px'; } else { syncTop(); }
     }
     window.addEventListener('resize', syncTop);
     window.addEventListener('load', syncTop);
     syncTop();
+
+    // hide the visa alert + tab switcher on scroll-down, bring it back on scroll-up —
+    // it was eating screen space on every scroll position, not just at the top.
+    function watchScroll(getY){
+      var lastY = getY();
+      return function(){
+        var y = getY();
+        var delta = y - lastY;
+        if(Math.abs(delta) > 4){
+          if(y > 48 && delta > 0) setChromeHidden(true);
+          else if(delta < 0 || y <= 48) setChromeHidden(false);
+          lastY = y;
+        }
+      };
+    }
+    wrapEl.addEventListener('scroll', watchScroll(function(){ return wrapEl.scrollTop; }), {passive:true});
+    window.addEventListener('scroll', watchScroll(function(){ return window.scrollY || 0; }), {passive:true});
+    function hookFrameScroll(f){
+      function attach(){
+        try {
+          var win = f.contentWindow;
+          win.addEventListener('scroll', watchScroll(function(){ return win.scrollY || win.pageYOffset || 0; }), {passive:true});
+        } catch(e){}
+      }
+      f.addEventListener('load', attach);
+      // the eager HEI frame can finish loading before this script runs, in which
+      // case the 'load' event above already fired and would never call attach()
+      try { if(f.contentDocument && f.contentDocument.readyState === 'complete') attach(); } catch(e){}
+    }
+    hookFrameScroll(document.getElementById('frameHei'));
+    hookFrameScroll(document.getElementById('frameScsu'));
 
     function showTab(tab){
       var isHei = tab === 'hei';
@@ -171,6 +213,7 @@
       document.getElementById('btnScsu').setAttribute('aria-selected', !isHei);
       document.getElementById('frameHei').classList.toggle('active', isHei);
       fScsu.classList.toggle('active', !isHei);
+      setChromeHidden(false);
       document.title = isHei
         ? 'ロサンゼルス語学留学 ｜ HEI 語学学校（日本人向け）'
         : 'ロサンゼルス大学進学・学位取得 ｜ SCSU 認定大学（日本人向け）';
