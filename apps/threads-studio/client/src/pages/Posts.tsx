@@ -150,6 +150,10 @@ export default function Posts() {
     onSuccess: () => { toast.success(t("再投稿コンテンツの設定を更新しました")); invalidate(); },
     onError: e => toast.error(e.message),
   });
+  const bulkAssignMut = trpc.posts.bulkAssignAccount.useMutation({
+    onSuccess: d => { toast.success(`${d.count}${t("件の投稿先を変更しました")}`); setSelected(new Set()); invalidate(); },
+    onError: e => toast.error(e.message),
+  });
   const bulkDeleteMut = trpc.posts.bulkDelete.useMutation({
     onSuccess: d => { toast.success(`${d.count}${t("件削除しました")}`); setSelected(new Set()); invalidate(); },
     onError: e => toast.error(e.message),
@@ -335,8 +339,19 @@ export default function Posts() {
                 <span className="text-xs text-muted-foreground">
                   {selected.size > 0 ? `${selected.size}${t("件選択中")}` : t("すべて選択")}
                 </span>
+                {selected.size > 0 && accounts.length > 1 && (
+                  <Select value="" onValueChange={v => bulkAssignMut.mutate({ ids: Array.from(selected), accountId: v === "none" ? null : Number(v) })}>
+                    <SelectTrigger className="h-7 w-[190px] text-xs ml-auto">
+                      <SelectValue placeholder={t("投稿先アカウントを変更")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map(a => <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>)}
+                      <SelectItem value="none">{t("未指定（どのアカウントでも可）")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
                 {selected.size > 0 && (
-                  <Button size="sm" variant="destructive" className="h-7 text-xs ml-auto"
+                  <Button size="sm" variant="destructive" className={`h-7 text-xs ${accounts.length > 1 ? "" : "ml-auto"}`}
                     disabled={bulkDeleteMut.isPending}
                     onClick={() => { if (confirm(`${selected.size}${t("件の原稿を削除しますか？この操作は取り消せません。")}`)) bulkDeleteMut.mutate({ ids: Array.from(selected) }); }}>
                     <Trash2 className="h-3.5 w-3.5 mr-1" />{bulkDeleteMut.isPending ? t("削除中...") : t("選択を削除")}

@@ -127,6 +127,19 @@ export const postsRouter = router({
       return { ok: true, id };
     }),
 
+  /** 選択した原稿の投稿先アカウントをまとめて変更する */
+  bulkAssignAccount: protectedProcedure
+    .input(z.object({
+      ids: z.array(z.number().int()).min(1).max(500),
+      accountId: z.number().int().nullable(),
+    }))
+    .mutation(async ({ input }) => {
+      for (const id of input.ids) {
+        await updatePost(id, { accountId: input.accountId });
+      }
+      return { ok: true, count: input.ids.length };
+    }),
+
   /** 選択した原稿をまとめて削除する */
   bulkDelete: protectedProcedure
     .input(z.object({ ids: z.array(z.number().int()).min(1).max(500) }))
