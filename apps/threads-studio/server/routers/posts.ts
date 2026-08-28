@@ -71,13 +71,15 @@ export const postsRouter = router({
       categoryId: z.number().int().nullable().optional(),
       accountId: z.number().int().nullable().optional(),
       scheduledDate: z.string().nullable().optional(),
+      imageUrl: z.string().max(512).nullable().optional(),
       sortOrder: z.number().int().default(0),
     }))
     .mutation(async ({ input }) => {
       const id = await createPost({
         content: input.content, slotIndex: input.slotIndex,
         categoryId: input.categoryId ?? null, accountId: input.accountId ?? null,
-        scheduledDate: input.scheduledDate ?? null, sortOrder: input.sortOrder,
+        scheduledDate: input.scheduledDate ?? null, imageUrl: input.imageUrl ?? null,
+        sortOrder: input.sortOrder,
         status: "pending", approvalStatus: await initialApprovalStatus(),
       });
       return { ok: true, id };
@@ -93,6 +95,7 @@ export const postsRouter = router({
       scheduledDate: z.string().nullable().optional(),
       sortOrder: z.number().int().optional(),
       status: z.enum(["pending", "posted", "error"]).optional(),
+      imageUrl: z.string().max(512).nullable().optional(),
       evergreen: z.boolean().optional(),
     }))
     .mutation(async ({ input }) => {

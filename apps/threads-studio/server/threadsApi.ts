@@ -6,22 +6,61 @@
 
 const THREADS_API_BASE = "https://graph.threads.net/v1.0";
 
+
+/**
+ * 画像コンテナが公開可能になるまで待つ。
+ * ERROR が返ったら理由を添えて失敗させ、時間切れなら待たずに公開を試みる
+ * （多くの場合そのまま成功し、駄目なら公開APIのエラーがそのまま上がる）。
+ */
+async function waitForContainer(
+  containerId: string,
+  accessToken: string,
+  { attempts = 10, intervalMs = 3000 } = {}
+): Promise<void> {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(
+        `${THREADS_API_BASE}/${containerId}?fields=status,error_message&access_token=${encodeURIComponent(accessToken)}`
+      );
+      if (res.ok) {
+        const data = (await res.json()) as { status?: string; error_message?: string };
+        if (data.status === "FINISHED") return;
+        if (data.status === "ERROR" || data.status === "EXPIRED") {
+          throw new Error(
+            `Threads media processing failed (${data.status}): ${data.error_message ?? "unknown"}`
+          );
+        }
+      }
+    } catch (e) {
+      // ステータス確認自体の失敗（ネットワーク等）では止めない
+      if (e instanceof Error && e.message.startsWith("Threads media processing failed")) throw e;
+    }
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+}
+
 export interface ThreadsPostResult {
   containerId: string;
   postId: string;
 }
 
+/**
+ * 投稿を作成して公開する。
+ * `imageUrl` を渡すと画像付き投稿になる。Threads は画像バイナリを直接受け取らず
+ * 「公開URLから取得」する仕様なので、必ず外部から到達できる絶対URLを渡すこと。
+ */
 export async function publishTextPost(
   accessToken: string,
   userId: string,
-  text: string
+  text: string,
+  imageUrl?: string | null
 ): Promise<ThreadsPostResult> {
   // Step 1: Create media container
-  const createParams = new URLSearchParams({
-    media_type: "TEXT",
-    text,
-    access_token: accessToken,
-  });
+  const createParams = new URLSearchParams(
+    imageUrl
+      ? { media_type: "IMAGE", image_url: imageUrl, text, access_token: accessToken }
+      : { media_type: "TEXT", text, access_token: accessToken }
+  );
 
   const createRes = await fetch(`${THREADS_API_BASE}/${userId}/threads`, {
     method: "POST",
@@ -37,8 +76,10 @@ export async function publishTextPost(
   const createData = (await createRes.json()) as { id: string };
   const containerId = createData.id;
 
-  // Brief pause recommended by Meta docs before publishing
+  // Brief pause recommended by Meta docs before publishing.
+  // 画像付きはメディアの取得・処理に時間がかかるため、状態がFINISHEDになるまで待つ。
   await new Promise((r) => setTimeout(r, 2000));
+  if (imageUrl) await waitForContainer(containerId, accessToken);
 
   // Step 2: Publish the container
   const publishParams = new URLSearchParams({

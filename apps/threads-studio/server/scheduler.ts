@@ -28,6 +28,7 @@ import {
 } from "./db";
 import { Account } from "../drizzle/schema";
 import { fetchPostInsights, publishTextPost, refreshLongLivedToken } from "./threadsApi";
+import { ENV } from "./_core/env";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 
@@ -138,6 +139,23 @@ export async function rewordForRecycle(content: string): Promise<string> {
   }
 }
 
+/**
+ * 添付画像URLをThreadsが取得できる絶対URLにする。
+ * 内部アップロード（/api/media/...）は APP_URL が無いと外部から取得できないため、
+ * 未設定なら分かりやすいエラーにする（黙って画像なしで投稿しない）。
+ */
+export function resolveImageUrl(imageUrl: string | null | undefined): string | null {
+  if (!imageUrl) return null;
+  if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
+  const base = ENV.appUrl.replace(/\/$/, "");
+  if (!base) {
+    throw new Error(
+      "APP_URL が未設定のため画像付き投稿ができません。Renderの環境変数にAPP_URLを設定してください。"
+    );
+  }
+  return `${base}${imageUrl.startsWith("/") ? "" : "/"}${imageUrl}`;
+}
+
 /** 1アカウント・1スロット分の投稿を試みる。発火しなかった場合は null */
 export async function runSlotForAccount(
   account: Account,
@@ -175,14 +193,17 @@ export async function runSlotForAccount(
   }
 
   try {
-    const result = await publishTextPost(account.threadsAccessToken, account.threadsUserId, content);
+    const imageUrl = resolveImageUrl(post.imageUrl);
+    const result = await publishTextPost(
+      account.threadsAccessToken, account.threadsUserId, content, imageUrl
+    );
     // 再投稿でも status を posted にしておく（未投稿のまま残ると通常枠で二重投稿になるため）
     await updatePost(post.id, { status: "posted" });
     if (recycled) await markPostRecycled(post.id, now);
     await createPostLog({
       postId: post.id, accountId: account.id, content,
       status: "posted", threadsPostId: result.postId, slotIndex, categoryId: post.categoryId,
-      recycled,
+      recycled, imageUrl: post.imageUrl,
     });
     return { posted: result.postId, ...(recycled ? { recycled: true } : {}) };
   } catch (err) {
@@ -192,7 +213,7 @@ export async function runSlotForAccount(
     await createPostLog({
       postId: post.id, accountId: account.id, content,
       status: "error", errorMessage: msg, slotIndex, categoryId: post.categoryId,
-      recycled,
+      recycled, imageUrl: post.imageUrl,
     });
     await maybeNotifyError(
       `【${account.name}】Threads自動投稿に失敗しました`,

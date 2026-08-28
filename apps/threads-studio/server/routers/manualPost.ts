@@ -3,7 +3,7 @@ import {
   createPostLog, getAccountById, getNextPendingPostAny, getPostById,
   getSettings, listActiveAccounts, updatePost,
 } from "../db";
-import { getLocalParts } from "../scheduler";
+import { getLocalParts, resolveImageUrl } from "../scheduler";
 import { publishTextPost } from "../threadsApi";
 import { protectedProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
@@ -52,7 +52,8 @@ export const manualPostRouter = router({
         const result = await publishTextPost(
           account.threadsAccessToken,
           account.threadsUserId,
-          post.content
+          post.content,
+          resolveImageUrl(post.imageUrl)
         );
         await updatePost(post.id, { status: "posted" });
         await createPostLog({
@@ -61,6 +62,7 @@ export const manualPostRouter = router({
           content: post.content,
           status: "posted",
           threadsPostId: result.postId,
+          imageUrl: post.imageUrl,
           slotIndex: 99,
           categoryId: post.categoryId,
         });
@@ -74,6 +76,7 @@ export const manualPostRouter = router({
           content: post.content,
           status: "error",
           errorMessage: msg,
+          imageUrl: post.imageUrl,
           slotIndex: 99,
         });
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: msg });

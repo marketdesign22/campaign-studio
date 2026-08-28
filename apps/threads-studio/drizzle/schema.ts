@@ -1,6 +1,7 @@
 import {
   boolean,
   int,
+  mediumtext,
   mysqlEnum,
   mysqlTable,
   text,
@@ -91,6 +92,22 @@ export const accounts = mysqlTable("accounts", {
 export type Account = typeof accounts.$inferSelect;
 export type InsertAccount = typeof accounts.$inferInsert;
 
+/**
+ * アップロードされた画像。Threads APIは「公開URL」しか受け付けないため、
+ * 画像はDBに保持し /api/media/:token で配信する（tokenはランダム）。
+ */
+export const media = mysqlTable("media", {
+  id: int("id").autoincrement().primaryKey(),
+  token: varchar("token", { length: 40 }).notNull().unique(),
+  mimeType: varchar("mimeType", { length: 40 }).notNull(),
+  byteSize: int("byteSize").notNull(),
+  /** base64エンコードした画像本体（MEDIUMTEXT = 最大16MB） */
+  data: mediumtext("data").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Media = typeof media.$inferSelect;
+
 /** Post drafts managed by the admin */
 /** Post categories */
 export const categories = mysqlTable("categories", {
@@ -118,6 +135,8 @@ export const posts = mysqlTable("posts", {
   /** category id */
   categoryId: int("categoryId"),
   sortOrder: int("sortOrder").default(0).notNull(),
+  /** 添付画像のURL（内部アップロードなら /api/media/xxx、外部URLも可） */
+  imageUrl: varchar("imageUrl", { length: 512 }),
   /** 再投稿コンテンツ: 投稿後も残しておき、空きスロットで言い回しを変えて再利用する */
   evergreen: boolean("evergreen").default(false).notNull(),
   /** 再投稿として最後に配信した日時（クールダウン判定に使う） */
@@ -142,6 +161,7 @@ export const postLogs = mysqlTable("post_logs", {
   errorMessage: text("errorMessage"),
   slotIndex: int("slotIndex").default(0).notNull(),
   categoryId: int("categoryId"),
+  imageUrl: varchar("imageUrl", { length: 512 }),
   /** 再投稿コンテンツから自動生成された投稿かどうか */
   recycled: boolean("recycled").default(false).notNull(),
   postedAt: timestamp("postedAt").defaultNow().notNull(),

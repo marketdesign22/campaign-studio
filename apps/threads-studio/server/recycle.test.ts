@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 /**
  * 再投稿（evergreen）まわりの要点だけを固定するテスト。
@@ -9,7 +9,7 @@ vi.mock("./_core/llm", () => ({
 }));
 
 import { invokeLLM } from "./_core/llm";
-import { rewordForRecycle } from "./scheduler";
+import { resolveImageUrl, rewordForRecycle } from "./scheduler";
 
 const mocked = vi.mocked(invokeLLM);
 
@@ -41,5 +41,24 @@ describe("rewordForRecycle", () => {
     expect(await rewordForRecycle(original)).toBe(original);
     mocked.mockResolvedValueOnce(llmReply("あ".repeat(501)));
     expect(await rewordForRecycle(original)).toBe(original);
+  });
+});
+
+describe("resolveImageUrl", () => {
+  const original = process.env.APP_URL;
+  afterEach(() => {
+    if (original === undefined) delete process.env.APP_URL;
+    else process.env.APP_URL = original;
+    vi.resetModules();
+  });
+
+  it("returns null when the post has no image", () => {
+    expect(resolveImageUrl(null)).toBeNull();
+    expect(resolveImageUrl(undefined)).toBeNull();
+    expect(resolveImageUrl("")).toBeNull();
+  });
+
+  it("passes external URLs through untouched", () => {
+    expect(resolveImageUrl("https://example.com/a.jpg")).toBe("https://example.com/a.jpg");
   });
 });

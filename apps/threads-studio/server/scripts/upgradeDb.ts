@@ -179,6 +179,20 @@ async function main() {
   await addColumn("posts", "approvalStatus", "`approvalStatus` enum('draft','approved') NOT NULL DEFAULT 'approved'");
   await addColumn("posts", "accountId", "`accountId` int NULL");
 
+  // ── media（画像アップロード） ────────────────────────────────────────────────
+  await createTable("media", `
+    CREATE TABLE \`media\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`token\` varchar(40) NOT NULL UNIQUE,
+      \`mimeType\` varchar(40) NOT NULL,
+      \`byteSize\` int NOT NULL,
+      \`data\` mediumtext NOT NULL,
+      \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await addColumn("posts", "imageUrl", "`imageUrl` varchar(512) NULL");
+  await addColumn("post_logs", "imageUrl", "`imageUrl` varchar(512) NULL");
+
   // ── posts: 再投稿コンテンツ ──────────────────────────────────────────────────
   await addColumn("posts", "evergreen", "`evergreen` boolean NOT NULL DEFAULT false");
   await addColumn("posts", "lastRecycledAt", "`lastRecycledAt` timestamp NULL");

@@ -82,7 +82,12 @@ export default function History() {
                         {new Date(log.postedAt).toLocaleString(locale)}
                       </span>
                     </div>
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap line-clamp-4">{log.content}</p>
+                    <div className="flex items-start gap-3">
+                      {log.imageUrl && (
+                        <img src={log.imageUrl} alt="" className="h-16 w-16 rounded-md object-cover border shrink-0" />
+                      )}
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap line-clamp-4">{log.content}</p>
+                    </div>
                     {log.status === "posted" && (
                       <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-sky-700 hover:bg-sky-500/10 -ml-2"
                         disabled={saveEvergreenMut.isPending}

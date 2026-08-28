@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { CalendarPlus, CheckCheck, FileUp, Pencil, Plus, Repeat, RotateCcw, Send, Sparkles, Trash2, Undo2, Upload } from "lucide-react";
+import { CalendarPlus, CheckCheck, FileUp, ImagePlus, Pencil, Plus, Repeat, RotateCcw, Send, Sparkles, Trash2, Undo2, Upload, X } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useI18n } from "@/i18n";
 
@@ -92,6 +92,29 @@ async function parseImportFile(file: File): Promise<string[]> {
   return lines;
 }
 
+/**
+ * 画像を投稿用に縮小してJPEGのdata URLにする。
+ * Threadsの推奨幅は1440pxまで。DB保存量とアップロード時間を抑えるため、
+ * 送信前にブラウザ側でリサイズ・再エンコードする。
+ */
+async function toUploadableJpeg(file: File, maxSide = 1440, quality = 0.85): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+  const w = Math.round(bitmap.width * scale);
+  const h = Math.round(bitmap.height * scale);
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("canvas unavailable");
+  // 透過PNGをJPEGにすると黒背景になるので白で下地を塗る
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close?.();
+  return canvas.toDataURL("image/jpeg", quality);
+}
+
 const SLOT_LABELS = ["朝", "夕", "追加1", "追加2", "追加3", "追加4"];
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-primary/10 text-primary",
@@ -136,6 +159,25 @@ export default function Posts() {
     onSuccess: () => { toast.success(t("空き枠に割り当てました")); invalidate(); },
     onError: e => toast.error(e.message),
   });
+  const uploadMedia = trpc.media.upload.useMutation();
+
+  async function handlePickImage(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setUploading(true);
+    try {
+      const dataUrl = await toUploadableJpeg(file);
+      const res = await uploadMedia.mutateAsync({ dataUrl });
+      setImageUrl(res.url);
+      toast.success(t("画像を添付しました"));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : t("画像の処理に失敗しました"));
+    } finally {
+      setUploading(false);
+    }
+  }
+
   const importMut = trpc.posts.bulkImport.useMutation({ onSuccess: d => { toast.success(`${d.count}${t("件インポートしました")}`); invalidate(); setImportOpen(false); setImportText(""); }, onError: e => toast.error(e.message) });
   const approvalMut = trpc.posts.setApproval.useMutation({ onSuccess: () => invalidate(), onError: e => toast.error(e.message) });
   const aiGenerate = trpc.ai.generateDrafts.useMutation({ onError: e => toast.error(e.message) });
@@ -151,6 +193,9 @@ export default function Posts() {
   const [catId, setCatId] = useState<number | null>(null);
   const [accountId, setAccountId] = useState<number | null>(null);
   const [scheduledDate, setScheduledDate] = useState("");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const imageFileRef = useRef<HTMLInputElement>(null);
   const [rewriteInstruction, setRewriteInstruction] = useState("");
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
@@ -187,16 +232,16 @@ export default function Posts() {
   const [aiLang, setAiLang] = useState<"ja" | "en">(lang);
   const [aiDrafts, setAiDrafts] = useState<string[]>([]);
 
-  function openCreate() { setEditing(null); setContent(""); setSlotIndex(0); setCatId(null); setAccountId(null); setScheduledDate(""); setRewriteInstruction(""); setOpen(true); }
-  function openEdit(p: typeof postList[0]) { setEditing(p); setContent(p.content); setSlotIndex(p.slotIndex); setCatId(p.categoryId); setAccountId(p.accountId ?? null); setScheduledDate(p.scheduledDate ?? ""); setRewriteInstruction(""); setOpen(true); }
+  function openCreate() { setEditing(null); setContent(""); setSlotIndex(0); setCatId(null); setAccountId(null); setScheduledDate(""); setImageUrl(null); setRewriteInstruction(""); setOpen(true); }
+  function openEdit(p: typeof postList[0]) { setEditing(p); setContent(p.content); setSlotIndex(p.slotIndex); setCatId(p.categoryId); setAccountId(p.accountId ?? null); setScheduledDate(p.scheduledDate ?? ""); setImageUrl(p.imageUrl ?? null); setRewriteInstruction(""); setOpen(true); }
   function handleSave() {
     const date = scheduledDate || null;
-    if (editing) updateMut.mutate({ id: editing.id, content, slotIndex, categoryId: catId, accountId, scheduledDate: date });
-    else createMut.mutate({ content, slotIndex, categoryId: catId, accountId, scheduledDate: date });
+    if (editing) updateMut.mutate({ id: editing.id, content, slotIndex, categoryId: catId, accountId, scheduledDate: date, imageUrl });
+    else createMut.mutate({ content, slotIndex, categoryId: catId, accountId, scheduledDate: date, imageUrl });
   }
   async function handleSaveAndPostNow() {
     try {
-      const created = await createMut.mutateAsync({ content, slotIndex, categoryId: catId, accountId, scheduledDate: scheduledDate || null });
+      const created = await createMut.mutateAsync({ content, slotIndex, categoryId: catId, accountId, scheduledDate: scheduledDate || null, imageUrl });
       postNowMut.mutate({ postId: created.id });
     } catch {
       // createMut.onError already surfaced the toast
@@ -326,7 +371,12 @@ export default function Posts() {
                           <span className="text-xs text-muted-foreground">@{account.name}</span>
                         )}
                       </div>
-                      <p className="text-sm leading-relaxed line-clamp-3">{p.content}</p>
+                      <div className="flex items-start gap-3">
+                        {p.imageUrl && (
+                          <img src={p.imageUrl} alt="" className="h-14 w-14 rounded-md object-cover border shrink-0" />
+                        )}
+                        <p className="text-sm leading-relaxed line-clamp-3">{p.content}</p>
+                      </div>
                     </div>
                     <div className="flex gap-1 shrink-0">
                       {approvalEnabled && p.status === "pending" && (
@@ -392,6 +442,27 @@ export default function Posts() {
                   {aiRewrite.isPending ? t("生成中...") : t("AIリライト")}
                 </Button>
               </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t("画像（任意）")}</Label>
+              <input ref={imageFileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePickImage} />
+              {imageUrl ? (
+                <div className="flex items-start gap-3">
+                  <img src={imageUrl} alt="" className="h-24 w-24 rounded-md object-cover border" />
+                  <div className="flex flex-col gap-1.5">
+                    <Button type="button" size="sm" variant="outline" onClick={() => imageFileRef.current?.click()} disabled={uploading}>
+                      {t("画像を変更")}
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" className="text-destructive" onClick={() => setImageUrl(null)}>
+                      <X className="h-3.5 w-3.5 mr-1" />{t("画像を外す")}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button type="button" size="sm" variant="outline" onClick={() => imageFileRef.current?.click()} disabled={uploading}>
+                  <ImagePlus className="h-4 w-4 mr-1.5" />{uploading ? t("アップロード中...") : t("画像を追加")}
+                </Button>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">

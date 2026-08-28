@@ -4,7 +4,7 @@ import { createPool } from "mysql2";
 import { buildDbConfig } from "./dbConfig";
 import {
   InsertAccount, InsertPost, InsertUser,
-  accounts, categories, postAnalytics, postLogs, posts, settings, users,
+  accounts, categories, media, postAnalytics, postLogs, posts, settings, users,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -153,6 +153,26 @@ export async function deleteCategory(id: number) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   await db.delete(categories).where(eq(categories.id, id));
+}
+
+// ── Media ─────────────────────────────────────────────────────────────────────
+
+export async function createMedia(data: {
+  token: string;
+  mimeType: string;
+  byteSize: number;
+  data: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.insert(media).values(data);
+}
+
+export async function getMediaByToken(token: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(media).where(eq(media.token, token)).limit(1);
+  return rows[0];
 }
 
 // ── Posts ─────────────────────────────────────────────────────────────────────
@@ -370,6 +390,7 @@ export async function createPostLog(data: {
   slotIndex?: number;
   categoryId?: number | null;
   recycled?: boolean;
+  imageUrl?: string | null;
 }) {
   const db = await getDb();
   if (!db) return;
