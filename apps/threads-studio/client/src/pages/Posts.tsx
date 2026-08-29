@@ -339,7 +339,7 @@ export default function Posts() {
                 <span className="text-xs text-muted-foreground">
                   {selected.size > 0 ? `${selected.size}${t("件選択中")}` : t("すべて選択")}
                 </span>
-                {selected.size > 0 && accounts.length > 1 && (
+                {selected.size > 0 && accounts.length > 0 && (
                   <Select value="" onValueChange={v => bulkAssignMut.mutate({ ids: Array.from(selected), accountId: v === "none" ? null : Number(v) })}>
                     <SelectTrigger className="h-7 w-[190px] text-xs ml-auto">
                       <SelectValue placeholder={t("投稿先アカウントを変更")} />
@@ -351,7 +351,7 @@ export default function Posts() {
                   </Select>
                 )}
                 {selected.size > 0 && (
-                  <Button size="sm" variant="destructive" className={`h-7 text-xs ${accounts.length > 1 ? "" : "ml-auto"}`}
+                  <Button size="sm" variant="destructive" className={`h-7 text-xs ${accounts.length > 0 ? "" : "ml-auto"}`}
                     disabled={bulkDeleteMut.isPending}
                     onClick={() => { if (confirm(`${selected.size}${t("件の原稿を削除しますか？この操作は取り消せません。")}`)) bulkDeleteMut.mutate({ ids: Array.from(selected) }); }}>
                     <Trash2 className="h-3.5 w-3.5 mr-1" />{bulkDeleteMut.isPending ? t("削除中...") : t("選択を削除")}
