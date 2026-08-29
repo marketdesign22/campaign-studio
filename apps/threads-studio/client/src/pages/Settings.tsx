@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
-  AtSign, CheckCircle, KeyRound, LucideIcon, Palette, Plus, RefreshCw,
+  AtSign, CheckCircle, Copy, KeyRound, Link2, LucideIcon, Palette, Plus, RefreshCw,
   ShieldCheck, Sunrise, Sunset, Trash2, Users,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
@@ -220,6 +220,11 @@ export default function Settings() {
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newTokenValue, setNewTokenValue] = useState("");
+  const [connectUrl, setConnectUrl] = useState<string | null>(null);
+  const connectLinkMut = trpc.accounts.createConnectLink.useMutation({
+    onSuccess: (d) => setConnectUrl(d.url),
+    onError: (e) => toast.error(e.message),
+  });
   const createMut = trpc.accounts.create.useMutation({
     onSuccess: (d) => {
       toast.success(`${t("アカウントを追加しました")}${d.username ? ` (@${d.username})` : ""}`);
@@ -375,7 +380,7 @@ export default function Settings() {
       </Card>
 
       {/* Add account dialog */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+      <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) setConnectUrl(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>{t("アカウントを追加")}</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
@@ -384,8 +389,30 @@ export default function Settings() {
               <Input placeholder={t("例: SCSU 公式")} value={newName} maxLength={64}
                 onChange={(e) => setNewName(e.target.value)} />
             </div>
+            <div className="space-y-2 p-3 rounded-lg border bg-muted/40">
+              <p className="text-sm font-medium">{t("方法A: 連携リンクを送る（推奨）")}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {t("リンクを開いた本人がThreadsで許可すると、このアプリにアカウントが追加されます。パスワードを預かる必要がありません。")}
+              </p>
+              {connectUrl ? (
+                <div className="space-y-1.5">
+                  <Input readOnly value={connectUrl} className="font-mono text-xs"
+                    onFocus={(e) => e.currentTarget.select()} />
+                  <Button size="sm" variant="outline" className="w-full"
+                    onClick={() => { navigator.clipboard?.writeText(connectUrl); toast.success(t("リンクをコピーしました")); }}>
+                    <Copy className="h-3.5 w-3.5 mr-1.5" />{t("リンクをコピー")}
+                  </Button>
+                </div>
+              ) : (
+                <Button size="sm" variant="outline" disabled={!newName.trim() || connectLinkMut.isPending}
+                  onClick={() => connectLinkMut.mutate({ name: newName.trim() })}>
+                  <Link2 className="h-3.5 w-3.5 mr-1.5" />
+                  {connectLinkMut.isPending ? t("発行中...") : t("連携リンクを発行")}
+                </Button>
+              )}
+            </div>
             <div className="space-y-1.5">
-              <Label>{t("長期アクセストークン")}</Label>
+              <Label>{t("方法B: 長期アクセストークンを直接入力")}</Label>
               <Input type="password" placeholder="THxxxxxxxx..." value={newTokenValue}
                 onChange={(e) => setNewTokenValue(e.target.value)} className="font-mono text-sm" />
               <p className="text-xs text-muted-foreground">

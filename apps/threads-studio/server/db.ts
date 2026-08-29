@@ -117,6 +117,17 @@ export async function getAccountById(id: number) {
   return rows[0];
 }
 
+export async function getAccountByThreadsUserId(threadsUserId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db
+    .select()
+    .from(accounts)
+    .where(eq(accounts.threadsUserId, threadsUserId))
+    .limit(1);
+  return rows[0];
+}
+
 export async function createAccount(data: InsertAccount) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");

@@ -18,6 +18,11 @@ export const ENV = {
     .map(s => s.trim().toLowerCase())
     .filter(Boolean),
 
+  // Threads OAuth（クライアントが自分で連携するための設定）
+  // App ID は Meta for Developers のアプリ、App Secret は Threads API の設定から取得
+  threadsAppId: process.env.THREADS_APP_ID ?? "",
+  threadsAppSecret: process.env.THREADS_APP_SECRET ?? "",
+
   // AIアシスト (Anthropic API)
   anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? "",
   anthropicModel: process.env.ANTHROPIC_MODEL ?? "claude-opus-5",

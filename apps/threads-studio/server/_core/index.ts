@@ -5,6 +5,7 @@ import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { mediaHandler } from "../mediaHandler";
+import { threadsConnectHandler } from "../threadsConnectHandler";
 import { appRouter } from "../routers";
 import { startInternalScheduler } from "../cron";
 import { createContext } from "./context";
@@ -40,6 +41,8 @@ async function startServer() {
   // 画像の公開配信。Threadsのサーバーが取得しに来るため認証は掛けられない
   // （tokenはランダム16バイトなので、URLを知らない限り到達できない）。
   app.get("/api/media/:token", mediaHandler);
+  // Threads連携（クライアントが自分で許可して戻ってくる先。未ログインで到達する）
+  app.get("/api/threads/callback", threadsConnectHandler);
   // Scheduled cron handlers — must be before Vite/static fallthrough
   app.post("/api/scheduled/tick", tickHandler);
   app.post("/api/scheduled/morning-post", morningPostHandler);

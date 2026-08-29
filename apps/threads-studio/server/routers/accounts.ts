@@ -4,6 +4,7 @@ import {
   createAccount, deleteAccount, getAccountById, listAccounts, updateAccount,
 } from "../db";
 import { getThreadsProfile, refreshLongLivedToken } from "../threadsApi";
+import { buildAuthorizeUrl, signConnectState } from "../threadsOAuth";
 import { protectedProcedure, router } from "../_core/trpc";
 
 /** トークンは常にマスクして返す */
@@ -17,6 +18,25 @@ export const accountsRouter = router({
     const rows = await listAccounts();
     return rows.map(mask);
   }),
+
+  /**
+   * クライアントに渡す連携リンクを発行する。
+   * リンクを開いた人がThreadsで許可すると、トークンがこのアプリに直接届く
+   * （＝クライアントのパスワードを預からずにアカウントを追加できる）。
+   */
+  createConnectLink: protectedProcedure
+    .input(z.object({ name: z.string().min(1).max(64) }))
+    .mutation(async ({ input }) => {
+      try {
+        const state = await signConnectState(input.name);
+        return { url: buildAuthorizeUrl(state) };
+      } catch (e) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: e instanceof Error ? e.message : String(e),
+        });
+      }
+    }),
 
   /** トークンを検証してアカウントを追加 */
   create: protectedProcedure
