@@ -84,7 +84,7 @@ export default function Dashboard() {
                     <AtSign className="h-4 w-4 text-[#1d3450]" strokeWidth={2.4} />
                   </span>
                   <div className="leading-tight">
-                    <p className="text-sm font-semibold">{t("SCSU 公式")}</p>
+                    <p className="text-sm font-semibold">{preview.accountName ?? t("アカウント未設定")}</p>
                     <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
                       {preview.slotIndex === 0 ? (
                         <><Sunrise className="h-3 w-3" />{t("朝の投稿枠")}</>

@@ -23,12 +23,12 @@ const en: Record<string, string> = {
   "サインイン": "Sign in",
   "運用チームメンバーとしてサインインしてください。": "Sign in as an operations team member.",
   "毎日の発信を、確かなリズムで。": "Every day. On rhythm.",
-  "投稿の計画・自動配信・効果測定までを一つに。SCSU公式Threadsアカウントの運用ダッシュボードです。":
+  "投稿の計画・自動配信・効果測定までを一つに。公式Threadsアカウントの運用ダッシュボードです。":
     "Plan, auto-publish, and measure — all in one operations dashboard for your official Threads account.",
 
   // ── Dashboard ───────────────────────────────────────────────────────────
   "未投稿": "Queued",
-  "SCSU 公式": "SCSU Official",
+  "アカウント未設定": "No account configured",
   "投稿済み": "Posted",
   "エラー": "Error",
   "公式Threads運用状況": "Official Threads operations",
@@ -276,7 +276,7 @@ const en: Record<string, string> = {
   "ブランド設定を保存": "Save Branding",
   "アカウントを追加": "Add Account",
   "表示名": "Display name",
-  "例: SCSU 公式": "e.g. SCSU Official",
+  "例: 〇〇大学 公式": "e.g. Acme Official",
   "長期アクセストークン": "Long-lived access token",
   "保存時にトークンを検証し、Threads User IDを自動取得します。": "The token is verified on save and the Threads User ID is fetched automatically.",
   "検証・追加中...": "Verifying...",

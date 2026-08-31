@@ -1,10 +1,23 @@
 import { z } from "zod";
 import { getSettings, upsertSettings } from "../db";
 import { getThreadsUserId } from "../threadsApi";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 
 export const settingsRouter = router({
+  /**
+   * サインイン画面用の公開ブランド情報。
+   * ログイン前に表示するため publicProcedure。表示名と色だけを返し、
+   * トークン等の運用情報は一切含めない。
+   */
+  brand: publicProcedure.query(async () => {
+    const s = await getSettings();
+    return {
+      brandName: s?.brandName ?? null,
+      brandAccent: s?.brandAccent ?? null,
+    };
+  }),
+
   get: protectedProcedure.query(async () => {
     const s = await getSettings();
     if (!s) return {

@@ -163,7 +163,11 @@ export const postsRouter = router({
     const tz = accounts[0]?.timezone ?? "LA";
     const today = getLocalParts(new Date(), tz).dateStr;
     const post = await getNextPendingPostAny(today, accounts[0]?.id);
-    return post ?? null;
+    if (!post) return null;
+    // プレビューには実際の投稿先アカウント名を添える
+    // （原稿にアカウント指定がなければ既定アカウントに投稿される）
+    const target = accounts.find((a) => a.id === post.accountId) ?? accounts[0];
+    return { ...post, accountName: target?.name ?? null };
   }),
 
   /** Bulk import from parsed text lines */

@@ -39,6 +39,9 @@ const menuItemsV2 = [
   { icon: Settings, label: "設定", path: "/settings" },
 ];
 
+/** ブランド未設定時の既定表示名（ホワイトレーベルのため特定組織名は入れない） */
+const DEFAULT_BRAND_NAME = "Threads Studio";
+
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 272;
 const MIN_WIDTH = 200;
@@ -81,6 +84,15 @@ export default function DashboardLayout({
   });
   const { loading, user } = useAuth();
   const { t, lang } = useI18n();
+  // サインイン画面は未ログインなので公開エンドポイントからブランドを取る
+  const { data: brand } = trpc.settings.brand.useQuery(undefined, { staleTime: 60_000 });
+  const brandTitle = brand?.brandName || DEFAULT_BRAND_NAME;
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (brand?.brandAccent) root.style.setProperty("--brand-accent", brand.brandAccent);
+    else root.style.removeProperty("--brand-accent");
+  }, [brand?.brandAccent]);
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
@@ -100,7 +112,7 @@ export default function DashboardLayout({
         <div className="hidden lg:flex flex-col justify-between bg-[oklch(0.245_0.055_248)] p-12 text-white">
           <div className="flex items-center gap-3">
             <BrandMark />
-            <span className="font-display font-semibold tracking-wide">SCSU Threads Studio</span>
+            <span className="font-display font-semibold tracking-wide">{brandTitle}</span>
           </div>
           <div>
             <p className="text-[11px] font-semibold tracking-[0.22em] uppercase text-[var(--brand-accent)] mb-4">
@@ -110,10 +122,10 @@ export default function DashboardLayout({
               {lang === "ja" ? (<>毎日の発信を、<br />確かなリズムで。</>) : (<>Every day.<br />On rhythm.</>)}
             </h2>
             <p className="text-sm text-white/60 mt-5 leading-relaxed max-w-sm">
-              {t("投稿の計画・自動配信・効果測定までを一つに。SCSU公式Threadsアカウントの運用ダッシュボードです。")}
+              {t("投稿の計画・自動配信・効果測定までを一つに。公式Threadsアカウントの運用ダッシュボードです。")}
             </p>
           </div>
-          <p className="text-xs text-white/40">© Southern California State University</p>
+          <p className="text-xs text-white/40">© {new Date().getFullYear()} {brandTitle}</p>
         </div>
         {/* Sign-in panel */}
         <div className="flex items-center justify-center p-8">
@@ -122,7 +134,7 @@ export default function DashboardLayout({
               <BrandMark size="lg" />
               <div className="text-center">
                 <h1 className="font-display text-2xl font-semibold tracking-tight">
-                  SCSU Threads Studio
+                  {brandTitle}
                 </h1>
                 <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
                   {t("運用チームメンバーとしてサインインしてください。")}
@@ -180,7 +192,7 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   // White-label: apply brand name / accent color from settings
   const { data: brand } = trpc.settings.get.useQuery(undefined, { staleTime: 60_000 });
-  const brandTitle = brand?.brandName || "SCSU Threads";
+  const brandTitle = brand?.brandName || DEFAULT_BRAND_NAME;
   useEffect(() => {
     const root = document.documentElement;
     if (brand?.brandAccent) root.style.setProperty("--brand-accent", brand.brandAccent);

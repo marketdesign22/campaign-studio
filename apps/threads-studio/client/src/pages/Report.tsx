@@ -33,7 +33,7 @@ export default function Report() {
   const engagementRate = totals.views > 0
     ? (((totals.likes + totals.replies + totals.reposts) / totals.views) * 100).toFixed(2)
     : "0.00";
-  const brandTitle = settings?.brandName || "SCSU Threads";
+  const brandTitle = settings?.brandName || "Threads Studio";
 
   const postKey = t("投稿数");
   const errorKey = t("エラー");
