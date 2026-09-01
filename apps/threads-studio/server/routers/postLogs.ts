@@ -1,9 +1,10 @@
 import { z } from "zod";
 import { listPostLogs } from "../db";
-import { protectedProcedure, router } from "../_core/trpc";
+import { accountProcedure } from "../accountScope";
+import { router } from "../_core/trpc";
 
 export const postLogsRouter = router({
-  list: protectedProcedure
+  list: accountProcedure
     .input(z.object({ limit: z.number().int().max(200).default(50) }).optional())
-    .query(({ input }) => listPostLogs(input?.limit ?? 50)),
+    .query(({ input, ctx }) => listPostLogs(input?.limit ?? 50, ctx.scope)),
 });

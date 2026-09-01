@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { useAccount } from "@/contexts/AccountContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -186,7 +187,10 @@ function AccountCard({ account }: { account: AccountRow }) {
 
 export default function Settings() {
   const { t } = useI18n();
-  const { data: settings } = trpc.settings.get.useQuery();
+  const { current: currentAccount, hasAccounts } = useAccount();
+  // アカウントが1件も無いうちは、アカウント前提のAPIを呼ばない
+  // （このページから最初の1件を追加できるようにするため）
+  const { data: settings } = trpc.settings.get.useQuery(undefined, { enabled: hasAccounts });
   const { data: accounts = [], isLoading: accountsLoading } = trpc.accounts.list.useQuery();
   const utils = trpc.useUtils();
 
@@ -239,7 +243,11 @@ export default function Settings() {
       <PageHeader
         eyebrow="Preferences"
         title={t("設定")}
-        description={t("アカウント・運用ルール・ブランドの管理")}
+        description={
+          currentAccount
+            ? `${currentAccount.name} — ${t("運用ルールとブランドはこのアカウントにのみ適用されます")}`
+            : t("アカウント・運用ルール・ブランドの管理")
+        }
       />
 
       {/* Accounts */}

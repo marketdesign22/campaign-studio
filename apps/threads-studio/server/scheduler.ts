@@ -14,10 +14,12 @@
  */
 import {
   createPostLog,
+  getAccountSettings,
   getEvergreenCandidate,
   getNextPendingPost,
   getSettings,
   hasSlotLogInRange,
+  listAccounts,
   listActiveAccounts,
   listLogsForAnalytics,
   markPostRecycled,
@@ -26,6 +28,7 @@ import {
   upsertAnalytics,
   upsertSettings,
 } from "./db";
+import { AccountScope, primaryAccountId, scopeOf } from "./accountScope";
 import { Account } from "../drizzle/schema";
 import { fetchPostInsights, publishTextPost, refreshLongLivedToken } from "./threadsApi";
 import { ENV } from "./_core/env";
@@ -93,10 +96,10 @@ export function tokenNeedsRefresh(account: Pick<Account, "tokenRefreshedAt" | "c
 
 // ── Posting ──────────────────────────────────────────────────────────────────
 
-async function maybeNotifyError(title: string, content: string) {
+async function maybeNotifyError(accountId: number, title: string, content: string) {
   try {
-    const cfg = await getSettings();
-    if (cfg && cfg.notifyOnError === false) return;
+    const cfg = await getAccountSettings(accountId);
+    if (!cfg.notifyOnError) return;
     await notifyOwner({ title, content });
   } catch (e) {
     console.warn("[scheduler] notification failed:", e);
@@ -159,6 +162,7 @@ export function resolveImageUrl(imageUrl: string | null | undefined): string | n
 /** 1アカウント・1スロット分の投稿を試みる。発火しなかった場合は null */
 export async function runSlotForAccount(
   account: Account,
+  scope: AccountScope,
   slotIndex: number,
   now: Date
 ): Promise<{ posted?: string; error?: string; recycled?: boolean } | null> {
@@ -169,9 +173,9 @@ export async function runSlotForAccount(
   if (!slotIsDue(local, slotHour, slotMinute)) return null;
 
   const { start, end } = localDayUtcRange(local.dateStr, account.timezone);
-  if (await hasSlotLogInRange(account.id, slotIndex, start, end)) return null;
+  if (await hasSlotLogInRange(scope, slotIndex, start, end)) return null;
 
-  let post = await getNextPendingPost(slotIndex, local.dateStr, account.id);
+  let post = await getNextPendingPost(slotIndex, local.dateStr, scope);
   let recycled = false;
   let content: string;
 
@@ -179,13 +183,9 @@ export async function runSlotForAccount(
     content = post.content;
   } else {
     // 予約原稿が尽きたスロットを、再投稿コンテンツで埋める（設定で有効化した場合のみ）
-    const cfg = await getSettings();
-    if (!cfg?.autoFillEvergreen) return null;
-    const candidate = await getEvergreenCandidate(
-      account.id,
-      cfg.recycleCooldownDays ?? 30,
-      now
-    );
+    const cfg = await getAccountSettings(account.id);
+    if (!cfg.autoFillEvergreen) return null;
+    const candidate = await getEvergreenCandidate(scope, cfg.recycleCooldownDays, now);
     if (!candidate) return null;
     post = candidate;
     recycled = true;
@@ -216,6 +216,7 @@ export async function runSlotForAccount(
       recycled, imageUrl: post.imageUrl,
     });
     await maybeNotifyError(
+      account.id,
       `【${account.name}】Threads自動投稿に失敗しました`,
       `スロット: ${slotIndex === 0 ? "朝" : "夕"}\n原稿ID: ${post.id}\nエラー: ${msg}\n\n投稿履歴ページからご確認ください。`
     );
@@ -245,6 +246,7 @@ export async function refreshTokensIfNeeded(now: Date) {
         account.tokenExpiresAt.getTime() - now.getTime() < 7 * 24 * 60 * 60 * 1000;
       if (expiresSoon) {
         await maybeNotifyError(
+          account.id,
           `【${account.name}】Threadsトークンの自動更新に失敗しています`,
           `トークンの失効が近づいています。設定ページから新しいトークンを登録してください。\nエラー: ${msg}`
         );
@@ -254,13 +256,19 @@ export async function refreshTokensIfNeeded(now: Date) {
 }
 
 export async function fetchAnalyticsForRecentPosts() {
-  const accounts = await listActiveAccounts();
+  const all = await listAccounts();
+  const accounts = all.filter((a) => a.active);
   if (accounts.length === 0) return;
   const byId = new Map(accounts.map((a) => [a.id, a]));
-  const fallback = accounts[0];
+  // accountId 未設定の旧ログは最初に作られたアカウントの投稿なので、そのトークンで引く
+  const primaryId = primaryAccountId(all);
+  const legacyOwner = primaryId !== null ? byId.get(primaryId) : undefined;
   const logs = await listLogsForAnalytics(30);
   for (const log of logs) {
-    const account = (log.accountId ? byId.get(log.accountId) : undefined) ?? fallback;
+    // 所属アカウントが無効化・削除されているログは、他アカウントのトークンで
+    // 引くと誤ったデータが入るため取得しない
+    const account = log.accountId ? byId.get(log.accountId) : legacyOwner;
+    if (!account) continue;
     if (!log.threadsPostId) continue;
     try {
       const m = await fetchPostInsights(account.threadsAccessToken, log.threadsPostId);
@@ -287,10 +295,13 @@ async function runDailyMaintenance(now: Date) {
 
 export async function runTick(now: Date = new Date()) {
   const results: Record<string, unknown>[] = [];
-  const accounts = await listActiveAccounts();
-  for (const account of accounts) {
+  const all = await listAccounts();
+  const primaryId = primaryAccountId(all);
+  for (const account of all.filter((a) => a.active)) {
+    // スコープはUIの選択状態ではなく、常にこのループのアカウントから作る
+    const scope = scopeOf(account, primaryId);
     for (const slotIndex of [0, 1]) {
-      const r = await runSlotForAccount(account, slotIndex, now);
+      const r = await runSlotForAccount(account, scope, slotIndex, now);
       if (r) results.push({ account: account.id, slotIndex, ...r });
     }
   }

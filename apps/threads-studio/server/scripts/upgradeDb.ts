@@ -56,6 +56,21 @@ async function main() {
     await conn.query(`ALTER TABLE \`${table}\` ADD COLUMN ${ddl}`);
   }
 
+  async function hasIndex(table: string, index: string): Promise<boolean> {
+    const [rows] = await conn.query(
+      "SELECT 1 FROM information_schema.statistics WHERE table_schema = ? AND table_name = ? AND index_name = ?",
+      [dbName, table, index]
+    );
+    return (rows as unknown[]).length > 0;
+  }
+
+  async function addIndex(table: string, index: string, columns: string) {
+    if (!(await hasTable(table))) return;
+    if (await hasIndex(table, index)) return;
+    console.log(`[upgrade] ${table} に索引 ${index} を追加`);
+    await conn.query(`CREATE INDEX \`${index}\` ON \`${table}\` (${columns})`);
+  }
+
   // ── 基本テーブル（空のDBへの初回デプロイ用。drizzle/schema.ts と揃えること） ──
   async function createTable(table: string, ddl: string) {
     if (await hasTable(table)) return;
@@ -256,6 +271,68 @@ async function main() {
       );
     }
   }
+
+  // ── アカウント分離（マルチアカウント対応） ──────────────────────────────────
+  // すべて追加のみ。既存の行・列・値は一切変更しない。
+
+  // カテゴリーの所属アカウント。NULL = 従来からある全アカウント共通のカテゴリー
+  await addColumn("categories", "accountId", "`accountId` int NULL");
+
+  // アカウントごとの運用設定
+  await createTable("account_settings", `
+    CREATE TABLE \`account_settings\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`accountId\` int NOT NULL UNIQUE,
+      \`requireApproval\` boolean NOT NULL DEFAULT false,
+      \`notifyOnError\` boolean NOT NULL DEFAULT true,
+      \`autoFillEvergreen\` boolean NOT NULL DEFAULT false,
+      \`recycleRewrite\` boolean NOT NULL DEFAULT true,
+      \`recycleCooldownDays\` int NOT NULL DEFAULT 30,
+      \`postsPerDay\` int NOT NULL DEFAULT 2,
+      \`brandName\` varchar(64) NULL,
+      \`brandAccent\` varchar(16) NULL,
+      \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
+  // 既存アカウントに設定行が無ければ、現在のグローバル settings の値をコピーして作る。
+  // 「今の挙動をそのまま各アカウントに引き継ぐ」ためのINSERTのみで、更新はしない。
+  {
+    const [globalRows] = await conn.query(
+      "SELECT requireApproval, notifyOnError, autoFillEvergreen, recycleRewrite, recycleCooldownDays, postsPerDay, brandName, brandAccent FROM `settings` LIMIT 1"
+    );
+    const g = (globalRows as Record<string, unknown>[])[0] ?? {};
+    const [missing] = await conn.query(
+      "SELECT a.id FROM `accounts` a LEFT JOIN `account_settings` s ON s.accountId = a.id WHERE s.id IS NULL"
+    );
+    for (const row of missing as { id: number }[]) {
+      console.log(`[upgrade] account_settings をアカウント ${row.id} に作成（現行のグローバル設定を引き継ぎ）`);
+      await conn.query(
+        `INSERT INTO \`account_settings\`
+          (accountId, requireApproval, notifyOnError, autoFillEvergreen, recycleRewrite, recycleCooldownDays, postsPerDay, brandName, brandAccent)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          row.id,
+          g.requireApproval ?? false,
+          g.notifyOnError ?? true,
+          g.autoFillEvergreen ?? false,
+          g.recycleRewrite ?? true,
+          g.recycleCooldownDays ?? 30,
+          g.postsPerDay ?? 2,
+          g.brandName ?? null,
+          g.brandAccent ?? null,
+        ]
+      );
+    }
+  }
+
+  // アカウント単位の絞り込みが常に索引に乗るようにする
+  await addIndex("posts", "idx_posts_account", "`accountId`");
+  await addIndex("posts", "idx_posts_account_date", "`accountId`, `scheduledDate`");
+  await addIndex("post_logs", "idx_post_logs_account", "`accountId`, `postedAt`");
+  await addIndex("post_analytics", "idx_post_analytics_log", "`postLogId`");
+  await addIndex("categories", "idx_categories_account", "`accountId`");
 
   console.log("[upgrade] 完了");
   await conn.end();

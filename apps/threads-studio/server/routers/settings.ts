@@ -1,9 +1,16 @@
 import { z } from "zod";
-import { getSettings, upsertSettings } from "../db";
-import { getThreadsUserId } from "../threadsApi";
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
-import { TRPCError } from "@trpc/server";
+import {
+  getAccountSettings, getSettings, upsertAccountSettings,
+} from "../db";
+import { accountProcedure } from "../accountScope";
+import { publicProcedure, router } from "../_core/trpc";
 
+/**
+ * ブランド設定は2階層ある。
+ * - グローバル（settings テーブル）: この導入環境そのものの名前。サインイン画面で使う
+ *   （ログイン前はどのアカウントを見るか決まっていないため）
+ * - アカウントごと（account_settings）: 選択中クライアントの表示名・色。ダッシュボード内で使う
+ */
 export const settingsRouter = router({
   /**
    * サインイン画面用の公開ブランド情報。
@@ -18,44 +25,29 @@ export const settingsRouter = router({
     };
   }),
 
-  get: protectedProcedure.query(async () => {
-    const s = await getSettings();
-    if (!s) return {
-      threadsAccessToken: null,
-      threadsUserId: null,
-      morningHour: 8,
-      morningMinute: 0,
-      eveningHour: 18,
-      eveningMinute: 0,
-      timezone: "LA" as const,
-      requireApproval: false,
-      notifyOnError: true,
-      brandName: null as string | null,
-      brandAccent: null as string | null,
-      autoFillEvergreen: false,
-      recycleRewrite: true,
-      recycleCooldownDays: 30,
-    };
+  /**
+   * 選択中アカウントの運用設定とスケジュール。
+   * トークンそのものは返さず、登録済みかどうかだけを返す。
+   */
+  get: accountProcedure.query(async ({ ctx }) => {
+    const ops = await getAccountSettings(ctx.account.id);
     return {
-      threadsAccessToken: s.threadsAccessToken ? "***saved***" : null,
-      threadsUserId: s.threadsUserId,
-      morningHour: s.morningHour,
-      morningMinute: s.morningMinute,
-      eveningHour: s.eveningHour,
-      eveningMinute: s.eveningMinute,
-      timezone: s.timezone,
-      requireApproval: s.requireApproval,
-      notifyOnError: s.notifyOnError,
-      brandName: s.brandName,
-      brandAccent: s.brandAccent,
-      autoFillEvergreen: s.autoFillEvergreen,
-      recycleRewrite: s.recycleRewrite,
-      recycleCooldownDays: s.recycleCooldownDays,
+      accountId: ctx.account.id,
+      accountName: ctx.account.name,
+      threadsUserId: ctx.account.threadsUserId,
+      hasToken: !!ctx.account.threadsAccessToken,
+      tokenExpiresAt: ctx.account.tokenExpiresAt,
+      morningHour: ctx.account.morningHour,
+      morningMinute: ctx.account.morningMinute,
+      eveningHour: ctx.account.eveningHour,
+      eveningMinute: ctx.account.eveningMinute,
+      timezone: ctx.account.timezone,
+      ...ops,
     };
   }),
 
-  /** 運用設定（承認フロー・通知）とブランド設定 */
-  saveOps: protectedProcedure
+  /** 運用設定（承認フロー・通知・再投稿）とブランド設定。選択中アカウントにのみ適用される */
+  saveOps: accountProcedure
     .input(z.object({
       requireApproval: z.boolean().optional(),
       notifyOnError: z.boolean().optional(),
@@ -64,56 +56,10 @@ export const settingsRouter = router({
       autoFillEvergreen: z.boolean().optional(),
       recycleRewrite: z.boolean().optional(),
       recycleCooldownDays: z.number().int().min(1).max(365).optional(),
+      postsPerDay: z.number().int().min(1).max(10).optional(),
     }))
-    .mutation(async ({ input }) => {
-      await upsertSettings(input);
-      return { ok: true };
-    }),
-
-  /** Legacy: 単一トークン保存（アカウント管理UIへ移行済みだが互換のため残す） */
-  save: protectedProcedure
-    .input(
-      z.object({
-        threadsAccessToken: z.string().min(1),
-        threadsUserId: z.string().optional(),
-      })
-    )
-    .mutation(async ({ input }) => {
-      let userId = input.threadsUserId;
-      if (!userId) {
-        try {
-          userId = await getThreadsUserId(input.threadsAccessToken);
-        } catch (e) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Token verification failed: ${e instanceof Error ? e.message : String(e)}`,
-          });
-        }
-      }
-      await upsertSettings({
-        threadsAccessToken: input.threadsAccessToken,
-        threadsUserId: userId,
-      });
-      return { ok: true, threadsUserId: userId };
-    }),
-
-  clear: protectedProcedure.mutation(async () => {
-    await upsertSettings({ threadsAccessToken: null, threadsUserId: null });
-    return { ok: true };
-  }),
-
-  saveSchedule: protectedProcedure
-    .input(
-      z.object({
-        morningHour: z.number().int().min(0).max(23),
-        morningMinute: z.number().int().min(0).max(59),
-        eveningHour: z.number().int().min(0).max(23),
-        eveningMinute: z.number().int().min(0).max(59),
-        timezone: z.enum(["LA", "JP", "ET", "CT", "MT"]),
-      })
-    )
-    .mutation(async ({ input }) => {
-      await upsertSettings(input);
+    .mutation(async ({ input, ctx }) => {
+      await upsertAccountSettings(ctx.account.id, input);
       return { ok: true };
     }),
 });

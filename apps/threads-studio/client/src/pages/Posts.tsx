@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { useAccount } from "@/contexts/AccountContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -134,7 +135,9 @@ export default function Posts() {
   const { t, lang } = useI18n();
   const { data: postList = [], isLoading } = trpc.posts.list.useQuery();
   const { data: cats = [] } = trpc.categories.list.useQuery();
-  const { data: accounts = [] } = trpc.accounts.list.useQuery();
+  const { accounts, current: currentAccount } = useAccount();
+  // 一覧はすべて選択中アカウントの原稿なので、移動先には他のアカウントだけを出す
+  const otherAccounts = accounts.filter(a => a.id !== currentAccount?.id);
   const { data: settings } = trpc.settings.get.useQuery();
   const utils = trpc.useUtils();
   const invalidate = () => { utils.posts.list.invalidate(); utils.posts.nextPreview.invalidate(); utils.posts.runway.invalidate(); };
@@ -151,7 +154,7 @@ export default function Posts() {
     onError: e => toast.error(e.message),
   });
   const bulkAssignMut = trpc.posts.bulkAssignAccount.useMutation({
-    onSuccess: d => { toast.success(`${d.count}${t("件の投稿先を変更しました")}`); setSelected(new Set()); invalidate(); },
+    onSuccess: d => { toast.success(`${d.count}${t("件を移動しました")}`); setSelected(new Set()); invalidate(); },
     onError: e => toast.error(e.message),
   });
   const bulkDeleteMut = trpc.posts.bulkDelete.useMutation({
@@ -195,7 +198,6 @@ export default function Posts() {
   const [content, setContent] = useState("");
   const [slotIndex, setSlotIndex] = useState(0);
   const [catId, setCatId] = useState<number | null>(null);
-  const [accountId, setAccountId] = useState<number | null>(null);
   const [scheduledDate, setScheduledDate] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -236,16 +238,16 @@ export default function Posts() {
   const [aiLang, setAiLang] = useState<"ja" | "en">(lang);
   const [aiDrafts, setAiDrafts] = useState<string[]>([]);
 
-  function openCreate() { setEditing(null); setContent(""); setSlotIndex(0); setCatId(null); setAccountId(null); setScheduledDate(""); setImageUrl(null); setRewriteInstruction(""); setOpen(true); }
-  function openEdit(p: typeof postList[0]) { setEditing(p); setContent(p.content); setSlotIndex(p.slotIndex); setCatId(p.categoryId); setAccountId(p.accountId ?? null); setScheduledDate(p.scheduledDate ?? ""); setImageUrl(p.imageUrl ?? null); setRewriteInstruction(""); setOpen(true); }
+  function openCreate() { setEditing(null); setContent(""); setSlotIndex(0); setCatId(null); setScheduledDate(""); setImageUrl(null); setRewriteInstruction(""); setOpen(true); }
+  function openEdit(p: typeof postList[0]) { setEditing(p); setContent(p.content); setSlotIndex(p.slotIndex); setCatId(p.categoryId); setScheduledDate(p.scheduledDate ?? ""); setImageUrl(p.imageUrl ?? null); setRewriteInstruction(""); setOpen(true); }
   function handleSave() {
     const date = scheduledDate || null;
-    if (editing) updateMut.mutate({ id: editing.id, content, slotIndex, categoryId: catId, accountId, scheduledDate: date, imageUrl });
-    else createMut.mutate({ content, slotIndex, categoryId: catId, accountId, scheduledDate: date, imageUrl });
+    if (editing) updateMut.mutate({ id: editing.id, content, slotIndex, categoryId: catId, scheduledDate: date, imageUrl });
+    else createMut.mutate({ content, slotIndex, categoryId: catId, scheduledDate: date, imageUrl });
   }
   async function handleSaveAndPostNow() {
     try {
-      const created = await createMut.mutateAsync({ content, slotIndex, categoryId: catId, accountId, scheduledDate: scheduledDate || null, imageUrl });
+      const created = await createMut.mutateAsync({ content, slotIndex, categoryId: catId, scheduledDate: scheduledDate || null, imageUrl });
       postNowMut.mutate({ postId: created.id });
     } catch {
       // createMut.onError already surfaced the toast
@@ -339,19 +341,18 @@ export default function Posts() {
                 <span className="text-xs text-muted-foreground">
                   {selected.size > 0 ? `${selected.size}${t("件選択中")}` : t("すべて選択")}
                 </span>
-                {selected.size > 0 && accounts.length > 0 && (
-                  <Select value="" onValueChange={v => bulkAssignMut.mutate({ ids: Array.from(selected), accountId: v === "none" ? null : Number(v) })}>
+                {selected.size > 0 && otherAccounts.length > 0 && (
+                  <Select value="" onValueChange={v => bulkAssignMut.mutate({ ids: Array.from(selected), accountId: Number(v) })}>
                     <SelectTrigger className="h-7 w-[190px] text-xs ml-auto">
-                      <SelectValue placeholder={t("投稿先アカウントを変更")} />
+                      <SelectValue placeholder={t("別のアカウントへ移動")} />
                     </SelectTrigger>
                     <SelectContent>
-                      {accounts.map(a => <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>)}
-                      <SelectItem value="none">{t("未指定（どのアカウントでも可）")}</SelectItem>
+                      {otherAccounts.map(a => <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 )}
                 {selected.size > 0 && (
-                  <Button size="sm" variant="destructive" className={`h-7 text-xs ${accounts.length > 0 ? "" : "ml-auto"}`}
+                  <Button size="sm" variant="destructive" className={`h-7 text-xs ${otherAccounts.length > 0 ? "" : "ml-auto"}`}
                     disabled={bulkDeleteMut.isPending}
                     onClick={() => { if (confirm(`${selected.size}${t("件の原稿を削除しますか？この操作は取り消せません。")}`)) bulkDeleteMut.mutate({ ids: Array.from(selected) }); }}>
                     <Trash2 className="h-3.5 w-3.5 mr-1" />{bulkDeleteMut.isPending ? t("削除中...") : t("選択を削除")}
@@ -505,18 +506,10 @@ export default function Posts() {
                 </Select>
               </div>
             </div>
-            {accounts.length > 1 && (
-              <div className="space-y-1.5">
-                <Label>{t("投稿先アカウント")}</Label>
-                <Select value={accountId ? String(accountId) : "default"} onValueChange={v => setAccountId(v === "default" ? null : Number(v))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="default">{t("デフォルト")} ({accounts[0]?.name})</SelectItem>
-                    {accounts.map(a => <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+            <p className="text-xs text-muted-foreground">
+              {t("投稿先")}: <span className="font-medium text-foreground">{currentAccount?.name ?? "-"}</span>
+              <span className="ml-1.5">{t("（左上の切り替えで変更できます）")}</span>
+            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>{t("キャンセル")}</Button>
@@ -576,7 +569,7 @@ export default function Posts() {
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">{d}</p>
                     <div className="flex justify-end gap-2">
                       <Button size="sm" variant="outline" className="h-7 text-xs"
-                        onClick={() => { setAiOpen(false); setEditing(null); setContent(d); setSlotIndex(0); setCatId(null); setAccountId(null); setRewriteInstruction(""); setOpen(true); }}>
+                        onClick={() => { setAiOpen(false); setEditing(null); setContent(d); setSlotIndex(0); setCatId(null); setRewriteInstruction(""); setOpen(true); }}>
                         {t("編集して使う")}
                       </Button>
                       <Button size="sm" className="h-7 text-xs" disabled={createMut.isPending}

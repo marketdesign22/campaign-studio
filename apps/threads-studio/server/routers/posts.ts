@@ -1,220 +1,253 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import {
-  bulkCreatePosts, createPost, deletePost, deletePostsByIds, getNextPendingPostAny,
-  getSettings, listActiveAccounts, listPosts, saveAsEvergreen, updatePost,
+  bulkCreatePosts, createPost, deletePost, deletePostsByIds, filterOwnedPostIds,
+  getAccountById, getAccountSettings, getNextPendingPostAny, getOwnedPost,
+  listPosts, saveAsEvergreen, updatePost,
 } from "../db";
 import { getLocalParts } from "../scheduler";
 import { planSchedule, slotKey, summarizeRunway } from "../schedulePlanner";
-import { protectedProcedure, router } from "../_core/trpc";
+import { accountProcedure } from "../accountScope";
+import type { AccountScope } from "../accountScope";
+import type { Account } from "../../drizzle/schema";
+import { router } from "../_core/trpc";
 
-/** 承認フロー有効時は新規原稿を draft で作成する */
-async function initialApprovalStatus(): Promise<"draft" | "approved"> {
-  const cfg = await getSettings();
-  return cfg?.requireApproval ? "draft" : "approved";
+/** 承認フロー有効時は新規原稿を draft で作成する（アカウントごとの設定） */
+async function initialApprovalStatus(accountId: number): Promise<"draft" | "approved"> {
+  const cfg = await getAccountSettings(accountId);
+  return cfg.requireApproval ? "draft" : "approved";
 }
 
-/** Group posts by date for calendar view */
-async function getCalendarView(year: number, month: number) {
-  const all = await listPosts();
-  const prefix = `${year}-${String(month).padStart(2, "0")}`;
-  const inMonth = all.filter(p => p.scheduledDate?.startsWith(prefix));
-  const byDate: Record<string, typeof inMonth> = {};
-  for (const p of inMonth) {
-    const d = p.scheduledDate!;
-    if (!byDate[d]) byDate[d] = [];
-    byDate[d].push(p);
+/**
+ * 更新・削除の前に「その原稿が本当にこのアカウントのものか」を確かめる。
+ * 他アカウントのIDを渡された場合はここで止まるので、
+ * リクエストを書き換えても別アカウントのデータには触れられない。
+ */
+async function requireOwnedPost(id: number, scope: AccountScope) {
+  const post = await getOwnedPost(id, scope);
+  if (!post) {
+    throw new TRPCError({ code: "NOT_FOUND", message: "この原稿は見つかりません。" });
   }
-  return byDate;
+  return post;
 }
 
-/** アカウントのローカル日付（YYYY-MM-DD）。アカウント未登録時はサーバー日付 */
-async function localToday(): Promise<string> {
-  const accounts = await listActiveAccounts();
-  const tz = accounts[0]?.timezone ?? "LA";
-  return getLocalParts(new Date(), tz).dateStr;
+/** アカウントのローカル日付（YYYY-MM-DD） */
+function localToday(account: Account): string {
+  return getLocalParts(new Date(), account.timezone).dateStr;
 }
 
 /**
  * 未割り当ての原稿に予約日・スロットを割り当てる。
  * 既に埋まっている枠は飛ばすので、実行しても既存の予定は動かない
  * （＝何度押しても安全で、投稿が途切れた日から順に埋まっていく）。
+ * 対象は選択中アカウントの原稿のみ。
  */
-async function autoSchedule(postsPerDay: number, _items: unknown[], startDate?: string) {
-  const db = await import("../db");
-  const all = await db.listPosts();
-  const unscheduled = all.filter(p => p.status === "pending" && !p.scheduledDate);
+async function autoSchedule(
+  scope: AccountScope,
+  account: Account,
+  postsPerDay: number,
+  startDate?: string
+) {
+  const all = await listPosts(scope);
+  const unscheduled = all.filter((p) => p.status === "pending" && !p.scheduledDate);
   if (unscheduled.length === 0) return;
 
-  const start = startDate ?? (await localToday());
+  const start = startDate ?? localToday(account);
   const occupied = all
-    .filter(p => p.scheduledDate && p.scheduledDate >= start)
-    .map(p => slotKey(p.scheduledDate as string, p.slotIndex));
+    .filter((p) => p.scheduledDate && p.scheduledDate >= start)
+    .map((p) => slotKey(p.scheduledDate as string, p.slotIndex));
 
   const plan = planSchedule({
-    ids: unscheduled.map(p => p.id),
+    ids: unscheduled.map((p) => p.id),
     occupied,
     startDate: start,
     postsPerDay,
   });
   for (const a of plan) {
-    await db.updatePost(a.id, { scheduledDate: a.scheduledDate, slotIndex: a.slotIndex });
+    await updatePost(a.id, { scheduledDate: a.scheduledDate, slotIndex: a.slotIndex });
   }
 }
 
 export const postsRouter = router({
-  list: protectedProcedure.query(() => listPosts()),
+  list: accountProcedure.query(({ ctx }) => listPosts(ctx.scope)),
 
-  create: protectedProcedure
+  create: accountProcedure
     .input(z.object({
       content: z.string().min(1).max(500),
       slotIndex: z.number().int().min(0).default(0),
       categoryId: z.number().int().nullable().optional(),
-      accountId: z.number().int().nullable().optional(),
       scheduledDate: z.string().nullable().optional(),
       imageUrl: z.string().max(512).nullable().optional(),
       sortOrder: z.number().int().default(0),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const id = await createPost({
         content: input.content, slotIndex: input.slotIndex,
-        categoryId: input.categoryId ?? null, accountId: input.accountId ?? null,
+        categoryId: input.categoryId ?? null,
+        // 投稿先は常に選択中のアカウント。クライアントからは指定させない
+        accountId: ctx.account.id,
         scheduledDate: input.scheduledDate ?? null, imageUrl: input.imageUrl ?? null,
         sortOrder: input.sortOrder,
-        status: "pending", approvalStatus: await initialApprovalStatus(),
+        status: "pending", approvalStatus: await initialApprovalStatus(ctx.account.id),
       });
       return { ok: true, id };
     }),
 
-  update: protectedProcedure
+  update: accountProcedure
     .input(z.object({
       id: z.number().int(),
       content: z.string().min(1).max(500).optional(),
       slotIndex: z.number().int().min(0).optional(),
       categoryId: z.number().int().nullable().optional(),
-      accountId: z.number().int().nullable().optional(),
       scheduledDate: z.string().nullable().optional(),
       sortOrder: z.number().int().optional(),
       status: z.enum(["pending", "posted", "error"]).optional(),
       imageUrl: z.string().max(512).nullable().optional(),
       evergreen: z.boolean().optional(),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const { id, ...data } = input;
+      await requireOwnedPost(id, ctx.scope);
       await updatePost(id, data);
       return { ok: true };
     }),
 
   /** 承認フロー: 原稿を承認/差し戻し */
-  setApproval: protectedProcedure
+  setApproval: accountProcedure
     .input(z.object({ id: z.number().int(), approvalStatus: z.enum(["draft", "approved"]) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      await requireOwnedPost(input.id, ctx.scope);
       await updatePost(input.id, { approvalStatus: input.approvalStatus });
       return { ok: true };
     }),
 
-  delete: protectedProcedure
+  delete: accountProcedure
     .input(z.object({ id: z.number().int() }))
-    .mutation(async ({ input }) => { await deletePost(input.id); return { ok: true }; }),
+    .mutation(async ({ input, ctx }) => {
+      await requireOwnedPost(input.id, ctx.scope);
+      await deletePost(input.id);
+      return { ok: true };
+    }),
 
   /** 再投稿コンテンツとして保存する（投稿履歴からも呼べる） */
-  saveAsEvergreen: protectedProcedure
+  saveAsEvergreen: accountProcedure
     .input(z.object({
       content: z.string().min(1).max(500),
       postId: z.number().int().nullable().optional(),
     }))
-    .mutation(async ({ input }) => {
-      const id = await saveAsEvergreen(input.content, input.postId ?? null);
+    .mutation(async ({ input, ctx }) => {
+      const id = await saveAsEvergreen(input.content, input.postId ?? null, ctx.scope);
       return { ok: true, id };
     }),
 
-  /** 選択した原稿の投稿先アカウントをまとめて変更する */
-  bulkAssignAccount: protectedProcedure
+  /**
+   * 選択した原稿を別のアカウントへ移す。
+   * 移せるのは自アカウントの原稿だけで、移動先も実在する有効なアカウントに限る。
+   */
+  bulkAssignAccount: accountProcedure
     .input(z.object({
       ids: z.array(z.number().int()).min(1).max(500),
-      accountId: z.number().int().nullable(),
+      accountId: z.number().int(),
     }))
-    .mutation(async ({ input }) => {
-      for (const id of input.ids) {
-        await updatePost(id, { accountId: input.accountId });
+    .mutation(async ({ input, ctx }) => {
+      const target = await getAccountById(input.accountId);
+      if (!target || !target.active) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "移動先のアカウントが不正です。" });
       }
-      return { ok: true, count: input.ids.length };
+      const owned = await filterOwnedPostIds(input.ids, ctx.scope);
+      for (const id of owned) {
+        await updatePost(id, { accountId: target.id });
+      }
+      return { ok: true, count: owned.length };
     }),
 
   /** 選択した原稿をまとめて削除する */
-  bulkDelete: protectedProcedure
+  bulkDelete: accountProcedure
     .input(z.object({ ids: z.array(z.number().int()).min(1).max(500) }))
-    .mutation(async ({ input }) => {
-      await deletePostsByIds(input.ids);
-      return { ok: true, count: input.ids.length };
+    .mutation(async ({ input, ctx }) => {
+      const owned = await filterOwnedPostIds(input.ids, ctx.scope);
+      await deletePostsByIds(owned, ctx.scope);
+      return { ok: true, count: owned.length };
     }),
 
   /** 配信の在庫状況（何日分の予約が残っているか・途切れる日はあるか） */
-  runway: protectedProcedure.query(async () => {
-    const today = await localToday();
-    const all = await listPosts();
+  runway: accountProcedure.query(async ({ ctx }) => {
+    const today = localToday(ctx.account);
+    const all = await listPosts(ctx.scope);
     const { days, lastDate, gapDates } = summarizeRunway(all, today);
-    const unscheduled = all.filter(p => p.status === "pending" && !p.scheduledDate).length;
+    const unscheduled = all.filter((p) => p.status === "pending" && !p.scheduledDate).length;
     return { today, days, lastDate, gapDates, unscheduled };
   }),
 
-  nextPreview: protectedProcedure.query(async () => {
-    // デフォルトアカウントのローカル日付基準で「今日投稿可能な」原稿のみ返す
-    const accounts = await listActiveAccounts();
-    const tz = accounts[0]?.timezone ?? "LA";
-    const today = getLocalParts(new Date(), tz).dateStr;
-    const post = await getNextPendingPostAny(today, accounts[0]?.id);
+  nextPreview: accountProcedure.query(async ({ ctx }) => {
+    // 選択中アカウントのローカル日付基準で「今日投稿可能な」原稿のみ返す
+    const today = localToday(ctx.account);
+    const post = await getNextPendingPostAny(today, ctx.scope);
     if (!post) return null;
-    // プレビューには実際の投稿先アカウント名を添える
-    // （原稿にアカウント指定がなければ既定アカウントに投稿される）
-    const target = accounts.find((a) => a.id === post.accountId) ?? accounts[0];
-    return { ...post, accountName: target?.name ?? null };
+    return { ...post, accountName: ctx.account.name };
   }),
 
   /** Bulk import from parsed text lines */
-  bulkImport: protectedProcedure
+  bulkImport: accountProcedure
     .input(z.object({
       lines: z.array(z.string().min(1).max(500)),
       categoryId: z.number().int().nullable().optional(),
       postsPerDay: z.number().int().min(1).max(10).default(2),
       startDate: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
-      const approvalStatus = await initialApprovalStatus();
+    .mutation(async ({ input, ctx }) => {
+      const approvalStatus = await initialApprovalStatus(ctx.account.id);
       const items = input.lines.map((content, i) => ({
         content,
         status: "pending" as const,
         approvalStatus,
+        accountId: ctx.account.id,
         slotIndex: i % input.postsPerDay,
         categoryId: input.categoryId ?? null,
         sortOrder: i,
       }));
       await bulkCreatePosts(items);
       // Auto-assign scheduledDate
-      await autoSchedule(input.postsPerDay, [], input.startDate);
+      await autoSchedule(ctx.scope, ctx.account, input.postsPerDay, input.startDate);
       return { ok: true, count: items.length };
     }),
 
   /** Re-run auto-schedule on all unscheduled pending posts */
-  autoSchedule: protectedProcedure
-    .input(z.object({ postsPerDay: z.number().int().min(1).max(10).default(2), startDate: z.string().optional() }))
-    .mutation(async ({ input }) => {
-      await autoSchedule(input.postsPerDay, [], input.startDate);
+  autoSchedule: accountProcedure
+    .input(z.object({
+      postsPerDay: z.number().int().min(1).max(10).default(2),
+      startDate: z.string().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      await autoSchedule(ctx.scope, ctx.account, input.postsPerDay, input.startDate);
       return { ok: true };
     }),
 
   /** Calendar view: posts grouped by date for a given year/month */
-  calendarView: protectedProcedure
+  calendarView: accountProcedure
     .input(z.object({ year: z.number().int(), month: z.number().int().min(1).max(12) }))
-    .query(async ({ input }) => getCalendarView(input.year, input.month)),
+    .query(async ({ input, ctx }) => {
+      const all = await listPosts(ctx.scope);
+      const prefix = `${input.year}-${String(input.month).padStart(2, "0")}`;
+      const inMonth = all.filter((p) => p.scheduledDate?.startsWith(prefix));
+      const byDate: Record<string, typeof inMonth> = {};
+      for (const p of inMonth) {
+        const d = p.scheduledDate!;
+        if (!byDate[d]) byDate[d] = [];
+        byDate[d].push(p);
+      }
+      return byDate;
+    }),
 
   /** Reschedule a single post to a new date and slot */
-  reschedule: protectedProcedure
+  reschedule: accountProcedure
     .input(z.object({
       id: z.number().int(),
       scheduledDate: z.string(),
       slotIndex: z.number().int().min(0).max(9),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      await requireOwnedPost(input.id, ctx.scope);
       await updatePost(input.id, { scheduledDate: input.scheduledDate, slotIndex: input.slotIndex });
       return { ok: true };
     }),

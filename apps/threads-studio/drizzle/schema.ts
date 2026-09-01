@@ -93,6 +93,40 @@ export type Account = typeof accounts.$inferSelect;
 export type InsertAccount = typeof accounts.$inferInsert;
 
 /**
+ * アカウントごとの運用設定。
+ *
+ * 従来 `settings` に1行だけ持っていた運用ルール（承認フロー・通知・再投稿など）を
+ * アカウント単位に分離したもの。`settings` は互換のため残してあり、
+ * アカウントを跨ぐ設定（lastMaintenanceDate 等）だけがそちらに残る。
+ */
+export const accountSettings = mysqlTable("account_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  /** accounts.id。1アカウント1行（UNIQUE） */
+  accountId: int("accountId").notNull().unique(),
+  /** 新規原稿を「下書き」で作成し、承認後にのみ自動投稿する */
+  requireApproval: boolean("requireApproval").default(false).notNull(),
+  /** 投稿失敗時にオーナーへ通知する */
+  notifyOnError: boolean("notifyOnError").default(true).notNull(),
+  /** 予約原稿が尽きたスロットを、再投稿コンテンツで自動的に埋める */
+  autoFillEvergreen: boolean("autoFillEvergreen").default(false).notNull(),
+  /** 再投稿時にAIで言い回し・絵文字を変える */
+  recycleRewrite: boolean("recycleRewrite").default(true).notNull(),
+  /** 同じ再投稿コンテンツを再利用するまでの最低日数 */
+  recycleCooldownDays: int("recycleCooldownDays").default(30).notNull(),
+  /** 1日の投稿回数（自動割り当ての既定値） */
+  postsPerDay: int("postsPerDay").default(2).notNull(),
+  /** ホワイトレーベル: 表示ブランド名 */
+  brandName: varchar("brandName", { length: 64 }),
+  /** ホワイトレーベル: アクセントカラー (hex) */
+  brandAccent: varchar("brandAccent", { length: 16 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AccountSettings = typeof accountSettings.$inferSelect;
+export type InsertAccountSettings = typeof accountSettings.$inferInsert;
+
+/**
  * アップロードされた画像。Threads APIは「公開URL」しか受け付けないため、
  * 画像はDBに保持し /api/media/:token で配信する（tokenはランダム）。
  */
@@ -114,6 +148,8 @@ export const categories = mysqlTable("categories", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 64 }).notNull(),
   color: varchar("color", { length: 16 }).default("#335B82").notNull(),
+  /** 所属アカウント。null = アカウント分離導入前からある共通カテゴリー */
+  accountId: int("accountId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

@@ -26,6 +26,9 @@ const en: Record<string, string> = {
   "投稿の計画・自動配信・効果測定までを一つに。公式Threadsアカウントの運用ダッシュボードです。":
     "Plan, auto-publish, and measure — all in one operations dashboard for your official Threads account.",
 
+  "アカウント": "Account",
+  "アカウントを切り替え": "Switch account",
+
   // ── Dashboard ───────────────────────────────────────────────────────────
   "未投稿": "Queued",
   "アカウント未設定": "No account configured",
@@ -152,9 +155,10 @@ const en: Record<string, string> = {
   "選択を削除": "Delete selected",
   "削除中...": "Deleting...",
   "件削除しました": " posts deleted",
-  "投稿先アカウントを変更": "Change target account",
-  "未指定（どのアカウントでも可）": "Unassigned (any account)",
-  "件の投稿先を変更しました": " posts reassigned",
+  "別のアカウントへ移動": "Move to another account",
+  "投稿先": "Posts to",
+  "（左上の切り替えで変更できます）": "(change it with the switcher at the top left)",
+  "件を移動しました": " posts moved",
   "件の原稿を削除しますか？この操作は取り消せません。": " posts will be deleted. This cannot be undone. Continue?",
   "今すぐThreadsに投稿しますか？": "Post to Threads right now?",
   "Threadsに投稿しました": "Posted to Threads",
@@ -235,6 +239,7 @@ const en: Record<string, string> = {
 
   // ── Settings ────────────────────────────────────────────────────────────
   "アカウント・運用ルール・ブランドの管理": "Accounts, operations rules, and branding",
+  "運用ルールとブランドはこのアカウントにのみ適用されます": "Operations rules and branding apply to this account only",
   "Threadsアカウント": "Threads Accounts",
   "複数アカウントを登録し、それぞれに投稿時刻を設定できます。": "Register multiple accounts, each with its own posting schedule.",
   "アカウントが未登録です。Meta開発者ポータルで取得した長期アクセストークンで追加してください。":

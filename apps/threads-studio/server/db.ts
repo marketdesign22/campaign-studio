@@ -2,11 +2,25 @@ import { and, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, or, sql } from
 import { drizzle } from "drizzle-orm/mysql2";
 import { createPool } from "mysql2";
 import { buildDbConfig } from "./dbConfig";
+import type { AnyMySqlColumn } from "drizzle-orm/mysql-core";
 import {
-  InsertAccount, InsertPost, InsertUser,
-  accounts, categories, media, postAnalytics, postLogs, posts, settings, users,
+  InsertAccount, InsertAccountSettings, InsertPost, InsertUser,
+  accountSettings, accounts, categories, media, postAnalytics, postLogs, posts, settings, users,
 } from "../drizzle/schema";
+import type { AccountScope } from "./accountScope";
 import { ENV } from "./_core/env";
+
+/**
+ * 「このスコープが所有する行だけ」に絞る条件。
+ *
+ * accountId が NULL の行はマルチアカウント化以前の旧データで、最初に作られた
+ * アカウントのものである。そのアカウント（includeLegacy=true）から読むときだけ
+ * 含め、2番目以降のアカウントからは絶対に見えない。
+ * この関数を通さずに posts / post_logs を引かないこと。
+ */
+function ownedBy(col: AnyMySqlColumn, scope: AccountScope) {
+  return scope.includeLegacy ? or(isNull(col), eq(col, scope.accountId)) : eq(col, scope.accountId);
+}
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -148,22 +162,30 @@ export async function deleteAccount(id: number) {
 
 // ── Categories ────────────────────────────────────────────────────────────────
 
-export async function listCategories() {
+export async function listCategories(scope: AccountScope) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(categories).orderBy(categories.id);
+  // accountId が NULL のカテゴリーは分離導入前からある共通カテゴリーなので全アカウントで見える
+  return db
+    .select()
+    .from(categories)
+    .where(or(isNull(categories.accountId), eq(categories.accountId, scope.accountId)))
+    .orderBy(categories.id);
 }
 
-export async function createCategory(name: string, color: string) {
+export async function createCategory(name: string, color: string, accountId: number) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
-  await db.insert(categories).values({ name, color });
+  await db.insert(categories).values({ name, color, accountId });
 }
 
-export async function deleteCategory(id: number) {
+/** 自アカウントのカテゴリーだけ削除できる（共通カテゴリーは消させない） */
+export async function deleteCategory(id: number, scope: AccountScope) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
-  await db.delete(categories).where(eq(categories.id, id));
+  await db
+    .delete(categories)
+    .where(and(eq(categories.id, id), eq(categories.accountId, scope.accountId)));
 }
 
 // ── Media ─────────────────────────────────────────────────────────────────────
@@ -188,17 +210,50 @@ export async function getMediaByToken(token: string) {
 
 // ── Posts ─────────────────────────────────────────────────────────────────────
 
-export async function listPosts() {
+export async function listPosts(scope: AccountScope) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(posts).orderBy(posts.scheduledDate, posts.slotIndex, posts.sortOrder, posts.createdAt);
+  return db
+    .select()
+    .from(posts)
+    .where(ownedBy(posts.accountId, scope))
+    .orderBy(posts.scheduledDate, posts.slotIndex, posts.sortOrder, posts.createdAt);
 }
 
+/** アカウントを問わず1件取得する。スケジューラなどサーバー内部専用 */
 export async function getPostById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
   const rows = await db.select().from(posts).where(eq(posts.id, id)).limit(1);
   return rows[0];
+}
+
+/**
+ * スコープが所有する原稿を1件取得する。
+ * 他アカウントの原稿IDを指定された場合は undefined を返すので、
+ * 更新・削除系は必ずこれを通してから書き込むこと。
+ */
+export async function getOwnedPost(id: number, scope: AccountScope) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db
+    .select()
+    .from(posts)
+    .where(and(eq(posts.id, id), ownedBy(posts.accountId, scope)))
+    .limit(1);
+  return rows[0];
+}
+
+/** スコープが所有するIDだけに絞り込む（一括操作の前段） */
+export async function filterOwnedPostIds(ids: number[], scope: AccountScope): Promise<number[]> {
+  if (ids.length === 0) return [];
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db
+    .select({ id: posts.id })
+    .from(posts)
+    .where(and(inArray(posts.id, ids), ownedBy(posts.accountId, scope)));
+  return rows.map((r) => r.id);
 }
 
 export async function createPost(data: InsertPost): Promise<number> {
@@ -227,11 +282,11 @@ export async function deletePost(id: number) {
   await db.delete(posts).where(eq(posts.id, id));
 }
 
-export async function deletePostsByIds(ids: number[]) {
+export async function deletePostsByIds(ids: number[], scope: AccountScope) {
   if (ids.length === 0) return;
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
-  await db.delete(posts).where(inArray(posts.id, ids));
+  await db.delete(posts).where(and(inArray(posts.id, ids), ownedBy(posts.accountId, scope)));
 }
 
 /**
@@ -241,39 +296,36 @@ export async function deletePostsByIds(ids: number[]) {
  *   予約日がまだ来ていない原稿は絶対に投稿しない。
  * - 対象アカウント宛て（accountId 一致 or 未指定原稿）
  */
-function eligibleWhere(todayLocal: string, accountId?: number) {
-  const conds = [
+function eligibleWhere(todayLocal: string, scope: AccountScope) {
+  return and(
     eq(posts.status, "pending"),
     eq(posts.approvalStatus, "approved"),
     or(isNull(posts.scheduledDate), lte(posts.scheduledDate, todayLocal)),
-  ];
-  if (accountId !== undefined) {
-    conds.push(or(isNull(posts.accountId), eq(posts.accountId, accountId)));
-  }
-  return and(...conds);
+    ownedBy(posts.accountId, scope),
+  );
 }
 
 /** Get next eligible post for a given slotIndex (date-aware) */
-export async function getNextPendingPost(slotIndex: number, todayLocal: string, accountId?: number) {
+export async function getNextPendingPost(slotIndex: number, todayLocal: string, scope: AccountScope) {
   const db = await getDb();
   if (!db) return undefined;
   const rows = await db
     .select()
     .from(posts)
-    .where(and(eq(posts.slotIndex, slotIndex), eligibleWhere(todayLocal, accountId)))
+    .where(and(eq(posts.slotIndex, slotIndex), eligibleWhere(todayLocal, scope)))
     .orderBy(posts.scheduledDate, posts.sortOrder, posts.createdAt)
     .limit(1);
   return rows[0];
 }
 
 /** Get next eligible post of any slot (date-aware) */
-export async function getNextPendingPostAny(todayLocal: string, accountId?: number) {
+export async function getNextPendingPostAny(todayLocal: string, scope: AccountScope) {
   const db = await getDb();
   if (!db) return undefined;
   const rows = await db
     .select()
     .from(posts)
-    .where(eligibleWhere(todayLocal, accountId))
+    .where(eligibleWhere(todayLocal, scope))
     .orderBy(posts.scheduledDate, posts.slotIndex, posts.sortOrder, posts.createdAt)
     .limit(1);
   return rows[0];
@@ -284,7 +336,7 @@ export async function getNextPendingPostAny(todayLocal: string, accountId?: numb
  * 「最後に使ったのが古い順（未使用が最優先）」で、クールダウン期間内のものは除外する。
  */
 export async function getEvergreenCandidate(
-  accountId: number | undefined,
+  scope: AccountScope,
   cooldownDays: number,
   now: Date = new Date()
 ) {
@@ -295,10 +347,8 @@ export async function getEvergreenCandidate(
     eq(posts.evergreen, true),
     eq(posts.approvalStatus, "approved"),
     or(isNull(posts.lastRecycledAt), lt(posts.lastRecycledAt, cooldownBefore)),
+    ownedBy(posts.accountId, scope),
   ];
-  if (accountId !== undefined) {
-    conds.push(or(isNull(posts.accountId), eq(posts.accountId, accountId)));
-  }
   const rows = await db
     .select()
     .from(posts)
@@ -320,11 +370,15 @@ export async function markPostRecycled(id: number, at: Date) {
 }
 
 /** 履歴などから再投稿コンテンツを登録する（既存原稿があればフラグを立てるだけ） */
-export async function saveAsEvergreen(content: string, postId?: number | null): Promise<number> {
+export async function saveAsEvergreen(
+  content: string,
+  postId: number | null | undefined,
+  scope: AccountScope
+): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   if (postId) {
-    const existing = await getPostById(postId);
+    const existing = await getOwnedPost(postId, scope);
     if (existing) {
       await db.update(posts).set({ evergreen: true }).where(eq(posts.id, postId));
       return postId;
@@ -337,6 +391,7 @@ export async function saveAsEvergreen(content: string, postId?: number | null): 
     status: "posted",
     approvalStatus: "approved",
     evergreen: true,
+    accountId: scope.accountId,
     slotIndex: 0,
     sortOrder: 0,
   });
@@ -347,7 +402,7 @@ export async function saveAsEvergreen(content: string, postId?: number | null): 
  * 既にあるか。tick が15分ごとに走っても同じ枠を二重投稿しないためのロック。
  */
 export async function hasSlotLogInRange(
-  accountId: number,
+  scope: AccountScope,
   slotIndex: number,
   startUtc: Date,
   endUtc: Date
@@ -358,7 +413,7 @@ export async function hasSlotLogInRange(
     .select({ id: postLogs.id })
     .from(postLogs)
     .where(and(
-      or(isNull(postLogs.accountId), eq(postLogs.accountId, accountId)),
+      ownedBy(postLogs.accountId, scope),
       eq(postLogs.slotIndex, slotIndex),
       gte(postLogs.postedAt, startUtc),
       lt(postLogs.postedAt, endUtc),
@@ -385,10 +440,15 @@ export async function listLogsForAnalytics(days: number) {
 
 // ── Post Logs ─────────────────────────────────────────────────────────────────
 
-export async function listPostLogs(limit = 100) {
+export async function listPostLogs(limit: number, scope: AccountScope) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(postLogs).orderBy(desc(postLogs.postedAt)).limit(limit);
+  return db
+    .select()
+    .from(postLogs)
+    .where(ownedBy(postLogs.accountId, scope))
+    .orderBy(desc(postLogs.postedAt))
+    .limit(limit);
 }
 
 export async function createPostLog(data: {
@@ -410,9 +470,33 @@ export async function createPostLog(data: {
 
 // ── Analytics ─────────────────────────────────────────────────────────────────
 
-export async function getAnalyticsSummary(period: "day" | "week" | "month") {
+/**
+ * 指定ログIDぶんの分析値を、ログID→最新1件 に畳んで返す。
+ *
+ * post_analytics には postLogId のユニーク制約が無く、日次取得のたびに
+ * 行が増える運用実績があるため、単純に合計すると同じ投稿を二重計上してしまう。
+ * ここで最新の fetchedAt だけを採用して重複を潰す。
+ */
+async function analyticsByLogId(logIds: number[]) {
+  const map = new Map<number, typeof postAnalytics.$inferSelect>();
+  if (logIds.length === 0) return map;
   const db = await getDb();
-  if (!db) return { totalPosts: 0, totalLikes: 0, totalReplies: 0, totalReposts: 0, totalViews: 0, byCategory: [] };
+  if (!db) return map;
+  const rows = await db
+    .select()
+    .from(postAnalytics)
+    .where(inArray(postAnalytics.postLogId, logIds));
+  for (const row of rows) {
+    const current = map.get(row.postLogId);
+    if (!current || row.fetchedAt > current.fetchedAt) map.set(row.postLogId, row);
+  }
+  return map;
+}
+
+export async function getAnalyticsSummary(period: "day" | "week" | "month", scope: AccountScope) {
+  const empty = { totalPosts: 0, totalLikes: 0, totalReplies: 0, totalReposts: 0, totalViews: 0, byCategory: [] };
+  const db = await getDb();
+  if (!db) return empty;
 
   const now = new Date();
   const from = new Date(now);
@@ -423,73 +507,70 @@ export async function getAnalyticsSummary(period: "day" | "week" | "month") {
   const logs = await db
     .select()
     .from(postLogs)
-    .where(and(eq(postLogs.status, "posted"), gte(postLogs.postedAt, from)));
+    .where(and(
+      eq(postLogs.status, "posted"),
+      gte(postLogs.postedAt, from),
+      ownedBy(postLogs.accountId, scope),
+    ));
 
-  const analytics = await db
-    .select()
-    .from(postAnalytics)
-    .where(gte(postAnalytics.fetchedAt, from));
+  // 分析値は「このアカウントの、この期間の投稿ログ」に紐づくものだけを合計する
+  const byLog = await analyticsByLogId(logs.map((l) => l.id));
+  let totalLikes = 0, totalReplies = 0, totalReposts = 0, totalViews = 0;
+  for (const a of Array.from(byLog.values())) {
+    totalLikes += a.likes;
+    totalReplies += a.replies;
+    totalReposts += a.reposts;
+    totalViews += a.views;
+  }
 
-  const totalPosts = logs.length;
-  const totalLikes = analytics.reduce((s, a) => s + a.likes, 0);
-  const totalReplies = analytics.reduce((s, a) => s + a.replies, 0);
-  const totalReposts = analytics.reduce((s, a) => s + a.reposts, 0);
-  const totalViews = analytics.reduce((s, a) => s + a.views, 0);
-
-  return { totalPosts, totalLikes, totalReplies, totalReposts, totalViews, byCategory: [] };
+  return { totalPosts: logs.length, totalLikes, totalReplies, totalReposts, totalViews, byCategory: [] };
 }
 
-export async function getTopPosts(limit = 10) {
+/** エンゲージメント上位の投稿。since を渡すとその日時以降に限定する */
+async function topPostsSince(scope: AccountScope, limit: number, since?: Date) {
   const db = await getDb();
   if (!db) return [];
-  const rows = await db
-    .select({
-      id: postLogs.id,
-      content: postLogs.content,
-      postedAt: postLogs.postedAt,
-      likes: postAnalytics.likes,
-      replies: postAnalytics.replies,
-      reposts: postAnalytics.reposts,
-      views: postAnalytics.views,
-      categoryId: postLogs.categoryId,
+  const conds = [eq(postLogs.status, "posted"), ownedBy(postLogs.accountId, scope)];
+  if (since) conds.push(gte(postLogs.postedAt, since));
+  const logs = await db.select().from(postLogs).where(and(...conds));
+  const byLog = await analyticsByLogId(logs.map((l) => l.id));
+  return logs
+    .map((l) => {
+      const a = byLog.get(l.id);
+      return {
+        id: l.id,
+        content: l.content,
+        postedAt: l.postedAt,
+        likes: a?.likes ?? 0,
+        replies: a?.replies ?? 0,
+        reposts: a?.reposts ?? 0,
+        views: a?.views ?? 0,
+        categoryId: l.categoryId,
+      };
     })
-    .from(postLogs)
-    .leftJoin(postAnalytics, eq(postAnalytics.postLogId, postLogs.id))
-    .where(eq(postLogs.status, "posted"))
-    .orderBy(desc(postAnalytics.likes))
-    .limit(limit);
-  return rows;
+    .sort((x, y) => y.likes - x.likes)
+    .slice(0, limit);
 }
 
-export async function getTopPostsByPeriod(period: "day" | "week" | "month", limit = 5) {
-  const db = await getDb();
-  if (!db) return [];
+export async function getTopPosts(limit: number, scope: AccountScope) {
+  return topPostsSince(scope, limit);
+}
+
+export async function getTopPostsByPeriod(
+  period: "day" | "week" | "month",
+  limit: number,
+  scope: AccountScope
+) {
   const now = new Date();
   let since: Date;
   if (period === "day") { since = new Date(now); since.setHours(0, 0, 0, 0); }
   else if (period === "week") { since = new Date(now); since.setDate(now.getDate() - 7); }
   else { since = new Date(now); since.setMonth(now.getMonth() - 1); }
-  const rows = await db
-    .select({
-      id: postLogs.id,
-      content: postLogs.content,
-      postedAt: postLogs.postedAt,
-      likes: postAnalytics.likes,
-      replies: postAnalytics.replies,
-      reposts: postAnalytics.reposts,
-      views: postAnalytics.views,
-      categoryId: postLogs.categoryId,
-    })
-    .from(postLogs)
-    .leftJoin(postAnalytics, eq(postAnalytics.postLogId, postLogs.id))
-    .where(and(eq(postLogs.status, "posted"), gte(postLogs.postedAt, since)))
-    .orderBy(desc(postAnalytics.likes))
-    .limit(limit);
-  return rows;
+  return topPostsSince(scope, limit, since);
 }
 
 /** 月次レポート用の集計。日別の投稿数とエンゲージメント、トップ投稿、エラーを返す */
-export async function getMonthlyReport(year: number, month: number) {
+export async function getMonthlyReport(year: number, month: number, scope: AccountScope) {
   const db = await getDb();
   const empty = {
     totals: { posts: 0, errors: 0, likes: 0, replies: 0, reposts: 0, views: 0 },
@@ -507,13 +588,13 @@ export async function getMonthlyReport(year: number, month: number) {
   const logs = await db
     .select()
     .from(postLogs)
-    .where(and(gte(postLogs.postedAt, from), lt(postLogs.postedAt, to)));
+    .where(and(
+      gte(postLogs.postedAt, from),
+      lt(postLogs.postedAt, to),
+      ownedBy(postLogs.accountId, scope),
+    ));
 
-  const logIds = logs.map((l) => l.id);
-  const analytics = logIds.length
-    ? await db.select().from(postAnalytics)
-    : [];
-  const byLogId = new Map(analytics.map((a) => [a.postLogId, a]));
+  const byLogId = await analyticsByLogId(logs.map((l) => l.id));
 
   const byDayMap = new Map<string, { posts: number; errors: number }>();
   let likes = 0, replies = 0, reposts = 0, views = 0, errors = 0, posted = 0;
@@ -558,4 +639,67 @@ export async function upsertAnalytics(data: {
   const db = await getDb();
   if (!db) return;
   await db.insert(postAnalytics).values(data).onDuplicateKeyUpdate({ set: data });
+}
+
+// ── Account settings ──────────────────────────────────────────────────────────
+
+/** アカウント運用設定の既定値。行がまだ無いアカウントでもUIが壊れないようにする */
+export const DEFAULT_ACCOUNT_SETTINGS = {
+  requireApproval: false,
+  notifyOnError: true,
+  autoFillEvergreen: false,
+  recycleRewrite: true,
+  recycleCooldownDays: 30,
+  postsPerDay: 2,
+  brandName: null as string | null,
+  brandAccent: null as string | null,
+};
+
+export type AccountSettingsValues = typeof DEFAULT_ACCOUNT_SETTINGS;
+
+export async function getAccountSettings(accountId: number): Promise<AccountSettingsValues> {
+  const db = await getDb();
+  if (!db) return { ...DEFAULT_ACCOUNT_SETTINGS };
+  const rows = await db
+    .select()
+    .from(accountSettings)
+    .where(eq(accountSettings.accountId, accountId))
+    .limit(1);
+  const row = rows[0];
+  if (!row) return { ...DEFAULT_ACCOUNT_SETTINGS };
+  return {
+    requireApproval: row.requireApproval,
+    notifyOnError: row.notifyOnError,
+    autoFillEvergreen: row.autoFillEvergreen,
+    recycleRewrite: row.recycleRewrite,
+    recycleCooldownDays: row.recycleCooldownDays,
+    postsPerDay: row.postsPerDay,
+    brandName: row.brandName,
+    brandAccent: row.brandAccent,
+  };
+}
+
+export async function upsertAccountSettings(
+  accountId: number,
+  data: Partial<Omit<InsertAccountSettings, "id" | "accountId">>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const rows = await db
+    .select({ id: accountSettings.id })
+    .from(accountSettings)
+    .where(eq(accountSettings.accountId, accountId))
+    .limit(1);
+  if (rows[0]) {
+    await db.update(accountSettings).set(data).where(eq(accountSettings.accountId, accountId));
+  } else {
+    await db.insert(accountSettings).values({ ...data, accountId });
+  }
+}
+
+/** アカウント削除時に設定行も片付ける（原稿・履歴は保全のため残す） */
+export async function deleteAccountSettings(accountId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(accountSettings).where(eq(accountSettings.accountId, accountId));
 }
