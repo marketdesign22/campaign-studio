@@ -35,14 +35,16 @@ import * as threadsApi from "./threadsApi";
 import { fetchAnalyticsForRecentPosts, runSlotForAccount, runTick } from "./scheduler";
 import { scopeOf } from "./accountScope";
 
-function account(id: number, name: string, threadsUserId: string, active = true): Account {
+function account(
+  id: number, name: string, threadsUserId: string, active = true, slots: string | null = null
+): Account {
   return {
     id, name, threadsUserId,
     threadsAccessToken: `token-for-${name}`,
     tokenRefreshedAt: new Date(), tokenExpiresAt: null,
     // 常に発火するよう 0:00 に設定
     morningHour: 0, morningMinute: 0, eveningHour: 0, eveningMinute: 0,
-    timezone: "LA", active,
+    timezone: "LA", slots, active,
     createdAt: new Date("2026-01-01T00:00:00Z"),
     updatedAt: new Date("2026-01-01T00:00:00Z"),
   };
@@ -61,6 +63,9 @@ const DEFAULT_SETTINGS = {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(db.listAccounts).mockResolvedValue([SCSU, CREAW]);
+  // 日次メンテナンス（トークン更新・分析取得）はここでは対象外なので空にしておく
+  vi.mocked(db.listActiveAccounts).mockResolvedValue([]);
+  vi.mocked(db.listLogsForAnalytics).mockResolvedValue([]);
   vi.mocked(db.getAccountSettings).mockResolvedValue({ ...DEFAULT_SETTINGS });
   vi.mocked(db.hasSlotLogInRange).mockResolvedValue(false);
   vi.mocked(db.getNextPendingPost).mockResolvedValue(undefined);
@@ -128,6 +133,53 @@ describe("runSlotForAccount", () => {
 
     await runSlotForAccount(SCSU, scopeOf(SCSU, 1), 0, NOW);
     expect(db.getEvergreenCandidate).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("枠ごとのタイムゾーン", () => {
+  /** JSTの朝夕 + PTの朝夕。1アカウントに4枠 */
+  const MIXED = account(1, "SCSU.Japan", "28207384535618732", true, JSON.stringify([
+    { hour: 12, minute: 0, timezone: "JP" },
+    { hour: 17, minute: 0, timezone: "JP" },
+    { hour: 8, minute: 0, timezone: "LA" },
+    { hour: 18, minute: 0, timezone: "LA" },
+  ]));
+
+  it("設定した枠の数だけ発火判定する", async () => {
+    vi.mocked(db.listAccounts).mockResolvedValue([MIXED]);
+    await runTick(NOW);
+    // NOW = 2026-09-01T20:00Z ＝ JST 9/2 05:00 / PT 9/1 13:00
+    // JST枠(12:00,17:00)はまだ来ていない。PT枠(8:00,18:00)は8:00だけ到来済み
+    const calls = vi.mocked(db.getNextPendingPost).mock.calls.map((c) => c[0]);
+    expect(calls).toEqual([2]);
+  });
+
+  it("枠のタイムゾーンで「今日」を数えるので、日付境界も枠ごとに違う", async () => {
+    // JST 9/2 05:00 なので、JST枠の当日は 9/2、PT枠の当日は 9/1
+    vi.mocked(db.listAccounts).mockResolvedValue([MIXED]);
+    await runTick(NOW);
+    const dates = vi.mocked(db.getNextPendingPost).mock.calls.map((c) => c[1]);
+    expect(dates).toEqual(["2026-09-01"]); // 発火したPT枠の当日
+  });
+
+  it("JSTの枠は日本の時刻で発火する", async () => {
+    vi.mocked(db.listAccounts).mockResolvedValue([MIXED]);
+    // 2026-09-02T04:00Z = JST 13:00 / PT 21:00 → JST 12:00枠が到来
+    await runTick(new Date("2026-09-02T04:00:00Z"));
+    const calls = vi.mocked(db.getNextPendingPost).mock.calls.map((c) => c[0]);
+    expect(calls).toContain(0);
+  });
+
+  it("存在しない枠番号では何もしない", async () => {
+    expect(await runSlotForAccount(MIXED, scopeOf(MIXED, 1), 9, NOW)).toBeNull();
+    expect(db.getNextPendingPost).not.toHaveBeenCalled();
+  });
+
+  it("枠未設定のアカウントは従来どおり朝夕2枠", async () => {
+    vi.mocked(db.listAccounts).mockResolvedValue([SCSU]);
+    await runTick(NOW);
+    const calls = vi.mocked(db.getNextPendingPost).mock.calls.map((c) => c[0]);
+    expect(calls).toEqual([0, 1]);
   });
 });
 

@@ -29,6 +29,7 @@ import {
   upsertSettings,
 } from "./db";
 import { AccountScope, primaryAccountId, scopeOf } from "./accountScope";
+import { formatSlot, resolveSlots } from "@shared/postingSlots";
 import { Account } from "../drizzle/schema";
 import { fetchPostInsights, publishTextPost, refreshLongLivedToken } from "./threadsApi";
 import { ENV } from "./_core/env";
@@ -159,20 +160,26 @@ export function resolveImageUrl(imageUrl: string | null | undefined): string | n
   return `${base}${imageUrl.startsWith("/") ? "" : "/"}${imageUrl}`;
 }
 
-/** 1アカウント・1スロット分の投稿を試みる。発火しなかった場合は null */
+/**
+ * 1アカウント・1スロット分の投稿を試みる。発火しなかった場合は null。
+ *
+ * 判定はすべて **その枠自身のタイムゾーン** で行う。同じアカウントでも
+ * 「JSTの12時」と「PTの8時」が別々の日付境界を持つため、
+ * 「今日もう投稿したか」のロックも枠のタイムゾーンで区切る。
+ */
 export async function runSlotForAccount(
   account: Account,
   scope: AccountScope,
   slotIndex: number,
   now: Date
 ): Promise<{ posted?: string; error?: string; recycled?: boolean } | null> {
-  const local = getLocalParts(now, account.timezone);
-  const slotHour = slotIndex === 0 ? account.morningHour : account.eveningHour;
-  const slotMinute = slotIndex === 0 ? account.morningMinute : account.eveningMinute;
+  const slot = resolveSlots(account)[slotIndex];
+  if (!slot) return null;
 
-  if (!slotIsDue(local, slotHour, slotMinute)) return null;
+  const local = getLocalParts(now, slot.timezone);
+  if (!slotIsDue(local, slot.hour, slot.minute)) return null;
 
-  const { start, end } = localDayUtcRange(local.dateStr, account.timezone);
+  const { start, end } = localDayUtcRange(local.dateStr, slot.timezone);
   if (await hasSlotLogInRange(scope, slotIndex, start, end)) return null;
 
   let post = await getNextPendingPost(slotIndex, local.dateStr, scope);
@@ -218,7 +225,7 @@ export async function runSlotForAccount(
     await maybeNotifyError(
       account.id,
       `【${account.name}】Threads自動投稿に失敗しました`,
-      `スロット: ${slotIndex === 0 ? "朝" : "夕"}\n原稿ID: ${post.id}\nエラー: ${msg}\n\n投稿履歴ページからご確認ください。`
+      `投稿枠: ${formatSlot(slot)}\n原稿ID: ${post.id}\nエラー: ${msg}\n\n投稿履歴ページからご確認ください。`
     );
     return { error: msg };
   }
@@ -300,7 +307,8 @@ export async function runTick(now: Date = new Date()) {
   for (const account of all.filter((a) => a.active)) {
     // スコープはUIの選択状態ではなく、常にこのループのアカウントから作る
     const scope = scopeOf(account, primaryId);
-    for (const slotIndex of [0, 1]) {
+    const slotCount = resolveSlots(account).length;
+    for (let slotIndex = 0; slotIndex < slotCount; slotIndex++) {
       const r = await runSlotForAccount(account, scope, slotIndex, now);
       if (r) results.push({ account: account.id, slotIndex, ...r });
     }

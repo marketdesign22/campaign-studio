@@ -82,8 +82,14 @@ export const accounts = mysqlTable("accounts", {
   morningMinute: int("morningMinute").default(0).notNull(),
   eveningHour: int("eveningHour").default(18).notNull(),
   eveningMinute: int("eveningMinute").default(0).notNull(),
-  /** タイムゾーン: "LA" = America/Los_Angeles, "JP" = Asia/Tokyo */
+  /** タイムゾーン: "LA" = America/Los_Angeles, "JP" = Asia/Tokyo。slots 未設定時の既定 */
   timezone: mysqlEnum("timezone", ["LA", "JP", "ET", "CT", "MT"]).default("LA").notNull(),
+  /**
+   * 投稿枠の定義 JSON: [{hour,minute,timezone},...]（最大6件）。
+   * 枠ごとにタイムゾーンを持てるので「JSTの朝夕 + PTの朝夕」が1アカウントで組める。
+   * null のときは上の morning/evening + timezone から2枠を組み立てる（従来動作）。
+   */
+  slots: text("slots"),
   active: boolean("active").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

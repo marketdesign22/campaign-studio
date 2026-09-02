@@ -5,13 +5,14 @@ import {
 } from "../db";
 import { getThreadsProfile, refreshLongLivedToken } from "../threadsApi";
 import { buildAuthorizeUrl, signConnectState } from "../threadsOAuth";
+import { MAX_SLOTS, resolveSlots, serializeSlots } from "@shared/postingSlots";
 import { accountProcedure } from "../accountScope";
 import { protectedProcedure, router } from "../_core/trpc";
 
-/** トークンは常にマスクして返す */
+/** トークンは常にマスクして返す。投稿枠は画面で扱いやすいよう配列にして返す */
 function mask(account: Awaited<ReturnType<typeof getAccountById>> & object) {
-  const { threadsAccessToken, ...rest } = account;
-  return { ...rest, hasToken: !!threadsAccessToken };
+  const { threadsAccessToken, slots, ...rest } = account;
+  return { ...rest, hasToken: !!threadsAccessToken, slots: resolveSlots(account) };
 }
 
 export const accountsRouter = router({
@@ -81,6 +82,16 @@ export const accountsRouter = router({
     .input(z.object({
       id: z.number().int(),
       name: z.string().min(1).max(64).optional(),
+      /**
+       * 投稿枠。枠ごとにタイムゾーンを指定できるので、
+       * 「JSTの朝夕 + PTの朝夕」のような組み合わせが1アカウントで組める。
+       */
+      slots: z.array(z.object({
+        hour: z.number().int().min(0).max(23),
+        minute: z.number().int().min(0).max(59),
+        timezone: z.enum(["LA", "JP", "ET", "CT", "MT"]),
+      })).min(1).max(MAX_SLOTS).optional(),
+      // 以下は枠機能より前からある設定。slots 未設定のアカウント向けに残している
       morningHour: z.number().int().min(0).max(23).optional(),
       morningMinute: z.number().int().min(0).max(59).optional(),
       eveningHour: z.number().int().min(0).max(23).optional(),
@@ -89,8 +100,11 @@ export const accountsRouter = router({
       active: z.boolean().optional(),
     }))
     .mutation(async ({ input }) => {
-      const { id, ...data } = input;
-      await updateAccount(id, data);
+      const { id, slots, ...rest } = input;
+      await updateAccount(id, {
+        ...rest,
+        ...(slots ? { slots: serializeSlots(slots) } : {}),
+      });
       return { ok: true };
     }),
 

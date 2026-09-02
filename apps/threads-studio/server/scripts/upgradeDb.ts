@@ -278,6 +278,10 @@ async function main() {
   // カテゴリーの所属アカウント。NULL = 従来からある全アカウント共通のカテゴリー
   await addColumn("categories", "accountId", "`accountId` int NULL");
 
+  // 投稿枠の定義（枠ごとにタイムゾーンを持つ）。
+  // NULL のままなら従来の朝夕設定がそのまま使われるので、既存アカウントは無変更で動く。
+  await addColumn("accounts", "slots", "`slots` text NULL");
+
   // アカウントごとの運用設定
   await createTable("account_settings", `
     CREATE TABLE \`account_settings\` (

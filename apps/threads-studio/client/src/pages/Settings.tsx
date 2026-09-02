@@ -11,10 +11,11 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   AtSign, CheckCircle, Copy, KeyRound, Link2, LucideIcon, Palette, Plus, RefreshCw,
-  ShieldCheck, Sunrise, Sunset, Trash2, Users,
+  ShieldCheck, Trash2, Users,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { TZ_OPTIONS, useI18n } from "@/i18n";
+import { MAX_SLOTS, PostingSlot, SlotTimezone } from "@shared/postingSlots";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type AccountRow = {
@@ -28,38 +29,59 @@ type AccountRow = {
   morningMinute: number;
   eveningHour: number;
   eveningMinute: number;
-  timezone: "LA" | "JP" | "ET" | "CT" | "MT";
+  timezone: SlotTimezone;
+  /** 投稿枠。サーバーが解決済みの配列で返す（未設定なら朝夕から組み立てた2件） */
+  slots: PostingSlot[];
   active: boolean;
 };
 
-function TimeInput({
-  label, hour, minute, onHourChange, onMinuteChange, icon: Icon,
+/** 投稿枠1件の編集行。時刻とタイムゾーンを枠ごとに指定する */
+function SlotRow({
+  index, slot, canRemove, onChange, onRemove,
 }: {
-  label: string; hour: number; minute: number;
-  onHourChange: (v: number) => void; onMinuteChange: (v: number) => void;
-  icon: LucideIcon;
+  index: number;
+  slot: PostingSlot;
+  canRemove: boolean;
+  onChange: (next: PostingSlot) => void;
+  onRemove: () => void;
 }) {
+  const { t } = useI18n();
   return (
-    <div className="flex items-center gap-3 p-3 rounded-xl border bg-card">
-      <span className="h-9 w-9 rounded-xl bg-[var(--brand-accent)]/12 flex items-center justify-center shrink-0">
-        <Icon className="h-4.5 w-4.5 text-[var(--brand-accent-deep)]" strokeWidth={1.8} />
+    <div className="flex items-center gap-2.5 p-3 rounded-xl border bg-card">
+      <span className="h-8 w-8 rounded-lg bg-[var(--brand-accent)]/12 flex items-center justify-center shrink-0 text-xs font-bold text-[var(--brand-accent-deep)] tabular-nums">
+        {index + 1}
       </span>
-      <div className="flex-1">
-        <p className="text-xs font-semibold mb-1.5">{label}</p>
-        <div className="flex items-center gap-1.5">
-          <Input
-            type="number" min={0} max={23} value={hour}
-            onChange={(e) => onHourChange(Math.min(23, Math.max(0, parseInt(e.target.value) || 0)))}
-            className="w-16 text-center font-mono h-8"
-          />
-          <span className="font-bold text-muted-foreground">:</span>
-          <Input
-            type="number" min={0} max={59} value={String(minute).padStart(2, "0")}
-            onChange={(e) => onMinuteChange(Math.min(59, Math.max(0, parseInt(e.target.value) || 0)))}
-            className="w-16 text-center font-mono h-8"
-          />
-        </div>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <Input
+          type="number" min={0} max={23} value={slot.hour}
+          aria-label={t("時")}
+          onChange={(e) => onChange({ ...slot, hour: Math.min(23, Math.max(0, parseInt(e.target.value) || 0)) })}
+          className="w-14 text-center font-mono h-8"
+        />
+        <span className="font-bold text-muted-foreground">:</span>
+        <Input
+          type="number" min={0} max={59} value={String(slot.minute).padStart(2, "0")}
+          aria-label={t("分")}
+          onChange={(e) => onChange({ ...slot, minute: Math.min(59, Math.max(0, parseInt(e.target.value) || 0)) })}
+          className="w-14 text-center font-mono h-8"
+        />
       </div>
+      <Select value={slot.timezone} onValueChange={(v) => onChange({ ...slot, timezone: v as SlotTimezone })}>
+        <SelectTrigger className="h-8 flex-1 min-w-0 text-xs"><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {TZ_OPTIONS.map((o) => (
+            <SelectItem key={o.value} value={o.value}>{t(o.labelJa)}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Button
+        size="sm" variant="ghost" className="h-8 w-8 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+        disabled={!canRemove}
+        aria-label={t("この枠を削除")}
+        onClick={onRemove}
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </Button>
     </div>
   );
 }
@@ -67,11 +89,7 @@ function TimeInput({
 function AccountCard({ account }: { account: AccountRow }) {
   const { t, locale } = useI18n();
   const utils = trpc.useUtils();
-  const [morningHour, setMorningHour] = useState(account.morningHour);
-  const [morningMinute, setMorningMinute] = useState(account.morningMinute);
-  const [eveningHour, setEveningHour] = useState(account.eveningHour);
-  const [eveningMinute, setEveningMinute] = useState(account.eveningMinute);
-  const [timezone, setTimezone] = useState<AccountRow["timezone"]>(account.timezone);
+  const [slots, setSlots] = useState<PostingSlot[]>(account.slots);
   const [newToken, setNewToken] = useState("");
   const [showToken, setShowToken] = useState(false);
 
@@ -92,7 +110,6 @@ function AccountCard({ account }: { account: AccountRow }) {
     onError: (e) => toast.error(e.message),
   });
 
-  const tzLabel = t(TZ_OPTIONS.find(o => o.value === timezone)?.labelJa ?? "太平洋時間 (PT)");
   const expires = account.tokenExpiresAt ? new Date(account.tokenExpiresAt) : null;
   const expiresSoon = expires && expires.getTime() - Date.now() < 14 * 24 * 3600 * 1000;
 
@@ -149,34 +166,42 @@ function AccountCard({ account }: { account: AccountRow }) {
 
       {/* Schedule */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-medium shrink-0">{t("自動投稿スケジュール")}</p>
-          <Select value={timezone} onValueChange={v => setTimezone(v as AccountRow["timezone"])}>
-            <SelectTrigger className="h-8 w-44 text-xs"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {TZ_OPTIONS.map(o => (
-                <SelectItem key={o.value} value={o.value}>{t(o.labelJa)}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div>
+          <p className="text-sm font-medium">{t("自動投稿スケジュール")}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {t("枠ごとにタイムゾーンを指定できます。日本時間と現地時間を混ぜても構いません。")}
+          </p>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <TimeInput label={`${t("朝")} (${tzLabel})`} hour={morningHour} minute={morningMinute}
-            onHourChange={setMorningHour} onMinuteChange={setMorningMinute} icon={Sunrise} />
-          <TimeInput label={`${t("夕")} (${tzLabel})`} hour={eveningHour} minute={eveningMinute}
-            onHourChange={setEveningHour} onMinuteChange={setEveningMinute} icon={Sunset} />
+
+        <div className="space-y-2">
+          {slots.map((slot, i) => (
+            <SlotRow
+              key={i}
+              index={i}
+              slot={slot}
+              canRemove={slots.length > 1}
+              onChange={(next) => setSlots(slots.map((s, j) => (j === i ? next : s)))}
+              onRemove={() => setSlots(slots.filter((_, j) => j !== i))}
+            />
+          ))}
         </div>
+
+        {slots.length < MAX_SLOTS && (
+          <Button
+            size="sm" variant="outline" className="w-full"
+            onClick={() => setSlots([...slots, { hour: 9, minute: 0, timezone: slots[slots.length - 1]?.timezone ?? "LA" }])}
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" />{t("投稿枠を追加")}
+          </Button>
+        )}
+
         <div className="flex justify-between items-center">
           <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive"
             onClick={() => { if (confirm(`"${account.name}" ${t("を削除しますか？原稿と履歴は残ります。")}`)) deleteMut.mutate({ id: account.id }); }}>
             <Trash2 className="h-3.5 w-3.5 mr-1" />{t("削除")}
           </Button>
           <Button size="sm" disabled={updateMut.isPending}
-            onClick={() => updateMut.mutate({
-              id: account.id,
-              morningHour, morningMinute, eveningHour, eveningMinute,
-              timezone,
-            })}>
+            onClick={() => updateMut.mutate({ id: account.id, slots })}>
             {updateMut.isPending ? t("保存中...") : t("スケジュールを保存")}
           </Button>
         </div>

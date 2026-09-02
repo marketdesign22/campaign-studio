@@ -7,6 +7,7 @@ import {
 } from "../db";
 import { getLocalParts } from "../scheduler";
 import { planSchedule, slotKey, summarizeRunway } from "../schedulePlanner";
+import { primaryTimezone } from "@shared/postingSlots";
 import { accountProcedure } from "../accountScope";
 import type { AccountScope } from "../accountScope";
 import type { Account } from "../../drizzle/schema";
@@ -31,9 +32,12 @@ async function requireOwnedPost(id: number, scope: AccountScope) {
   return post;
 }
 
-/** アカウントのローカル日付（YYYY-MM-DD） */
+/**
+ * アカウントのローカル日付（YYYY-MM-DD）。
+ * 枠ごとにタイムゾーンが異なりうるので、最初の枠のものを基準にする。
+ */
 function localToday(account: Account): string {
-  return getLocalParts(new Date(), account.timezone).dateStr;
+  return getLocalParts(new Date(), primaryTimezone(account)).dateStr;
 }
 
 /**

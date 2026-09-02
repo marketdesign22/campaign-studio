@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAccount } from "@/contexts/AccountContext";
+import { slotLabel } from "@/lib/slotLabel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -116,7 +117,6 @@ async function toUploadableJpeg(file: File, maxSide = 1440, quality = 0.85): Pro
   return canvas.toDataURL("image/jpeg", quality);
 }
 
-const SLOT_LABELS = ["朝", "夕", "追加1", "追加2", "追加3", "追加4"];
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-primary/10 text-primary",
   posted: "bg-emerald-600/10 text-emerald-700",
@@ -136,6 +136,7 @@ export default function Posts() {
   const { data: postList = [], isLoading } = trpc.posts.list.useQuery();
   const { data: cats = [] } = trpc.categories.list.useQuery();
   const { accounts, current: currentAccount } = useAccount();
+  const accountSlots = currentAccount?.slots ?? [];
   // 一覧はすべて選択中アカウントの原稿なので、移動先には他のアカウントだけを出す
   const otherAccounts = accounts.filter(a => a.id !== currentAccount?.id);
   const { data: settings } = trpc.settings.get.useQuery();
@@ -380,7 +381,7 @@ export default function Posts() {
                             <Repeat className="h-3 w-3" />{t("再投稿")}{p.recycleCount > 0 ? ` ×${p.recycleCount}` : ""}
                           </span>
                         )}
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border">{SLOT_LABELS[p.slotIndex] ? t(SLOT_LABELS[p.slotIndex]) : `${t("スロット")}${p.slotIndex}`}</span>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border">{slotLabel(accountSlots, p.slotIndex, t("枠"))}</span>
                         {p.scheduledDate && <span className="text-xs text-muted-foreground tabular-nums">{p.scheduledDate}</span>}
                         {cat && <span className="text-xs px-2 py-0.5 rounded-full text-white font-medium" style={{ backgroundColor: cat.color }}>{cat.name}</span>}
                         {account && accounts.length > 1 && (
@@ -492,7 +493,7 @@ export default function Posts() {
                 <Label>{t("投稿スロット")}</Label>
                 <Select value={String(slotIndex)} onValueChange={v => setSlotIndex(Number(v))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{SLOT_LABELS.map((l, i) => <SelectItem key={i} value={String(i)}>{t(l)}</SelectItem>)}</SelectContent>
+                  <SelectContent>{accountSlots.map((_, i) => <SelectItem key={i} value={String(i)}>{slotLabel(accountSlots, i, t("枠"))}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-1.5">

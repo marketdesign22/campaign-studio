@@ -62,7 +62,8 @@ async function runLegacySlot(slotIndex: number, res: Response) {
       // 日次ロックと予約日フィルタのみ適用する
       const local = getLocalParts(now, account.timezone);
       const r = await runSlotForAccount(
-        { ...account, morningHour: 0, morningMinute: 0, eveningHour: 0, eveningMinute: 0 },
+        // 時刻0の2枠として扱い、到来チェックを実質無効化する
+        { ...account, slots: null, morningHour: 0, morningMinute: 0, eveningHour: 0, eveningMinute: 0 },
         scopeOf(account, primaryId),
         slotIndex,
         now
