@@ -51,21 +51,31 @@ export async function threadsConnectHandler(req: Request, res: Response) {
     const short = await exchangeCodeForToken(code);
     const long = await exchangeForLongLivedToken(short.accessToken);
 
-    // 表示名の取得は失敗しても連携自体は成立させる
+    // 表示名の取得は失敗しても連携自体は成立させる。
+    // あわせてプロフィールのIDも控える: Graph API は id を文字列で返すため、
+    // 数値経由で丸められる余地がなく、トークン応答由来のIDより信頼できる。
     let username: string | null = null;
+    let profileId: string | null = null;
     try {
-      username = (await getThreadsProfile(long.accessToken)).username ?? null;
+      const profile = await getThreadsProfile(long.accessToken);
+      username = profile.username ?? null;
+      profileId = profile.id || null;
     } catch {
       /* ignore */
     }
+    const threadsUserId = profileId ?? short.userId;
 
     const now = new Date();
     const expiresAt = new Date(now.getTime() + long.expiresIn * 1000);
-    const existing = await getAccountByThreadsUserId(short.userId);
+    const existing =
+      (await getAccountByThreadsUserId(threadsUserId)) ??
+      // 過去に誤ったIDで登録された行を拾って直せるようにする
+      (threadsUserId === short.userId ? undefined : await getAccountByThreadsUserId(short.userId));
 
     if (existing) {
       // 再連携: トークンを差し替えるだけ（予約投稿や履歴はそのまま残る）
       await updateAccount(existing.id, {
+        threadsUserId,
         threadsAccessToken: long.accessToken,
         tokenRefreshedAt: now,
         tokenExpiresAt: expiresAt,
@@ -74,7 +84,7 @@ export async function threadsConnectHandler(req: Request, res: Response) {
     } else {
       await createAccount({
         name: accountName || username || "連携アカウント",
-        threadsUserId: short.userId,
+        threadsUserId,
         threadsAccessToken: long.accessToken,
         tokenRefreshedAt: now,
         tokenExpiresAt: expiresAt,

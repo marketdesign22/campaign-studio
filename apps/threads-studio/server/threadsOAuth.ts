@@ -73,6 +73,19 @@ export function buildAuthorizeUrl(state: string): string {
   return url.toString();
 }
 
+/**
+ * トークン応答から Threads User ID を取り出す。
+ *
+ * Threads は user_id を JSON の「数値」で返すが、IDは17桁あり JavaScript の
+ * 安全整数（2^53-1 = 9007199254740991）を超える。JSON.parse を通すと末尾が
+ * 丸められ、実在しないIDになってしまう（例: ...276 が ...270 になる）。
+ * 数値化される前の生テキストから桁をそのまま取り出すこと。
+ */
+export function extractUserId(rawJson: string): string | null {
+  const m = /"user_id"\s*:\s*"?(\d+)"?/.exec(rawJson);
+  return m ? m[1] : null;
+}
+
 /** 認可コード → 短期トークン */
 export async function exchangeCodeForToken(
   code: string
@@ -91,11 +104,14 @@ export async function exchangeCodeForToken(
       code,
     }).toString(),
   });
+  const text = await res.text();
   if (!res.ok) {
-    throw new Error(`Threads token exchange failed (${res.status}): ${await res.text()}`);
+    throw new Error(`Threads token exchange failed (${res.status}): ${text}`);
   }
-  const data = (await res.json()) as { access_token: string; user_id: string | number };
-  return { accessToken: data.access_token, userId: String(data.user_id) };
+  const data = JSON.parse(text) as { access_token: string; user_id: string | number };
+  // String(data.user_id) だと丸められた値になるため、生テキストから取り出す
+  const userId = extractUserId(text) ?? String(data.user_id);
+  return { accessToken: data.access_token, userId };
 }
 
 /** 短期トークン → 長期トークン（60日・自動更新の対象になる） */
