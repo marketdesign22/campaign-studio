@@ -1,8 +1,12 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo } from "react";
+import {
+  createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useSyncExternalStore,
+} from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { trpc } from "@/lib/trpc";
-import { getSelectedAccountId, setSelectedAccountId } from "@/lib/accountStore";
+import {
+  getSelectedAccountId, setSelectedAccountId, subscribeSelectedAccount,
+} from "@/lib/accountStore";
 
 export type SwitchableAccount = {
   id: number;
@@ -46,7 +50,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     [data]
   );
 
-  const stored = getSelectedAccountId();
+  // 選択中アカウントはReactの外（localStorage）で持っているので、購読して再描画させる。
+  // ここを素の getSelectedAccountId() にすると、切り替えても画面が更新されない。
+  const stored = useSyncExternalStore(subscribeSelectedAccount, getSelectedAccountId);
   const current = accounts.find((a) => a.id === stored) ?? accounts[0] ?? null;
 
   // 保存されていたIDが削除・無効化されていた場合は既定アカウントへ戻す。
@@ -60,8 +66,9 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     (id: number) => {
       if (id === getSelectedAccountId()) return;
       setSelectedAccountId(id);
-      // 直前のアカウントのデータが一瞬でも見えないよう、キャッシュを捨ててから引き直す
-      queryClient.clear();
+      // 直前のアカウントのデータが一瞬でも見えないよう、取得済みの値を捨てて引き直す。
+      // clear() だと購読中のクエリごと消えて再取得が走らないので resetQueries を使う。
+      queryClient.resetQueries();
     },
     [queryClient]
   );

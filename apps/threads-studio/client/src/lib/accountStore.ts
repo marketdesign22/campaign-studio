@@ -39,7 +39,9 @@ export function setSelectedAccountId(id: number | null) {
 
 export function subscribeSelectedAccount(fn: () => void): () => void {
   listeners.add(fn);
-  return () => listeners.delete(fn);
+  return () => {
+    listeners.delete(fn);
+  };
 }
 
 /** tRPC リクエストに付ける選択中アカウントのヘッダ */
