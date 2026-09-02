@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { ENV } from "./_core/env";
 import { getLocalParts, runSlotForAccount, runTick } from "./scheduler";
-import { listActiveAccounts } from "./db";
+import { listAccounts } from "./db";
+import { primaryAccountId, scopeOf } from "./accountScope";
 
 /**
  * 外部cron（Railway cron・GitHub Actions等）から叩く場合の認可。
@@ -48,10 +49,12 @@ export async function tickHandler(req: Request, res: Response) {
 /** Legacy fixed-time endpoints — kept so existing cron registrations still work. */
 async function runLegacySlot(slotIndex: number, res: Response) {
   try {
-    const accounts = await listActiveAccounts();
+    const all = await listAccounts();
+    const accounts = all.filter((a) => a.active);
     if (accounts.length === 0) {
       return res.status(200).json({ ok: false, reason: "Threads credentials not configured" });
     }
+    const primaryId = primaryAccountId(all);
     const now = new Date();
     const fired: Record<string, unknown>[] = [];
     for (const account of accounts) {
@@ -60,6 +63,7 @@ async function runLegacySlot(slotIndex: number, res: Response) {
       const local = getLocalParts(now, account.timezone);
       const r = await runSlotForAccount(
         { ...account, morningHour: 0, morningMinute: 0, eveningHour: 0, eveningMinute: 0 },
+        scopeOf(account, primaryId),
         slotIndex,
         now
       );

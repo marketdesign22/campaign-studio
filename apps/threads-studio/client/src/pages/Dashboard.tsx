@@ -1,5 +1,6 @@
 import { trpc } from "@/lib/trpc";
 import { useI18n } from "@/i18n";
+import { useAccount } from "@/contexts/AccountContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/components/PageHeader";
@@ -16,6 +17,7 @@ const STATS = [
 
 export default function Dashboard() {
   const { t, locale } = useI18n();
+  const { current: currentAccount } = useAccount();
   const { data: posts } = trpc.posts.list.useQuery();
   const { data: logs } = trpc.postLogs.list.useQuery({ limit: 5 });
   const { data: preview } = trpc.posts.nextPreview.useQuery();
@@ -44,7 +46,7 @@ export default function Dashboard() {
       <PageHeader
         eyebrow="Overview"
         title={t("ダッシュボード")}
-        description={`${today} — ${t("公式Threads運用状況")}`}
+        description={`${today} — ${currentAccount?.name ?? t("公式Threads運用状況")}`}
       />
 
       {/* Stats */}
@@ -84,7 +86,7 @@ export default function Dashboard() {
                     <AtSign className="h-4 w-4 text-[#1d3450]" strokeWidth={2.4} />
                   </span>
                   <div className="leading-tight">
-                    <p className="text-sm font-semibold">{t("SCSU 公式")}</p>
+                    <p className="text-sm font-semibold">{preview.accountName ?? t("アカウント未設定")}</p>
                     <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-0.5">
                       {preview.slotIndex === 0 ? (
                         <><Sunrise className="h-3 w-3" />{t("朝の投稿枠")}</>

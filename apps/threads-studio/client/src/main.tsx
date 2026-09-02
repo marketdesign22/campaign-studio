@@ -5,6 +5,7 @@ import { httpBatchLink, TRPCClientError } from "@trpc/client";
 import { createRoot } from "react-dom/client";
 import superjson from "superjson";
 import App from "./App";
+import { accountHeaders } from "./lib/accountStore";
 import { startLogin } from "./const";
 import "./index.css";
 
@@ -42,6 +43,8 @@ const trpcClient = trpc.createClient({
     httpBatchLink({
       url: "/api/trpc",
       transformer: superjson,
+      // 選択中アカウントを毎リクエスト送る。サーバー側で必ず検証される
+      headers: accountHeaders,
       fetch(input, init) {
         return globalThis.fetch(input, {
           ...(init ?? {}),

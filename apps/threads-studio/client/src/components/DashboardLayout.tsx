@@ -23,9 +23,10 @@ import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
 import { useI18n } from "@/i18n";
-import { AtSign, BarChart3, CalendarDays, Clock, FileBarChart, FileText, Languages, LayoutDashboard, LogOut, PanelLeft, Settings } from "lucide-react";
+import { AtSign, BarChart3, CalendarDays, Check, ChevronsUpDown, Clock, FileBarChart, FileText, Languages, LayoutDashboard, LogOut, PanelLeft, Settings } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
+import { AccountProvider, useAccount } from "@/contexts/AccountContext";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
@@ -38,6 +39,9 @@ const menuItemsV2 = [
   { icon: FileBarChart, label: "月次レポート", path: "/report" },
   { icon: Settings, label: "設定", path: "/settings" },
 ];
+
+/** ブランド未設定時の既定表示名（ホワイトレーベルのため特定組織名は入れない） */
+const DEFAULT_BRAND_NAME = "Threads Studio";
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 272;
@@ -57,6 +61,86 @@ function LangToggle({ onDark = false }: { onDark?: boolean }) {
       <Languages className="h-3.5 w-3.5" />
       {lang === "ja" ? "English" : "日本語"}
     </button>
+  );
+}
+
+/**
+ * アカウント切り替え。ここで選んだアカウントが、以降すべての画面のデータ範囲になる。
+ * 選択は端末に保存され、ページを移動しても維持される。
+ */
+function AccountSwitcher({ collapsed }: { collapsed: boolean }) {
+  const { accounts, current, select } = useAccount();
+  const { t } = useI18n();
+
+  if (!current) return null;
+
+  const initial = current.name.trim().charAt(0).toUpperCase() || "@";
+
+  if (collapsed) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="mx-auto h-8 w-8 rounded-lg bg-white/10 hover:bg-white/20 transition-colors flex items-center justify-center text-[11px] font-semibold text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={t("アカウントを切り替え")}
+            title={current.name}
+          >
+            {initial}
+          </button>
+        </DropdownMenuTrigger>
+        <AccountMenu accounts={accounts} currentId={current.id} onSelect={select} />
+      </DropdownMenu>
+    );
+  }
+
+  return (
+    <div className="px-3 pt-3">
+      <p className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/35 mb-1.5 px-1">
+        {t("アカウント")}
+      </p>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="w-full flex items-center gap-2.5 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 px-2.5 py-2 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={t("アカウントを切り替え")}
+          >
+            <span className="h-6 w-6 rounded-md bg-[var(--brand-accent)] text-[#1d3450] text-[11px] font-bold flex items-center justify-center shrink-0">
+              {initial}
+            </span>
+            <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-white">
+              {current.name}
+            </span>
+            <ChevronsUpDown className="h-3.5 w-3.5 text-white/40 shrink-0" />
+          </button>
+        </DropdownMenuTrigger>
+        <AccountMenu accounts={accounts} currentId={current.id} onSelect={select} />
+      </DropdownMenu>
+    </div>
+  );
+}
+
+function AccountMenu({
+  accounts,
+  currentId,
+  onSelect,
+}: {
+  accounts: { id: number; name: string; threadsUserId: string }[];
+  currentId: number;
+  onSelect: (id: number) => void;
+}) {
+  return (
+    <DropdownMenuContent align="start" className="w-60">
+      {accounts.map((a) => (
+        <DropdownMenuItem
+          key={a.id}
+          onClick={() => onSelect(a.id)}
+          className="cursor-pointer gap-2"
+        >
+          <Check className={`h-4 w-4 shrink-0 ${a.id === currentId ? "opacity-100" : "opacity-0"}`} />
+          <span className="min-w-0 flex-1 truncate">{a.name}</span>
+        </DropdownMenuItem>
+      ))}
+    </DropdownMenuContent>
   );
 }
 
@@ -81,6 +165,15 @@ export default function DashboardLayout({
   });
   const { loading, user } = useAuth();
   const { t, lang } = useI18n();
+  // サインイン画面は未ログインなので公開エンドポイントからブランドを取る
+  const { data: brand } = trpc.settings.brand.useQuery(undefined, { staleTime: 60_000 });
+  const brandTitle = brand?.brandName || DEFAULT_BRAND_NAME;
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (brand?.brandAccent) root.style.setProperty("--brand-accent", brand.brandAccent);
+    else root.style.removeProperty("--brand-accent");
+  }, [brand?.brandAccent]);
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
@@ -100,7 +193,7 @@ export default function DashboardLayout({
         <div className="hidden lg:flex flex-col justify-between bg-[oklch(0.245_0.055_248)] p-12 text-white">
           <div className="flex items-center gap-3">
             <BrandMark />
-            <span className="font-display font-semibold tracking-wide">SCSU Threads Studio</span>
+            <span className="font-display font-semibold tracking-wide">{brandTitle}</span>
           </div>
           <div>
             <p className="text-[11px] font-semibold tracking-[0.22em] uppercase text-[var(--brand-accent)] mb-4">
@@ -110,10 +203,10 @@ export default function DashboardLayout({
               {lang === "ja" ? (<>毎日の発信を、<br />確かなリズムで。</>) : (<>Every day.<br />On rhythm.</>)}
             </h2>
             <p className="text-sm text-white/60 mt-5 leading-relaxed max-w-sm">
-              {t("投稿の計画・自動配信・効果測定までを一つに。SCSU公式Threadsアカウントの運用ダッシュボードです。")}
+              {t("投稿の計画・自動配信・効果測定までを一つに。公式Threadsアカウントの運用ダッシュボードです。")}
             </p>
           </div>
-          <p className="text-xs text-white/40">© Southern California State University</p>
+          <p className="text-xs text-white/40">© {new Date().getFullYear()} {brandTitle}</p>
         </div>
         {/* Sign-in panel */}
         <div className="flex items-center justify-center p-8">
@@ -122,7 +215,7 @@ export default function DashboardLayout({
               <BrandMark size="lg" />
               <div className="text-center">
                 <h1 className="font-display text-2xl font-semibold tracking-tight">
-                  SCSU Threads Studio
+                  {brandTitle}
                 </h1>
                 <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
                   {t("運用チームメンバーとしてサインインしてください。")}
@@ -150,17 +243,19 @@ export default function DashboardLayout({
   }
 
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": `${sidebarWidth}px`,
-        } as CSSProperties
-      }
-    >
-      <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>
-        {children}
-      </DashboardLayoutContent>
-    </SidebarProvider>
+    <AccountProvider>
+      <SidebarProvider
+        style={
+          {
+            "--sidebar-width": `${sidebarWidth}px`,
+          } as CSSProperties
+        }
+      >
+        <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>
+          {children}
+        </DashboardLayoutContent>
+      </SidebarProvider>
+    </AccountProvider>
   );
 }
 
@@ -180,7 +275,7 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   // White-label: apply brand name / accent color from settings
   const { data: brand } = trpc.settings.get.useQuery(undefined, { staleTime: 60_000 });
-  const brandTitle = brand?.brandName || "SCSU Threads";
+  const brandTitle = brand?.brandName || DEFAULT_BRAND_NAME;
   useEffect(() => {
     const root = document.documentElement;
     if (brand?.brandAccent) root.style.setProperty("--brand-accent", brand.brandAccent);
@@ -189,7 +284,16 @@ function DashboardLayoutContent({
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const activeMenuItem = menuItemsV2.find(item => item.path === location);
+  const { current: currentAccount, hasAccounts, isLoading: accountsLoading } = useAccount();
   const isMobile = useIsMobile();
+
+  // アカウントが1件も無いと、どの画面もデータを出せない。
+  // 追加できる唯一の場所（設定）へ寄せる。
+  useEffect(() => {
+    if (!accountsLoading && !hasAccounts && location !== "/settings") {
+      setLocation("/settings");
+    }
+  }, [accountsLoading, hasAccounts, location, setLocation]);
 
   // Navigate and, on mobile, close the sheet sidebar so the page is immediately visible
   function handleNavigate(path: string) {
@@ -267,6 +371,7 @@ function DashboardLayoutContent({
           </SidebarHeader>
 
           <SidebarContent className="gap-0">
+            <AccountSwitcher collapsed={isCollapsed} />
             {!isCollapsed && (
               <p className="px-4 pt-5 pb-1 text-[10px] font-semibold tracking-[0.2em] uppercase text-white/35">
                 Menu
@@ -353,6 +458,11 @@ function DashboardLayoutContent({
                 <span className="font-display font-semibold tracking-tight text-foreground text-[15px]">
                   {activeMenuItem ? t(activeMenuItem.label) : brandTitle}
                 </span>
+                {currentAccount && (
+                  <span className="text-[11px] text-muted-foreground truncate max-w-[40vw]">
+                    {currentAccount.name}
+                  </span>
+                )}
               </div>
             </div>
           </div>

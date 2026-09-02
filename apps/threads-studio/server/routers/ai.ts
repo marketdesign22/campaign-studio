@@ -2,7 +2,9 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { invokeLLM } from "../_core/llm";
 import { listPostLogs } from "../db";
-import { protectedProcedure, router } from "../_core/trpc";
+import { accountProcedure } from "../accountScope";
+import type { AccountScope } from "../accountScope";
+import { router } from "../_core/trpc";
 
 /** LLMの応答からテキストを取り出す（configによりcontentの型が揺れるため） */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -21,9 +23,12 @@ function parseJsonSafely(text: string): unknown {
   return JSON.parse(stripped);
 }
 
-/** 直近の成功投稿をスタイル参照として集める */
-async function getStyleExamples(limit = 8): Promise<string[]> {
-  const logs = await listPostLogs(50);
+/**
+ * 直近の成功投稿をスタイル参照として集める。
+ * 参照するのは選択中アカウントの投稿だけ（他クライアントの文面を学習させない）。
+ */
+async function getStyleExamples(scope: AccountScope, limit = 8): Promise<string[]> {
+  const logs = await listPostLogs(50, scope);
   return logs
     .filter((l) => l.status === "posted")
     .slice(0, limit)
@@ -32,15 +37,15 @@ async function getStyleExamples(limit = 8): Promise<string[]> {
 
 export const aiRouter = router({
   /** ブランドボイスに合わせた下書きを複数案生成する */
-  generateDrafts: protectedProcedure
+  generateDrafts: accountProcedure
     .input(z.object({
       topic: z.string().min(1).max(300),
       tone: z.enum(["standard", "casual", "formal", "energetic"]).default("standard"),
       count: z.number().int().min(1).max(5).default(3),
       language: z.enum(["ja", "en"]).default("ja"),
     }))
-    .mutation(async ({ input }) => {
-      const examples = await getStyleExamples();
+    .mutation(async ({ input, ctx }) => {
+      const examples = await getStyleExamples(ctx.scope);
       const isEn = input.language === "en";
       const toneLabel = isEn
         ? {
@@ -109,7 +114,7 @@ export const aiRouter = router({
     }),
 
   /** 既存の下書きを指示に従ってリライトする */
-  rewrite: protectedProcedure
+  rewrite: accountProcedure
     .input(z.object({
       content: z.string().min(1).max(2000),
       instruction: z.string().min(1).max(300),

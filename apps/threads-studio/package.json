@@ -12,7 +12,11 @@
     "test": "vitest run",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
     "db:upgrade": "tsx server/scripts/upgradeDb.ts",
-    "seed:demo": "tsx server/scripts/seedDemo.ts"
+    "seed:demo": "tsx server/scripts/seedDemo.ts",
+    "db:counts": "tsx server/scripts/dbCounts.ts",
+    "db:export": "tsx server/scripts/dbBackup.ts",
+    "db:import": "tsx server/scripts/dbBackup.ts --import",
+    "db:backfill": "tsx server/scripts/backfillAccountIds.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",

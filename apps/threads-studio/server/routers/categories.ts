@@ -1,13 +1,20 @@
 import { z } from "zod";
 import { createCategory, deleteCategory, listCategories } from "../db";
-import { protectedProcedure, router } from "../_core/trpc";
+import { accountProcedure } from "../accountScope";
+import { router } from "../_core/trpc";
 
 export const categoriesRouter = router({
-  list: protectedProcedure.query(() => listCategories()),
-  create: protectedProcedure
+  list: accountProcedure.query(({ ctx }) => listCategories(ctx.scope)),
+  create: accountProcedure
     .input(z.object({ name: z.string().min(1).max(64), color: z.string().default("#335B82") }))
-    .mutation(async ({ input }) => { await createCategory(input.name, input.color); return { ok: true }; }),
-  delete: protectedProcedure
+    .mutation(async ({ input, ctx }) => {
+      await createCategory(input.name, input.color, ctx.account.id);
+      return { ok: true };
+    }),
+  delete: accountProcedure
     .input(z.object({ id: z.number().int() }))
-    .mutation(async ({ input }) => { await deleteCategory(input.id); return { ok: true }; }),
+    .mutation(async ({ input, ctx }) => {
+      await deleteCategory(input.id, ctx.scope);
+      return { ok: true };
+    }),
 });

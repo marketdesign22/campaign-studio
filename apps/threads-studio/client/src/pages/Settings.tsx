@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { useAccount } from "@/contexts/AccountContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -186,7 +187,10 @@ function AccountCard({ account }: { account: AccountRow }) {
 
 export default function Settings() {
   const { t } = useI18n();
-  const { data: settings } = trpc.settings.get.useQuery();
+  const { current: currentAccount, hasAccounts } = useAccount();
+  // アカウントが1件も無いうちは、アカウント前提のAPIを呼ばない
+  // （このページから最初の1件を追加できるようにするため）
+  const { data: settings } = trpc.settings.get.useQuery(undefined, { enabled: hasAccounts });
   const { data: accounts = [], isLoading: accountsLoading } = trpc.accounts.list.useQuery();
   const utils = trpc.useUtils();
 
@@ -239,7 +243,11 @@ export default function Settings() {
       <PageHeader
         eyebrow="Preferences"
         title={t("設定")}
-        description={t("アカウント・運用ルール・ブランドの管理")}
+        description={
+          currentAccount
+            ? `${currentAccount.name} — ${t("運用ルールとブランドはこのアカウントにのみ適用されます")}`
+            : t("アカウント・運用ルール・ブランドの管理")
+        }
       />
 
       {/* Accounts */}
@@ -353,7 +361,7 @@ export default function Settings() {
         <CardContent className="pt-5 space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="brandName">{t("ブランド名")}</Label>
-            <Input id="brandName" placeholder="SCSU Threads" value={brandName} maxLength={64}
+            <Input id="brandName" placeholder="Threads Studio" value={brandName} maxLength={64}
               onChange={(e) => setBrandName(e.target.value)} />
           </div>
           <div className="space-y-1.5">
@@ -386,7 +394,7 @@ export default function Settings() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label>{t("表示名")}</Label>
-              <Input placeholder={t("例: SCSU 公式")} value={newName} maxLength={64}
+              <Input placeholder={t("例: 〇〇大学 公式")} value={newName} maxLength={64}
                 onChange={(e) => setNewName(e.target.value)} />
             </div>
             <div className="space-y-2 p-3 rounded-lg border bg-muted/40">

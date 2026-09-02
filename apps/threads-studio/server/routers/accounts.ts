@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import {
-  createAccount, deleteAccount, getAccountById, listAccounts, updateAccount,
+  createAccount, deleteAccount, deleteAccountSettings, getAccountById, listAccounts, updateAccount,
 } from "../db";
 import { getThreadsProfile, refreshLongLivedToken } from "../threadsApi";
 import { buildAuthorizeUrl, signConnectState } from "../threadsOAuth";
+import { accountProcedure } from "../accountScope";
 import { protectedProcedure, router } from "../_core/trpc";
 
 /** トークンは常にマスクして返す */
@@ -18,6 +19,18 @@ export const accountsRouter = router({
     const rows = await listAccounts();
     return rows.map(mask);
   }),
+
+  /**
+   * サーバーが実際に操作対象として確定したアカウント。
+   * 画面の選択状態が本当にサーバーへ届いているかを確認するために使う
+   * （クライアントの保存値ではなく、検証を通った値が返る）。
+   */
+  current: accountProcedure.query(({ ctx }) => ({
+    id: ctx.account.id,
+    name: ctx.account.name,
+    threadsUserId: ctx.account.threadsUserId,
+    timezone: ctx.account.timezone,
+  })),
 
   /**
    * クライアントに渡す連携リンクを発行する。
@@ -129,6 +142,8 @@ export const accountsRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.number().int() }))
     .mutation(async ({ input }) => {
+      // 原稿・履歴は監査のため残し、そのアカウント固有の設定行だけ片付ける
+      await deleteAccountSettings(input.id);
       await deleteAccount(input.id);
       return { ok: true };
     }),

@@ -1,51 +1,38 @@
 import { z } from "zod";
 import {
-  createPostLog, getAccountById, getNextPendingPostAny, getPostById,
-  getSettings, listActiveAccounts, updatePost,
+  createPostLog, getAccountSettings, getNextPendingPostAny, getOwnedPost, updatePost,
 } from "../db";
 import { getLocalParts, resolveImageUrl } from "../scheduler";
 import { publishTextPost } from "../threadsApi";
-import { protectedProcedure, router } from "../_core/trpc";
+import { accountProcedure } from "../accountScope";
+import { router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 
 export const manualPostRouter = router({
-  post: protectedProcedure
+  /**
+   * 「今すぐ投稿」。投稿先は常に選択中のアカウントで、
+   * 対象原稿もそのアカウントが所有するものに限られる。
+   */
+  post: accountProcedure
     .input(z.object({ postId: z.number().int().optional() }))
-    .mutation(async ({ input }) => {
-      const accounts = await listActiveAccounts();
-      if (accounts.length === 0) {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "Threadsアカウントが登録されていません。設定ページからアカウントを追加してください。",
-        });
-      }
+    .mutation(async ({ input, ctx }) => {
+      const { account, scope } = ctx;
 
-      let post;
-      if (input.postId) {
-        post = await getPostById(input.postId);
-      } else {
-        const tz = accounts[0].timezone;
-        const today = getLocalParts(new Date(), tz).dateStr;
-        post = await getNextPendingPostAny(today, accounts[0].id);
-      }
+      const post = input.postId
+        ? await getOwnedPost(input.postId, scope)
+        : await getNextPendingPostAny(getLocalParts(new Date(), account.timezone).dateStr, scope);
 
       if (!post) {
         throw new TRPCError({ code: "NOT_FOUND", message: "投稿可能な原稿がありません。" });
       }
 
       // 承認フロー有効時は未承認原稿の手動投稿もブロックする
-      const cfg = await getSettings();
-      if (cfg?.requireApproval && post.approvalStatus !== "approved") {
+      const cfg = await getAccountSettings(account.id);
+      if (cfg.requireApproval && post.approvalStatus !== "approved") {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
           message: "この原稿は未承認です。承認後に投稿してください。",
         });
-      }
-
-      const account =
-        (post.accountId ? await getAccountById(post.accountId) : undefined) ?? accounts[0];
-      if (!account.active) {
-        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "投稿先アカウントが無効化されています。" });
       }
 
       try {
@@ -55,7 +42,7 @@ export const manualPostRouter = router({
           post.content,
           resolveImageUrl(post.imageUrl)
         );
-        await updatePost(post.id, { status: "posted" });
+        await updatePost(post.id, { status: "posted", accountId: account.id });
         await createPostLog({
           postId: post.id,
           accountId: account.id,
