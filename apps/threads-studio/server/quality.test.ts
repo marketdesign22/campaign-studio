@@ -24,6 +24,11 @@ describe("AI品質チェック", () => {
     await expect(createSafeRewrite("料金は1,000円 https://example.com", [])).rejects.toThrow("変更しました");
   });
 
+  it("英字・カタカナの固有名詞を変えた案を拒否する", async () => {
+    vi.mocked(invokeLLM).mockResolvedValue({ choices: [{ index: 0, finish_reason: null, message: { role: "assistant", content: JSON.stringify({ revised: "OpenAIとキャンペーンを紹介します", changes: [] }) } }], id: "x", model: "test" });
+    await expect(createSafeRewrite("Threads Studioとスレッズを紹介します", [])).rejects.toThrow("変更しました");
+  });
+
   it("不正なAI JSONを保存可能な結果として返さない", async () => {
     vi.mocked(invokeLLM).mockResolvedValue({ choices: [{ index: 0, finish_reason: null, message: { role: "assistant", content: "not-json" } }], id: "x", model: "test" });
     await expect(runAiQualityCheck("本文", {})).rejects.toThrow();
