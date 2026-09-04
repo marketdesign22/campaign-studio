@@ -5,8 +5,9 @@ import { buildDbConfig } from "./dbConfig";
 import type { AnyMySqlColumn } from "drizzle-orm/mysql-core";
 import {
   InsertAccount, InsertAccountSettings, InsertPost, InsertUser,
-  accountSettings, accounts, categories, engagementComments, followerSnapshots, media, postAnalytics, postLogs, posts,
-  replyTemplates, settings, threadReplies, trendAnalyses, trendPosts, trendSettings, users,
+  accounts, accountSettings, categories, clientProfileDrafts, clientProfiles, clientTrendKeywords,
+  engagementComments, followerSnapshots, media, postAnalytics, postLogs, posts, replyTemplates, settings,
+  threadReplies, trendAnalyses, trendPosts, trendSettings, users,
 } from "../drizzle/schema";
 import type { AccountScope } from "./accountScope";
 import { ENV } from "./_core/env";
@@ -1019,6 +1020,72 @@ export async function getOwnedTrendAnalysis(id: number, accountId: number) {
   const rows = await db.select().from(trendAnalyses)
     .where(and(eq(trendAnalyses.id, id), eq(trendAnalyses.accountId, accountId))).limit(1);
   return rows[0];
+}
+
+// ── クライアントプロフィール候補/承認 ──────────────────────────────
+
+export async function createClientProfileDraft(
+  accountId: number, inputs: unknown, profile: unknown, keywords: unknown, warnings: unknown
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const [result] = await db.insert(clientProfileDrafts).values({
+    accountId, inputs: JSON.stringify(inputs), profile: JSON.stringify(profile),
+    keywords: JSON.stringify(keywords), warnings: JSON.stringify(warnings),
+  });
+  return result.insertId;
+}
+
+export async function getLatestClientProfileDraft(accountId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(clientProfileDrafts)
+    .where(eq(clientProfileDrafts.accountId, accountId))
+    .orderBy(desc(clientProfileDrafts.createdAt)).limit(1);
+  return rows[0];
+}
+
+export async function getOwnedClientProfileDraft(id: number, accountId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(clientProfileDrafts).where(and(
+    eq(clientProfileDrafts.id, id), eq(clientProfileDrafts.accountId, accountId),
+  )).limit(1);
+  return rows[0];
+}
+
+export async function getClientProfile(accountId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(clientProfiles).where(eq(clientProfiles.accountId, accountId)).limit(1);
+  return rows[0];
+}
+
+export async function approveClientProfileDraft(
+  draftId: number, accountId: number, profile: unknown, inputs: unknown,
+  keywords: Array<{ keyword: string; category: string; reason: string; targetCustomer: string | null; region: string | null; priority: number; enabled: boolean; sources: string[] }>,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.transaction(async (tx) => {
+    await tx.insert(clientProfiles).values({
+      accountId, profile: JSON.stringify(profile), sourceInputs: JSON.stringify(inputs), approvedAt: new Date(),
+    }).onDuplicateKeyUpdate({ set: {
+      profile: JSON.stringify(profile), sourceInputs: JSON.stringify(inputs), approvedAt: new Date(),
+    } });
+    for (const keyword of keywords) {
+      await tx.insert(clientTrendKeywords).values({
+        accountId, ...keyword, sources: JSON.stringify(keyword.sources),
+      }).onDuplicateKeyUpdate({ set: {
+        category: keyword.category, reason: keyword.reason, targetCustomer: keyword.targetCustomer,
+        region: keyword.region, priority: keyword.priority, enabled: keyword.enabled,
+        sources: JSON.stringify(keyword.sources),
+      } });
+    }
+    await tx.update(clientProfileDrafts).set({ status: "approved", reviewedAt: new Date() }).where(and(
+      eq(clientProfileDrafts.id, draftId), eq(clientProfileDrafts.accountId, accountId),
+    ));
+  });
 }
 
 /** 今日のAI分析回数（1日の上限判定用） */

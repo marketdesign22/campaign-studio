@@ -415,3 +415,50 @@ export const engagementComments = mysqlTable("engagement_comments", {
 });
 
 export type EngagementComment = typeof engagementComments.$inferSelect;
+
+// ── クライアント情報のAI読み取り ──────────────────────────────────────
+
+/** AI候補。確認完了まで既存設定とは分離する。 */
+export const clientProfileDrafts = mysqlTable("client_profile_drafts", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull(),
+  status: mysqlEnum("status", ["pending", "approved", "dismissed"]).default("pending").notNull(),
+  inputs: text("inputs").notNull(),
+  profile: mediumtext("profile").notNull(),
+  keywords: text("keywords").notNull(),
+  warnings: text("warnings").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  reviewedAt: timestamp("reviewedAt"),
+});
+
+export type ClientProfileDraft = typeof clientProfileDrafts.$inferSelect;
+
+/** 利用者が確認した現行プロフィール。アカウントごと1件。 */
+export const clientProfiles = mysqlTable("client_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull().unique(),
+  profile: mediumtext("profile").notNull(),
+  sourceInputs: text("sourceInputs").notNull(),
+  approvedAt: timestamp("approvedAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ClientProfileRow = typeof clientProfiles.$inferSelect;
+
+/** 承認された検索候補と過去成果を独立して保持する。 */
+export const clientTrendKeywords = mysqlTable("client_trend_keywords", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull(),
+  keyword: varchar("keyword", { length: 64 }).notNull(),
+  category: varchar("category", { length: 32 }).notNull(),
+  reason: varchar("reason", { length: 300 }).notNull(),
+  targetCustomer: varchar("targetCustomer", { length: 160 }),
+  region: varchar("region", { length: 80 }),
+  priority: int("priority").default(3).notNull(),
+  enabled: boolean("enabled").default(true).notNull(),
+  sources: text("sources").notNull(),
+  lastUsedAt: timestamp("lastUsedAt"),
+  outcome: text("outcome"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});

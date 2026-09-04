@@ -586,6 +586,30 @@ const en: Record<string, string> = {
   "中部時間 (CT)": "Central (CT)",
   "山岳部時間 (MT)": "Mountain (MT)",
   "日本時間 (JST)": "Japan (JST)",
+
+  // ── Client profile reader ─────────────────────────────────────────────
+  "クライアント情報のAI自動取得": "AI Client Profile Reader",
+  "公式ホームページURL": "Official website URL",
+  "Instagram紹介文（任意）": "Instagram bio (optional)",
+  "AIでクライアント情報を読み取る": "Read client information with AI",
+  "安全に読み取り中...": "Reading safely...",
+  "前回の読み取り結果を確認": "Review latest result",
+  "AIが読み取ったクライアント情報": "Client information found by AI",
+  "確認できる候補はありません。": "There is no result to review.",
+  "確認済み": "Verified", "推定": "Inferred", "ユーザー修正済み": "User edited",
+  "信頼度": "Confidence", "情報が一致しません": "Sources conflict", "現在の設定": "Current setting", "未設定": "Not set",
+  "トレンド検索キーワード候補": "Trend keyword suggestions", "優先度": "Priority", "後で確認": "Review later",
+  "選択した項目と検索条件を承認": "Approve selected fields and keywords", "反映中...": "Applying...",
+  "すべて承認": "Approve all",
+  "AIで検索キーワードを改善": "Improve search keywords with AI", "改善案を作成中...": "Creating suggestions...",
+  "検索成果をもとにAIが改善候補を作成しました。": "AI created suggestions from recent search results.",
+  "すべての項目を選択": "Select all fields", "すべての選択を解除": "Clear all fields",
+  "クライアント名": "Client name", "業種の細分類": "Industry detail",
+  "主な商品・サービス": "Products and services", "特徴・強み": "Strengths", "実績": "Achievements", "想定顧客": "Target customers",
+  "顧客の悩み": "Customer problems", "利用場面": "Use cases", "対象地域・商圏": "Regions", "対応言語": "Languages", "価格帯": "Price range",
+  "集客目的": "Marketing goals", "問い合わせ・購入導線": "Conversion paths", "ブランドの語調": "Brand tone", "よく使う言葉": "Common words",
+  "避けるべき表現": "Expressions to avoid", "地域キーワード": "Region keywords", "業界キーワード": "Industry keywords",
+  "顧客課題キーワード": "Problem keywords", "商品キーワード": "Product keywords", "季節キーワード": "Seasonal keywords", "競合・参考アカウント候補": "Reference account suggestions",
 };
 
 type I18nValue = {

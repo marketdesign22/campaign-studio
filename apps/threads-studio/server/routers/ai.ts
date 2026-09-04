@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { invokeLLM } from "../_core/llm";
-import { getAccountSettings, getOwnedTrendAnalysis, getTrendSettings, listPostLogs } from "../db";
+import { getAccountSettings, getClientProfile, getOwnedTrendAnalysis, getTrendSettings, listPostLogs } from "../db";
 import type { TrendAnalysisResult } from "../trends";
+import { parseStoredProfile } from "../clientProfile";
 import { ENV } from "../_core/env";
 import {
   AI_GUARDRAILS, aiError, createRateLimiter, MAX_POST_LENGTH,
@@ -113,6 +114,27 @@ export const aiRouter = router({
       requireConfigured();
       requireQuota(ctx.user.id);
       const examples = await getStyleExamples(ctx.scope);
+      const approvedProfile = parseStoredProfile((await getClientProfile(ctx.account.id))?.profile);
+      const profileValue = (key: keyof NonNullable<typeof approvedProfile>) => {
+        const value = approvedProfile?.[key].value;
+        return Array.isArray(value) ? value.join(" / ") : value ?? "";
+      };
+      const approvedProfileBlock = approvedProfile ? [
+        "## 利用者が承認したクライアント情報",
+        `ブランド: ${profileValue("brandName")}`,
+        `商品・サービス: ${profileValue("productsServices")}`,
+        `強み: ${profileValue("strengths")}`,
+        `対象顧客: ${profileValue("targetCustomers")}`,
+        `顧客の悩み: ${profileValue("customerProblems")}`,
+        `地域: ${profileValue("regions")}`,
+        `語調: ${profileValue("brandTone")}`,
+        `よく使う言葉: ${profileValue("commonWords")}`,
+        `投稿テーマ: ${profileValue("postThemes")}`,
+        `投稿目的: ${profileValue("marketingGoals")}`,
+        `問い合わせ・購入導線: ${profileValue("conversionPaths")}`,
+        `禁止表現: ${profileValue("avoidExpressions")}`,
+        "公式サイトやSNSの文章を複製せず、承認済みの事実だけを維持して独自表現で書く。",
+      ].join("\n") : "";
 
       // トレンド反映: 分析は選択中アカウントのものだけ参照できる
       let trendBlock = "";
@@ -178,6 +200,7 @@ export const aiRouter = router({
           ? `\n参考として、このアカウントの過去投稿の文体・語彙に合わせてください:\n${examples.map((e, i) => `${i + 1}. ${e}`).join("\n")}`
           : "",
         trendBlock,
+        approvedProfileBlock,
       ].filter(Boolean).join("\n");
 
       const user = isEn

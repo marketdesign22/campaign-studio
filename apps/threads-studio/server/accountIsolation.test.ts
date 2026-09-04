@@ -347,3 +347,21 @@ describe("自動返信テンプレート", () => {
     expect(params).toContain("案内文");
   });
 });
+
+describe("クライアントプロフィール", () => {
+  it("承認済みプロフィールと最新候補はaccountIdで絞る", async () => {
+    const { getClientProfile, getLatestClientProfileDraft } = await import("./db");
+    await getClientProfile(2);
+    scopedTo(2);
+    await getLatestClientProfileDraft(2);
+    scopedTo(2);
+  });
+
+  it("候補の取得はidとaccountIdの両方で絞る", async () => {
+    const { getOwnedClientProfileDraft } = await import("./db");
+    await getOwnedClientProfileDraft(9, 2);
+    const { sql } = lastQuery();
+    expect(sql).toMatch(/`id` = \?/);
+    scopedTo(2);
+  });
+});

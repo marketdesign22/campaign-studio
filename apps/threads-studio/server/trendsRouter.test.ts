@@ -16,6 +16,7 @@ vi.mock("./db", () => ({
   getAccountSettings: vi.fn(),
   getOwnedTrendAnalysis: vi.fn(),
   getTrendSettings: vi.fn(),
+  getClientProfile: vi.fn(),
   upsertTrendSettings: vi.fn(),
   getLatestTrendAnalysis: vi.fn(),
   getOwnedTrendPost: vi.fn(),
@@ -78,6 +79,7 @@ beforeEach(async () => {
   vi.mocked(d.listPostLogs).mockResolvedValue([] as never);
   vi.mocked(d.getAccountSettings).mockResolvedValue({ brandName: "SCSU" } as never);
   vi.mocked(d.getTrendSettings).mockResolvedValue(SETTINGS as never);
+  vi.mocked(d.getClientProfile).mockResolvedValue(undefined);
   vi.mocked(d.upsertTrendSettings).mockResolvedValue(undefined);
   vi.mocked(d.listTrendPosts).mockResolvedValue([] as never);
   vi.mocked(d.listPostOutcomes).mockResolvedValue([] as never);
@@ -93,6 +95,7 @@ describe("トレンド反映の原稿生成 (ai.generateDrafts)", () => {
     vi.mocked(d.listAccounts).mockResolvedValue([SCSU, CREAW] as never);
     vi.mocked(d.getAccountSettings).mockResolvedValue({ brandName: "SCSU" } as never);
     vi.mocked(d.getTrendSettings).mockResolvedValue(SETTINGS as never);
+    vi.mocked(d.getClientProfile).mockResolvedValue(undefined);
     // 過去投稿は12件あるが、参照は8件まで
     vi.mocked(d.listPostLogs).mockResolvedValue(
       Array.from({ length: 12 }, (_, i) => ({ id: i, status: "posted", content: `過去投稿${i}` })) as never

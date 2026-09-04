@@ -5,7 +5,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./_core/llm", () => ({ invokeLLM: vi.fn() }));
-vi.mock("./db", () => ({ listPostLogs: vi.fn(), listAccounts: vi.fn() }));
+vi.mock("./db", () => ({ listPostLogs: vi.fn(), listAccounts: vi.fn(), getClientProfile: vi.fn() }));
 
 import * as llm from "./_core/llm";
 import * as db from "./db";
@@ -43,6 +43,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(db.listPostLogs).mockResolvedValue([] as never);
   vi.mocked(db.listAccounts).mockResolvedValue([ACCOUNT] as never);
+  vi.mocked(db.getClientProfile).mockResolvedValue(undefined);
   delete process.env.OPENAI_API_KEY;
   vi.resetModules();
 });
@@ -185,6 +186,24 @@ describe("生成とリライト", () => {
     const { aiRouter } = await import("./routers/ai");
     const r = await aiRouter.createCaller(ctx()).generateDrafts({ topic: "オープンキャンパス" });
     expect(r.drafts).toEqual(["案1", "案2", "案3"]);
+  });
+
+  it("承認済みクライアント情報を事実と語調の制約として原稿生成に使う", async () => {
+    const profile = (await import("@shared/clientProfile")).emptyProfile();
+    profile.brandName = { value: "Human Approved", status: "user_edited", confidence: 1, sources: [], conflict: null };
+    profile.productsServices = { value: ["留学相談"], status: "verified", confidence: 1, sources: [], conflict: null };
+    profile.avoidExpressions = { value: ["必ず成功"], status: "user_edited", confidence: 1, sources: [], conflict: null };
+    const d = await import("./db");
+    vi.mocked(d.getClientProfile).mockResolvedValue({ profile: JSON.stringify(profile) } as never);
+    const llm2 = await import("./_core/llm");
+    vi.mocked(llm2.invokeLLM).mockResolvedValue(llmReply(JSON.stringify({ drafts: ["案1", "案2", "案3"] })) as never);
+    const { aiRouter } = await import("./routers/ai");
+    await aiRouter.createCaller(ctx()).generateDrafts({ topic: "テスト" });
+    const sent = JSON.stringify(vi.mocked(llm2.invokeLLM).mock.calls[0][0]);
+    expect(sent).toContain("Human Approved");
+    expect(sent).toContain("留学相談");
+    expect(sent).toContain("必ず成功");
+    expect(sent).toContain("独自表現");
   });
 
   it("リライトは案を返すだけで、本文の差し替えはしない", async () => {

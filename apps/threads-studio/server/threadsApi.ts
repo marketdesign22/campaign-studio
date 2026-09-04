@@ -153,6 +153,35 @@ export async function getThreadsUserId(accessToken: string): Promise<string> {
   return (await getThreadsProfile(accessToken)).id;
 }
 
+/** 連携済み本人アカウントの公式APIで取得できるプロフィールと直近投稿。 */
+export async function getOwnThreadsProfileContent(accessToken: string): Promise<{
+  profile: { id: string; username: string | null };
+  posts: Array<{ id: string; text: string; permalink: string | null; timestamp: string | null }>;
+}> {
+  const profile = await getThreadsProfile(accessToken);
+  const url = new URL(`${THREADS_API_BASE}/me/threads`);
+  url.searchParams.set("fields", "id,text,permalink,timestamp");
+  url.searchParams.set("limit", "12");
+  url.searchParams.set("access_token", accessToken);
+  const response = await fetch(url, { signal: AbortSignal.timeout(12_000) });
+  if (!response.ok) throw new Error(`Threads profile posts failed (${response.status})`);
+  const payload: unknown = await response.json();
+  const rows = payload && typeof payload === "object" && Array.isArray((payload as { data?: unknown }).data)
+    ? (payload as { data: unknown[] }).data : [];
+  const posts = rows.flatMap((row) => {
+    if (!row || typeof row !== "object") return [];
+    const value = row as Record<string, unknown>;
+    if (typeof value.id !== "string" || typeof value.text !== "string") return [];
+    return [{
+      id: value.id,
+      text: Array.from(value.text).slice(0, 500).join(""),
+      permalink: typeof value.permalink === "string" ? value.permalink : null,
+      timestamp: typeof value.timestamp === "string" ? value.timestamp : null,
+    }];
+  });
+  return { profile: { id: profile.id, username: profile.username ?? null }, posts };
+}
+
 /**
  * Refresh a long-lived Threads access token.
  * Long-lived tokens expire after 60 days and can be refreshed once they are

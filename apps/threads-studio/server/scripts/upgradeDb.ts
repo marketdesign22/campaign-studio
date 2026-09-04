@@ -468,6 +468,46 @@ async function main() {
       \`content\` varchar(500) NOT NULL,
       \`threadsCommentId\` varchar(128) NULL,
       \`sentAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+  await createTable("client_profile_drafts", `
+    CREATE TABLE \`client_profile_drafts\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`accountId\` int NOT NULL,
+      \`status\` enum('pending','approved','dismissed') NOT NULL DEFAULT 'pending',
+      \`inputs\` text NOT NULL,
+      \`profile\` mediumtext NOT NULL,
+      \`keywords\` text NOT NULL,
+      \`warnings\` text NOT NULL,
+      \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`reviewedAt\` timestamp NULL
+    )
+  `);
+  await createTable("client_profiles", `
+    CREATE TABLE \`client_profiles\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`accountId\` int NOT NULL UNIQUE,
+      \`profile\` mediumtext NOT NULL,
+      \`sourceInputs\` text NOT NULL,
+      \`approvedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+  await createTable("client_trend_keywords", `
+    CREATE TABLE \`client_trend_keywords\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`accountId\` int NOT NULL,
+      \`keyword\` varchar(64) NOT NULL,
+      \`category\` varchar(32) NOT NULL,
+      \`reason\` varchar(300) NOT NULL,
+      \`targetCustomer\` varchar(160) NULL,
+      \`region\` varchar(80) NULL,
+      \`priority\` int NOT NULL DEFAULT 3,
+      \`enabled\` boolean NOT NULL DEFAULT true,
+      \`sources\` text NOT NULL,
+      \`lastUsedAt\` timestamp NULL,
+      \`outcome\` text NULL,
+      \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY \`uniq_client_keyword\` (\`accountId\`, \`keyword\`)
     )
   `);
 
@@ -487,6 +527,8 @@ async function main() {
   await addIndex("reply_templates", "idx_reply_templates_account", "`accountId`");
   await addIndex("engagement_comments", "idx_engagement_comments_account_sent", "`accountId`, `sentAt`");
   await addIndex("engagement_comments", "idx_engagement_comments_target", "`accountId`, `targetExternalId`");
+  await addIndex("client_profile_drafts", "idx_profile_draft_account", "`accountId`, `createdAt`");
+  await addIndex("client_trend_keywords", "idx_client_keyword_account", "`accountId`, `enabled`, `priority`");
 
   console.log("[upgrade] 完了");
   await conn.end();
