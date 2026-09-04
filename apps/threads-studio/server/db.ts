@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { createPool } from "mysql2";
 import { buildDbConfig } from "./dbConfig";
@@ -6,7 +6,7 @@ import type { AnyMySqlColumn } from "drizzle-orm/mysql-core";
 import {
   InsertAccount, InsertAccountSettings, InsertPost, InsertUser,
   accountSettings, accounts, categories, followerSnapshots, media, postAnalytics, postLogs, posts,
-  settings, threadReplies, trendAnalyses, trendPosts, trendSettings, users,
+  replyTemplates, settings, threadReplies, trendAnalyses, trendPosts, trendSettings, users,
 } from "../drizzle/schema";
 import type { AccountScope } from "./accountScope";
 import { ENV } from "./_core/env";
@@ -1099,12 +1099,20 @@ export async function upsertThreadReply(row: UpsertThreadReply) {
 /** 指定アカウントの返信一覧。新しい順 */
 export async function listThreadReplies(
   accountId: number,
-  opts: { status?: ("unread" | "read" | "replied")[]; limit?: number } = {}
+  opts: {
+    status?: ("unread" | "read" | "replied")[]; limit?: number;
+    /** 自分自身の返信（スレッドの続き）を除く。既に保存済みの行にも効く（削除はしない） */
+    excludeUsername?: string | null;
+  } = {}
 ) {
   const db = await getDb();
   if (!db) return [];
   const conds = [eq(threadReplies.accountId, accountId)];
   if (opts.status?.length) conds.push(inArray(threadReplies.status, opts.status));
+  if (opts.excludeUsername) {
+    // or() は型上 undefined を返しうるが、ここは常に2件渡すので実際には起きない
+    conds.push(or(isNull(threadReplies.username), ne(threadReplies.username, opts.excludeUsername))!);
+  }
   return db.select().from(threadReplies).where(and(...conds))
     .orderBy(desc(threadReplies.postedAt)).limit(opts.limit ?? 100);
 }
@@ -1133,10 +1141,60 @@ export async function markThreadReplyReplied(id: number, accountId: number, cont
 }
 
 /** 未読件数（サイドバーのバッジ表示用） */
-export async function countUnreadThreadReplies(accountId: number): Promise<number> {
+export async function countUnreadThreadReplies(accountId: number, excludeUsername?: string | null): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
-  const rows = await db.select({ c: sql<number>`count(*)` }).from(threadReplies)
-    .where(and(eq(threadReplies.accountId, accountId), eq(threadReplies.status, "unread")));
+  const conds = [eq(threadReplies.accountId, accountId), eq(threadReplies.status, "unread")];
+  if (excludeUsername) {
+    conds.push(or(isNull(threadReplies.username), ne(threadReplies.username, excludeUsername))!);
+  }
+  const rows = await db.select({ c: sql<number>`count(*)` }).from(threadReplies).where(and(...conds));
   return Number(rows[0]?.c ?? 0);
+}
+
+// ── 受信箱: 自動返信テンプレート ────────────────────────────────────────────
+
+/** アカウントのテンプレート一覧。登録順（id昇順）で返す（一致判定の優先順位に使う） */
+export async function listReplyTemplates(accountId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(replyTemplates).where(eq(replyTemplates.accountId, accountId)).orderBy(replyTemplates.id);
+}
+
+export async function getOwnedReplyTemplate(id: number, accountId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(replyTemplates)
+    .where(and(eq(replyTemplates.id, id), eq(replyTemplates.accountId, accountId))).limit(1);
+  return rows[0];
+}
+
+export async function createReplyTemplate(accountId: number, keywords: string[], replyText: string): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const [r] = await db.insert(replyTemplates).values({
+    accountId, keywords: JSON.stringify(keywords), replyText,
+  });
+  return r.insertId;
+}
+
+export async function updateReplyTemplate(
+  id: number, accountId: number,
+  data: Partial<{ keywords: string[]; replyText: string; enabled: boolean }>
+) {
+  const db = await getDb();
+  if (!db) return;
+  const set: Record<string, unknown> = {};
+  if (data.keywords) set.keywords = JSON.stringify(data.keywords);
+  if (data.replyText !== undefined) set.replyText = data.replyText;
+  if (data.enabled !== undefined) set.enabled = data.enabled;
+  if (Object.keys(set).length === 0) return;
+  await db.update(replyTemplates).set(set)
+    .where(and(eq(replyTemplates.id, id), eq(replyTemplates.accountId, accountId)));
+}
+
+export async function deleteReplyTemplate(id: number, accountId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(replyTemplates).where(and(eq(replyTemplates.id, id), eq(replyTemplates.accountId, accountId)));
 }

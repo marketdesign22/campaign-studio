@@ -369,6 +369,121 @@ function TrendSettingsCard() {
   );
 }
 
+type ReplyTemplateRow = { id: number; keywords: string[]; replyText: string; enabled: boolean };
+
+/**
+ * 1件のテンプレート編集行。
+ * 保存を押すまでThreadsへは何も送らない。有効/無効の切替だけは即時保存する
+ * （提案するかどうかの見た目の状態なので、他のフィールドと違って迷いにくい）。
+ */
+function ReplyTemplateEditor({
+  template, onChanged,
+}: {
+  template: ReplyTemplateRow;
+  onChanged: () => void;
+}) {
+  const { t } = useI18n();
+  const [keywords, setKeywords] = useState(template.keywords.join(", "));
+  const [replyText, setReplyText] = useState(template.replyText);
+
+  const updateMut = trpc.replies.templates.update.useMutation({
+    onSuccess: () => { toast.success(t("テンプレートを保存しました")); onChanged(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const deleteMut = trpc.replies.templates.delete.useMutation({
+    onSuccess: () => { toast.success(t("テンプレートを削除しました")); onChanged(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const kws = splitList(keywords);
+
+  return (
+    <div className="rounded-lg border bg-card p-3 space-y-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Switch checked={template.enabled}
+            onCheckedChange={(v) => updateMut.mutate({ id: template.id, enabled: v })} />
+          <span className="text-xs text-muted-foreground">{template.enabled ? t("有効") : t("無効")}</span>
+        </div>
+        <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive"
+          onClick={() => { if (confirm(t("このテンプレートを削除しますか？"))) deleteMut.mutate({ id: template.id }); }}>
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+      <div className="space-y-1">
+        <Label className="text-xs">{t("反応するキーワード（カンマ区切り）")}</Label>
+        <Input value={keywords} onChange={(e) => setKeywords(e.target.value)} placeholder="ビザ, 在留資格" className="text-sm" />
+      </div>
+      <div className="space-y-1">
+        <Label className="text-xs">{t("提案する返信文")}</Label>
+        <Textarea rows={2} value={replyText} maxLength={500}
+          onChange={(e) => setReplyText(e.target.value)} className="resize-none text-sm" />
+      </div>
+      <div className="flex justify-end">
+        <Button size="sm" className="h-7 text-xs" disabled={kws.length === 0 || !replyText.trim() || updateMut.isPending}
+          onClick={() => updateMut.mutate({ id: template.id, keywords: kws, replyText: replyText.trim() })}>
+          {updateMut.isPending ? t("保存中...") : t("保存")}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 受信箱の自動返信テンプレート。
+ * キーワードに一致した返信へ、この定型文を「案」として受信箱に出す。
+ * 実際に送るかどうかは必ず利用者が受信箱で選ぶ（自動送信はしない）。
+ */
+function ReplyTemplatesCard() {
+  const { t } = useI18n();
+  const utils = trpc.useUtils();
+  const { data: templates = [] } = trpc.replies.templates.list.useQuery();
+  const [newKeywords, setNewKeywords] = useState("");
+  const [newReply, setNewReply] = useState("");
+
+  const refresh = () => utils.replies.templates.list.invalidate();
+  const createMut = trpc.replies.templates.create.useMutation({
+    onSuccess: () => { toast.success(t("テンプレートを追加しました")); setNewKeywords(""); setNewReply(""); refresh(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const newKws = splitList(newKeywords);
+
+  return (
+    <Card className="border shadow-none">
+      <CardHeader className="pb-3">
+        <CardTitle className="font-display text-base font-semibold flex items-center gap-2">
+          <Sparkles className="h-4 w-4" />{t("自動返信テンプレート")}
+        </CardTitle>
+        <CardDescription>
+          {t("キーワードに一致する返信があると、受信箱に候補として表示します。自動では送信せず、必ず利用者が内容を確認してから送信します。")}
+        </CardDescription>
+      </CardHeader>
+      <Separator />
+      <CardContent className="pt-5 space-y-3">
+        {templates.length === 0 && (
+          <p className="text-xs text-muted-foreground">{t("まだテンプレートがありません。")}</p>
+        )}
+        {templates.map((tpl) => (
+          <ReplyTemplateEditor key={tpl.id} template={tpl} onChanged={refresh} />
+        ))}
+        <div className="rounded-lg border border-dashed p-3 space-y-2">
+          <p className="text-xs font-medium">{t("新しいテンプレートを追加")}</p>
+          <Input value={newKeywords} onChange={(e) => setNewKeywords(e.target.value)}
+            placeholder={t("キーワード（カンマ区切り。例: ビザ, 在留資格）")} className="text-sm" />
+          <Textarea rows={2} value={newReply} maxLength={500} onChange={(e) => setNewReply(e.target.value)}
+            placeholder={t("この内容で提案する返信文")} className="resize-none text-sm" />
+          <div className="flex justify-end">
+            <Button size="sm" className="h-8 text-xs" disabled={newKws.length === 0 || !newReply.trim() || createMut.isPending}
+              onClick={() => createMut.mutate({ keywords: newKws, replyText: newReply.trim() })}>
+              <Plus className="h-3.5 w-3.5 mr-1" />{createMut.isPending ? t("追加中...") : t("追加")}
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Settings() {
   const { t } = useI18n();
   const { current: currentAccount, hasAccounts } = useAccount();
@@ -623,6 +738,9 @@ export default function Settings() {
 
       {/* Trend research (per account) */}
       {hasAccounts && <TrendSettingsCard />}
+
+      {/* Reply auto-suggest templates (per account) */}
+      {hasAccounts && <ReplyTemplatesCard />}
 
       {/* Add account dialog */}
       <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) setConnectUrl(null); }}>

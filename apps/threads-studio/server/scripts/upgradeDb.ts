@@ -417,6 +417,9 @@ async function main() {
   // ── 受信箱（Threadsの返信管理） ────────────────────────────────────────────
   await addColumn("accounts", "lastReplyFetchAt", "`lastReplyFetchAt` timestamp NULL");
   await addColumn("accounts", "lastReplyFetchError", "`lastReplyFetchError` varchar(32) NULL");
+  // 自分自身の返信（スレッドの続き）を受信箱から除くために必要。未設定の既存アカウントは
+  // 次回の返信取得時に自動で埋まる（server/replies.ts fetchRepliesForAccount 参照）
+  await addColumn("accounts", "threadsUsername", "`threadsUsername` varchar(64) NULL");
 
   await createTable("thread_replies", `
     CREATE TABLE \`thread_replies\` (
@@ -440,6 +443,18 @@ async function main() {
     )
   `);
 
+  await createTable("reply_templates", `
+    CREATE TABLE \`reply_templates\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`accountId\` int NOT NULL,
+      \`keywords\` text NOT NULL,
+      \`replyText\` varchar(500) NOT NULL,
+      \`enabled\` boolean NOT NULL DEFAULT true,
+      \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+
   // アカウント単位の絞り込みが常に索引に乗るようにする
   await addIndex("posts", "idx_posts_account", "`accountId`");
   await addIndex("posts", "idx_posts_account_date", "`accountId`, `scheduledDate`");
@@ -453,6 +468,7 @@ async function main() {
   await addIndex("posts", "idx_posts_trend", "`trendAnalysisId`");
   await addIndex("thread_replies", "idx_thread_replies_account_status", "`accountId`, `status`");
   await addIndex("thread_replies", "idx_thread_replies_account_posted", "`accountId`, `postedAt`");
+  await addIndex("reply_templates", "idx_reply_templates_account", "`accountId`");
 
   console.log("[upgrade] 完了");
   await conn.end();

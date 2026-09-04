@@ -12,7 +12,7 @@
  */
 import type { Account } from "../drizzle/schema";
 import { updateAccount, upsertThreadReply } from "./db";
-import { fetchAccountReplies, publishReply as publishReplyToThreads } from "./threadsApi";
+import { fetchAccountReplies, getThreadsProfile, publishReply as publishReplyToThreads } from "./threadsApi";
 import { classifyError, worstError, type ThreadsErrorKind } from "./threadsErrors";
 import { withRetry } from "./threadsRetry";
 
@@ -22,6 +22,15 @@ export const REPLY_FETCH_LIMIT = 50;
 function retryClass(e: unknown): "network" | "rate_limited" | "other" {
   const kind = classifyError(e);
   return kind === "network" || kind === "rate_limited" ? kind : "other";
+}
+
+/**
+ * 自分自身の投稿（スレッドの続きとして自分に返信したもの）かどうか。
+ * どちらかのユーザー名が分からない場合は判定できないので false（除外しない）。
+ */
+export function isOwnReply(username: string | null, ownUsername: string | null): boolean {
+  if (!username || !ownUsername) return false;
+  return username.toLowerCase() === ownUsername.toLowerCase();
 }
 
 export type ReplyFetchResult = {
@@ -38,11 +47,28 @@ export type ReplyFetchResult = {
  */
 export async function fetchRepliesForAccount(account: Account, now: Date = new Date()): Promise<ReplyFetchResult> {
   /** 取得結果の記録はベストエフォート。これ自体の失敗で結果を「失敗」に変えない */
-  async function recordOutcome(error: ThreadsErrorKind | null) {
+  async function recordOutcome(error: ThreadsErrorKind | null, threadsUsername?: string | null) {
     try {
-      await updateAccount(account.id, { lastReplyFetchAt: now, lastReplyFetchError: error });
+      await updateAccount(account.id, {
+        lastReplyFetchAt: now, lastReplyFetchError: error,
+        ...(threadsUsername !== undefined ? { threadsUsername } : {}),
+      });
     } catch {
       /* 記録に失敗しても取得結果自体は返す */
+    }
+  }
+
+  // 自分自身の返信（スレッドの続き）を除くために、自分のユーザー名が要る。
+  // 未登録（初回接続時にプロフィール取得が失敗した等）なら、ここで一度だけ解決して保存する
+  let ownUsername = account.threadsUsername;
+  let resolvedUsername: string | null | undefined;
+  if (!ownUsername) {
+    try {
+      const profile = await getThreadsProfile(account.threadsAccessToken);
+      ownUsername = profile.username ?? null;
+      resolvedUsername = ownUsername;
+    } catch {
+      // 取得できなくても返信の取得自体は続ける（自分の返信の除外だけ効かなくなる）
     }
   }
 
@@ -55,6 +81,8 @@ export async function fetchRepliesForAccount(account: Account, now: Date = new D
     for (const it of items) {
       // 本文の無い返信（画像のみ等）は現状扱わない
       if (!it.text) continue;
+      // 自分自身の返信（スレッドの続き）は「返信が必要な受信」ではないので保存しない
+      if (isOwnReply(it.username, ownUsername)) continue;
       await upsertThreadReply({
         accountId: account.id, externalId: it.id, rootMediaId: it.rootMediaId, rootPermalink: null,
         username: it.username, text: it.text.slice(0, 500), permalink: it.permalink,
@@ -62,13 +90,13 @@ export async function fetchRepliesForAccount(account: Account, now: Date = new D
       });
       stored++;
     }
-    await recordOutcome(null);
+    await recordOutcome(null, resolvedUsername);
     return { accountId: account.id, fetched: items.length, stored, error: null };
   } catch (e) {
     const kind = classifyError(e);
     // トークンやレスポンス本文はログに残さない。種別だけ記録する
     console.warn(`[replies] fetch failed (account ${account.id}): ${kind}`);
-    await recordOutcome(kind);
+    await recordOutcome(kind, resolvedUsername);
     return { accountId: account.id, fetched: 0, stored: 0, error: kind };
   }
 }

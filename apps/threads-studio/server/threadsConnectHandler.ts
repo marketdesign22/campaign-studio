@@ -80,6 +80,8 @@ export async function threadsConnectHandler(req: Request, res: Response) {
         tokenRefreshedAt: now,
         tokenExpiresAt: expiresAt,
         active: true,
+        // username が取れた時だけ更新する（失敗時に既存の値を消さないため）
+        ...(username ? { threadsUsername: username } : {}),
       });
     } else {
       await createAccount({
@@ -88,6 +90,7 @@ export async function threadsConnectHandler(req: Request, res: Response) {
         threadsAccessToken: long.accessToken,
         tokenRefreshedAt: now,
         tokenExpiresAt: expiresAt,
+        threadsUsername: username,
       });
     }
 

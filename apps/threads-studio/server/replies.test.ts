@@ -16,12 +16,13 @@ vi.mock("./db", () => ({
 vi.mock("./threadsApi", () => ({
   fetchAccountReplies: vi.fn(),
   publishReply: vi.fn(),
+  getThreadsProfile: vi.fn(),
 }));
 
 import * as db from "./db";
 import * as api from "./threadsApi";
 import {
-  fetchRepliesForAccount, fetchRepliesForAccounts, MAX_REPLY_LENGTH, sendReply, worstReplyError,
+  fetchRepliesForAccount, fetchRepliesForAccounts, isOwnReply, MAX_REPLY_LENGTH, sendReply, worstReplyError,
 } from "./replies";
 import { _test } from "./threadsRetry";
 
@@ -34,9 +35,12 @@ function account(id: number, name: string, token: string): Account {
     tokenRefreshedAt: null, tokenExpiresAt: null,
     morningHour: 8, morningMinute: 0, eveningHour: 18, eveningMinute: 0,
     timezone: "JP", slots: null, active: true,
-    lastReplyFetchAt: null, lastReplyFetchError: null,
+    lastReplyFetchAt: null, lastReplyFetchError: null, threadsUsername: null as string | null,
     createdAt: new Date("2026-01-01T00:00:00Z"), updatedAt: new Date("2026-01-01T00:00:00Z"),
   } as Account;
+}
+function withUsername(a: Account, username: string): Account {
+  return { ...a, threadsUsername: username };
 }
 const SCSU = account(1, "SCSU.Japan", TOKEN_A);
 const CREAW = account(2, "creaw.usa", TOKEN_B);
@@ -114,6 +118,61 @@ describe("fetchRepliesForAccount", () => {
     vi.mocked(db.updateAccount).mockRejectedValue(new Error("db write failed"));
     const r = await fetchRepliesForAccount(SCSU, NOW);
     expect(r).toEqual({ accountId: 1, fetched: 1, stored: 1, error: null });
+  });
+
+  it("自分自身の返信（スレッドの続き）は保存しない", async () => {
+    vi.mocked(api.fetchAccountReplies).mockResolvedValue([
+      reply("a", { username: "scsu.japan" }), reply("b", { username: "fan" }),
+    ]);
+    const r = await fetchRepliesForAccount(withUsername(SCSU, "scsu.japan"), NOW);
+    expect(r).toEqual({ accountId: 1, fetched: 2, stored: 1, error: null });
+    expect(db.upsertThreadReply).toHaveBeenCalledTimes(1);
+    expect(db.upsertThreadReply).toHaveBeenCalledWith(expect.objectContaining({ username: "fan" }));
+  });
+
+  it("大文字・小文字が違っても自分自身の返信として除く", async () => {
+    vi.mocked(api.fetchAccountReplies).mockResolvedValue([reply("a", { username: "SCSU.Japan" })]);
+    const r = await fetchRepliesForAccount(withUsername(SCSU, "scsu.japan"), NOW);
+    expect(r.stored).toBe(0);
+  });
+
+  it("自分のユーザー名が未登録なら、取得時に一度だけ解決して以降のフィルタと記録に使う", async () => {
+    vi.mocked(api.getThreadsProfile).mockResolvedValue({ id: "user-1", username: "scsu.japan" });
+    vi.mocked(api.fetchAccountReplies).mockResolvedValue([
+      reply("a", { username: "scsu.japan" }), reply("b", { username: "fan" }),
+    ]);
+    const r = await fetchRepliesForAccount(SCSU, NOW); // threadsUsername: null
+    expect(api.getThreadsProfile).toHaveBeenCalledTimes(1);
+    expect(r.stored).toBe(1); // 自分の返信(a)は除かれ、fan の返信(b)だけ保存される
+    expect(db.updateAccount).toHaveBeenCalledWith(1, {
+      lastReplyFetchAt: NOW, lastReplyFetchError: null, threadsUsername: "scsu.japan",
+    });
+  });
+
+  it("ユーザー名の解決に失敗しても、返信の取得自体は続ける（フィルタだけ効かない）", async () => {
+    vi.mocked(api.getThreadsProfile).mockRejectedValue(new Error("profile fetch failed"));
+    vi.mocked(api.fetchAccountReplies).mockResolvedValue([reply("a", { username: "fan" })]);
+    const r = await fetchRepliesForAccount(SCSU, NOW);
+    expect(r).toEqual({ accountId: 1, fetched: 1, stored: 1, error: null });
+    expect(db.updateAccount).toHaveBeenCalledWith(1, { lastReplyFetchAt: NOW, lastReplyFetchError: null });
+  });
+
+  it("既にユーザー名が分かっていれば解決し直さない", async () => {
+    vi.mocked(api.fetchAccountReplies).mockResolvedValue([reply("a", { username: "fan" })]);
+    await fetchRepliesForAccount(withUsername(SCSU, "scsu.japan"), NOW);
+    expect(api.getThreadsProfile).not.toHaveBeenCalled();
+  });
+});
+
+describe("isOwnReply", () => {
+  it("同じユーザー名（大文字小文字を問わず）なら自分自身の返信と判定する", () => {
+    expect(isOwnReply("scsu.japan", "scsu.japan")).toBe(true);
+    expect(isOwnReply("SCSU.Japan", "scsu.japan")).toBe(true);
+    expect(isOwnReply("fan", "scsu.japan")).toBe(false);
+  });
+  it("どちらかが分からない場合は判定できないので除外しない", () => {
+    expect(isOwnReply(null, "scsu.japan")).toBe(false);
+    expect(isOwnReply("fan", null)).toBe(false);
   });
 });
 

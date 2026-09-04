@@ -113,9 +113,16 @@ describe("db:upgrade", () => {
     expect(tables.has("thread_replies")).toBe(true);
     expect(tables.get("accounts")!.columns.has("lastReplyFetchAt")).toBe(true);
     expect(tables.get("accounts")!.columns.has("lastReplyFetchError")).toBe(true);
+    expect(tables.get("accounts")!.columns.has("threadsUsername")).toBe(true);
     expect(tables.get("thread_replies")!.indexes.has("uniq_thread_reply")).toBe(true);
     expect(tables.get("thread_replies")!.indexes.has("idx_thread_replies_account_status")).toBe(true);
     expect(tables.get("thread_replies")!.indexes.has("idx_thread_replies_account_posted")).toBe(true);
+  });
+
+  it("空のDBに自動返信テンプレートのテーブル・索引を作る", async () => {
+    await runUpgradeOnce();
+    expect(tables.has("reply_templates")).toBe(true);
+    expect(tables.get("reply_templates")!.indexes.has("idx_reply_templates_account")).toBe(true);
   });
 
   it("2回目以降はDDLを1本も流さない（冪等）", async () => {
