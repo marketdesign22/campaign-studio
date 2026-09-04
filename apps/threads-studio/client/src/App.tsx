@@ -15,6 +15,7 @@ import Analytics from "./pages/Analytics";
 import Calendar from "./pages/Calendar";
 import Report from "./pages/Report";
 import Trends from "./pages/Trends";
+import Inbox from "./pages/Inbox";
 function Router() {
   return (
     <DashboardLayout>
@@ -27,6 +28,7 @@ function Router() {
         <Route path="/report" component={Report} />
         <Route path="/calendar" component={Calendar} />
         <Route path="/trends" component={Trends} />
+        <Route path="/inbox" component={Inbox} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>

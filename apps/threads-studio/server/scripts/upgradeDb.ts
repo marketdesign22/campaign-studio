@@ -414,6 +414,32 @@ async function main() {
     )
   `);
 
+  // ── 受信箱（Threadsの返信管理） ────────────────────────────────────────────
+  await addColumn("accounts", "lastReplyFetchAt", "`lastReplyFetchAt` timestamp NULL");
+  await addColumn("accounts", "lastReplyFetchError", "`lastReplyFetchError` varchar(32) NULL");
+
+  await createTable("thread_replies", `
+    CREATE TABLE \`thread_replies\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`accountId\` int NOT NULL,
+      \`externalId\` varchar(128) NOT NULL,
+      \`rootMediaId\` varchar(128) NULL,
+      \`rootPermalink\` varchar(512) NULL,
+      \`username\` varchar(64) NULL,
+      \`text\` varchar(600) NULL,
+      \`permalink\` varchar(512) NULL,
+      \`postedAt\` timestamp NULL,
+      \`hideStatus\` varchar(24) NULL,
+      \`status\` enum('unread','read','replied') NOT NULL DEFAULT 'unread',
+      \`repliedContent\` text NULL,
+      \`repliedAt\` timestamp NULL,
+      \`firstSeenAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`fetchedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY \`uniq_thread_reply\` (\`accountId\`, \`externalId\`)
+    )
+  `);
+
   // アカウント単位の絞り込みが常に索引に乗るようにする
   await addIndex("posts", "idx_posts_account", "`accountId`");
   await addIndex("posts", "idx_posts_account_date", "`accountId`, `scheduledDate`");
@@ -425,6 +451,8 @@ async function main() {
   await addIndex("trend_posts", "idx_trend_posts_account_status", "`accountId`, `status`");
   await addIndex("trend_analyses", "idx_trend_analyses_account", "`accountId`, `createdAt`");
   await addIndex("posts", "idx_posts_trend", "`trendAnalysisId`");
+  await addIndex("thread_replies", "idx_thread_replies_account_status", "`accountId`, `status`");
+  await addIndex("thread_replies", "idx_thread_replies_account_posted", "`accountId`, `postedAt`");
 
   console.log("[upgrade] 完了");
   await conn.end();

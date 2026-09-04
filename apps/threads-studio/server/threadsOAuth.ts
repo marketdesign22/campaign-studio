@@ -22,6 +22,9 @@ export const THREADS_SCOPES = [
   // トレンドリサーチ（公開投稿のキーワード検索）。
   // 追加した権限は既存の連携済みアカウントには付かないので、再連携が必要。
   "threads_keyword_search",
+  // 受信箱（自社投稿への返信の閲覧・送信）。同様に既存アカウントは再連携が必要。
+  "threads_read_replies",
+  "threads_manage_replies",
 ].join(",");
 
 const STATE_PURPOSE = "threads-connect";

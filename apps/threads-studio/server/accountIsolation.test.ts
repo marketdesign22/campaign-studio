@@ -272,3 +272,45 @@ describe("トレンドリサーチ", () => {
     expect(includesLegacy()).toBe(false);
   });
 });
+
+describe("受信箱（Threadsの返信管理）", () => {
+  it("返信一覧は accountId で絞る", async () => {
+    const { listThreadReplies } = await import("./db");
+    await listThreadReplies(2, {});
+    scopedTo(2);
+  });
+
+  it("個別の返信の取得・状態変更は id と accountId の両方で絞る", async () => {
+    const { getOwnedThreadReply, setThreadReplyStatus, markThreadReplyReplied } = await import("./db");
+    await getOwnedThreadReply(9, 2);
+    expect(lastQuery().sql).toMatch(/`id` = \?/);
+    scopedTo(2);
+    await setThreadReplyStatus(9, 2, "read");
+    expect(lastQuery().sql).toMatch(/^update `thread_replies`/);
+    scopedTo(2);
+    await markThreadReplyReplied(9, 2, "ありがとうございます");
+    expect(lastQuery().sql).toMatch(/^update `thread_replies`/);
+    scopedTo(2);
+  });
+
+  it("未読件数は accountId で絞る", async () => {
+    const { countUnreadThreadReplies } = await import("./db");
+    await countUnreadThreadReplies(2);
+    scopedTo(2);
+  });
+
+  it("同じ返信の再取得は行を増やさず、利用者の既読/返信済み状態を上書きしない", async () => {
+    const { upsertThreadReply } = await import("./db");
+    await upsertThreadReply({
+      accountId: 2, externalId: "ext", rootMediaId: "root", rootPermalink: null,
+      username: "fan", text: "いいですね", permalink: null, postedAt: null, hideStatus: null,
+    });
+    const { sql } = lastQuery();
+    expect(sql).toMatch(/^insert into `thread_replies`/);
+    expect(sql).toMatch(/on duplicate key update/);
+    const updateClause = sql.split("on duplicate key update")[1];
+    expect(updateClause).not.toMatch(/`status`/);
+    expect(updateClause).not.toMatch(/`repliedContent`/);
+    expect(updateClause).not.toMatch(/`repliedAt`/);
+  });
+});

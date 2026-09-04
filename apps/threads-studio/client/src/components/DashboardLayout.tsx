@@ -23,7 +23,7 @@ import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
 import { useI18n } from "@/i18n";
-import { AtSign, BarChart3, CalendarDays, Check, ChevronsUpDown, Clock, FileBarChart, FileText, Languages, LayoutDashboard, LogOut, PanelLeft, Settings, Compass } from "lucide-react";
+import { AtSign, BarChart3, CalendarDays, Check, ChevronsUpDown, Clock, FileBarChart, FileText, Languages, LayoutDashboard, LogOut, MessageCircle, PanelLeft, Settings, Compass } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { AccountProvider, useAccount } from "@/contexts/AccountContext";
@@ -32,6 +32,7 @@ import { Button } from "./ui/button";
 
 const menuItemsV2 = [
   { icon: LayoutDashboard, label: "ダッシュボード", path: "/" },
+  { icon: MessageCircle, label: "受信箱", path: "/inbox" },
   { icon: FileText, label: "投稿原稿管理", path: "/posts" },
   { icon: CalendarDays, label: "カレンダー", path: "/calendar" },
   { icon: Clock, label: "投稿履歴", path: "/history" },
@@ -287,6 +288,10 @@ function DashboardLayoutContent({
   const activeMenuItem = menuItemsV2.find(item => item.path === location);
   const { current: currentAccount, hasAccounts, isLoading: accountsLoading } = useAccount();
   const isMobile = useIsMobile();
+  // 受信箱の未読件数。サイドバーにバッジで出す
+  const { data: unreadReplies } = trpc.replies.unreadCount.useQuery(undefined, {
+    enabled: hasAccounts, staleTime: 30_000, refetchInterval: 60_000,
+  });
 
   // アカウントが1件も無いと、どの画面もデータを出せない。
   // 追加できる唯一の場所（設定）へ寄せる。
@@ -396,6 +401,11 @@ function DashboardLayoutContent({
                         <item.icon className={`h-[18px] w-[18px] ${isActive ? "text-[var(--brand-accent)]" : "text-white/60"}`} strokeWidth={1.8} />
                       </span>
                       <span className={isActive ? "text-white" : "text-white/75"}>{t(item.label)}</span>
+                      {item.path === "/inbox" && !!unreadReplies && (
+                        <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-[var(--brand-accent)] text-[10px] font-bold text-white flex items-center justify-center tabular-nums">
+                          {unreadReplies > 99 ? "99+" : unreadReplies}
+                        </span>
+                      )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );

@@ -39,6 +39,7 @@ import { ENV } from "./_core/env";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 import { markDeletedSavedPosts, runTrendFetchIfDue } from "./trends";
+import { fetchRepliesForAccounts } from "./replies";
 
 // ── Timezone helpers (pure, unit-tested) ─────────────────────────────────────
 
@@ -364,6 +365,12 @@ export async function runTick(now: Date = new Date()) {
     await runTrendFetchIfDue(all.filter((a) => a.active), (a) => scopeOf(a, primaryId), now);
   } catch (e) {
     console.warn(`[scheduler] trend fetch failed: ${e instanceof Error ? e.name : "error"}`);
+  }
+  // 受信箱: 自社投稿への公開返信を取得する。失敗しても投稿・トレンド取得に影響させない
+  try {
+    await fetchRepliesForAccounts(all.filter((a) => a.active), now);
+  } catch (e) {
+    console.warn(`[scheduler] reply fetch failed: ${e instanceof Error ? e.name : "error"}`);
   }
   return { fired: results };
 }

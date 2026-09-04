@@ -518,6 +518,34 @@ const en: Record<string, string> = {
   "トレンド設定を保存": "Save trend settings",
   "トレンド設定を保存しました": "Trend settings saved",
 
+  // ── Inbox (reply management) ───────────────────────────────────────────
+  "受信箱": "Inbox",
+  "このアカウントの返信だけを表示します": "Showing only this account's replies",
+  "自社投稿についた返信の閲覧・返信": "View and reply to comments on your posts",
+  "未読": "Unread",
+  "既読": "Read",
+  "返信済み": "Replied",
+  "不明なユーザー": "Unknown user",
+  "非表示": "Hidden",
+  "Threadsで見る": "View on Threads",
+  "送信した返信": "Sent reply",
+  "既読にする": "Mark as read",
+  "返信する": "Reply",
+  "返信を入力...": "Write a reply...",
+  "送信": "Send",
+  "送信中...": "Sending...",
+  "返信を送信しました": "Reply sent",
+  "返信はまだありません。": "No replies yet.",
+  "ダイレクトメッセージ（DM）はThreadsの公式APIが公開されていないため対応していません。ここに出るのは自社投稿への公開返信のみです。":
+    "Direct messages (DMs) aren't supported — Threads has no official API for them. Only public replies to your posts appear here.",
+  "Threadsの認証が切れています。設定画面の「アカウントを追加」から同じ表示名で連携リンクを発行し、このアカウントで再接続してください。":
+    "Threads authorization has expired. In Settings, use \"Add account\" with the same display name to issue a connect link and reconnect this account.",
+  "返信の閲覧・送信の権限がありません。設定画面の「アカウントを追加」から同じ表示名で連携リンクを発行し、このアカウントで再接続すると付与されます。":
+    "Missing permission to view or send replies. In Settings, use \"Add account\" with the same display name to issue a connect link and reconnect this account to grant it.",
+  "Threadsの利用制限に達しました。しばらく待ってからお試しください。": "Threads usage limit reached. Please try again shortly.",
+  "Threadsに接続できませんでした。しばらくしてからもう一度お試しください。": "Could not reach Threads. Please try again shortly.",
+  "取得に失敗しました。時間をおいて再度お試しください。": "Fetch failed. Please try again later.",
+
   // ── Timezones ───────────────────────────────────────────────────────────
   "太平洋時間 (PT)": "Pacific (PT)",
   "東部時間 (ET)": "Eastern (ET)",

@@ -20,34 +20,18 @@ import { primaryTimezone } from "@shared/postingSlots";
 import type { AccountScope } from "./accountScope";
 import { invokeLLM } from "./_core/llm";
 import { parseJsonLoose } from "./aiSupport";
+import { classifyThreadsError, worstError, type ThreadsErrorKind } from "./threadsErrors";
+import { _test, RETRY_DELAY_MS, withRetry } from "./threadsRetry";
+
+// Threads APIのエラー分類・再試行は複数機能（トレンド収集・返信管理）で共通のため、
+// server/threadsErrors.ts と server/threadsRetry.ts に切り出してある。
+// このモジュールでは既存の呼び出し元・テストのために同じ名前で再エクスポートする。
+export { classifyThreadsError, worstError, _test, RETRY_DELAY_MS };
+export type TrendErrorKind = ThreadsErrorKind;
+export type TrendPlatform = "threads" | "instagram";
 
 /** 1回の取得で使うキーワード数の上限。2種類の検索 × 1日2回でも 2,200/日 の制限に対して十分余裕がある */
 export const MAX_KEYWORDS_PER_FETCH = 20;
-/** 取得失敗の再試行回数（ネットワーク・5xx・レート制限のみ） */
-const RETRIES = 1;
-/** 再試行までの待ち時間。テストから差し替えられるようにしておく */
-export const RETRY_DELAY_MS: Record<"network" | "rate_limited", number> = { network: 1000, rate_limited: 5000 };
-export const _test = { sleep: (ms: number) => new Promise<void>((r) => setTimeout(r, ms)) };
-
-export type TrendErrorKind = "auth" | "permission" | "rate_limited" | "network" | "unknown";
-export type TrendPlatform = "threads" | "instagram";
-
-/** Threads API の失敗を画面に出せる粒度へ丸める。生の本文は返さない */
-export function classifyThreadsError(message: string): TrendErrorKind {
-  const m = message.toLowerCase();
-  if (/\(429\)/.test(m) || m.includes("rate limit") || m.includes("too many") || m.includes("\"code\":4,") || m.includes("\"code\":17,")) return "rate_limited";
-  if (m.includes("threads_keyword_search") || m.includes("permission") || m.includes("subcode\":10") || /\(403\)/.test(m)) return "permission";
-  if (/\(401\)/.test(m) || m.includes("oauthexception") || m.includes("expired") || m.includes("\"code\":190")) return "auth";
-  if (m.includes("fetch failed") || m.includes("network") || m.includes("etimedout") || m.includes("econnreset") || /\(5\d{2}\)/.test(m)) return "network";
-  return "unknown";
-}
-
-/** 複数の失敗から、利用者が対処すべきものを1つ選ぶ（深刻な順） */
-const SEVERITY: TrendErrorKind[] = ["auth", "permission", "rate_limited", "network", "unknown"];
-export function worstError(kinds: TrendErrorKind[]): TrendErrorKind | null {
-  for (const k of SEVERITY) if (kinds.includes(k)) return k;
-  return null;
-}
 
 /**
  * プラットフォームごとの収集口。
@@ -93,20 +77,10 @@ function kindOf(e: unknown): TrendErrorKind {
   return classifyThreadsError(e instanceof Error ? e.message : String(e));
 }
 
-/** 通信エラーとレート制限だけ、間を空けて1回再試行する。認証・権限は再試行しても無駄 */
-async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
-  let last: unknown;
-  for (let attempt = 0; attempt <= RETRIES; attempt++) {
-    try {
-      return await fn();
-    } catch (e) {
-      last = e;
-      const kind = kindOf(e);
-      if (kind !== "network" && kind !== "rate_limited") break;
-      if (attempt < RETRIES) await _test.sleep(RETRY_DELAY_MS[kind] * (attempt + 1));
-    }
-  }
-  throw last;
+/** withRetry へ渡す分類関数。通信エラーとレート制限だけ再試行対象にする */
+function retryClass(e: unknown): "network" | "rate_limited" | "other" {
+  const kind = kindOf(e);
+  return kind === "network" || kind === "rate_limited" ? kind : "other";
 }
 
 export type FetchResult = {
@@ -146,7 +120,7 @@ export async function fetchTrendsForAccount(
       let failed: TrendErrorKind | null = null;
       for (const type of ["TOP", "RECENT"] as const) {
         try {
-          const items = await withRetry(() => collector.search(account, keyword, type));
+          const items = await withRetry(() => collector.search(account, keyword, type), retryClass);
           for (const it of items) if (!seen.has(it.id)) seen.set(it.id, it);
         } catch (e) {
           failed = kindOf(e);

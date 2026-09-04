@@ -6,7 +6,7 @@ import type { AnyMySqlColumn } from "drizzle-orm/mysql-core";
 import {
   InsertAccount, InsertAccountSettings, InsertPost, InsertUser,
   accountSettings, accounts, categories, followerSnapshots, media, postAnalytics, postLogs, posts,
-  settings, trendAnalyses, trendPosts, trendSettings, users,
+  settings, threadReplies, trendAnalyses, trendPosts, trendSettings, users,
 } from "../drizzle/schema";
 import type { AccountScope } from "./accountScope";
 import { ENV } from "./_core/env";
@@ -1064,4 +1064,79 @@ export async function listPostOutcomes(scope: AccountScope, since: Date) {
       hasAnalytics: !!a,
     };
   });
+}
+
+// ── 受信箱（Threadsの返信管理） ───────────────────────────────────────────────
+
+export type UpsertThreadReply = {
+  accountId: number;
+  externalId: string;
+  rootMediaId: string | null;
+  rootPermalink: string | null;
+  username: string | null;
+  text: string | null;
+  permalink: string | null;
+  postedAt: Date | null;
+  hideStatus: string | null;
+};
+
+/**
+ * 返信の保存。同じ (accountId, externalId) は行を増やさず更新する。
+ * 利用者が付けた status（既読/返信済み）と返信内容は上書きしない。
+ */
+export async function upsertThreadReply(row: UpsertThreadReply) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(threadReplies).values(row).onDuplicateKeyUpdate({
+    set: {
+      rootMediaId: row.rootMediaId, rootPermalink: row.rootPermalink, username: row.username,
+      text: row.text, permalink: row.permalink, postedAt: row.postedAt, hideStatus: row.hideStatus,
+      fetchedAt: new Date(),
+    },
+  });
+}
+
+/** 指定アカウントの返信一覧。新しい順 */
+export async function listThreadReplies(
+  accountId: number,
+  opts: { status?: ("unread" | "read" | "replied")[]; limit?: number } = {}
+) {
+  const db = await getDb();
+  if (!db) return [];
+  const conds = [eq(threadReplies.accountId, accountId)];
+  if (opts.status?.length) conds.push(inArray(threadReplies.status, opts.status));
+  return db.select().from(threadReplies).where(and(...conds))
+    .orderBy(desc(threadReplies.postedAt)).limit(opts.limit ?? 100);
+}
+
+export async function getOwnedThreadReply(id: number, accountId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(threadReplies)
+    .where(and(eq(threadReplies.id, id), eq(threadReplies.accountId, accountId))).limit(1);
+  return rows[0];
+}
+
+export async function setThreadReplyStatus(id: number, accountId: number, status: "unread" | "read" | "replied") {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(threadReplies).set({ status })
+    .where(and(eq(threadReplies.id, id), eq(threadReplies.accountId, accountId)));
+}
+
+/** 返信送信の成功後に呼ぶ。送った内容と日時を残し、状態を「返信済み」にする */
+export async function markThreadReplyReplied(id: number, accountId: number, content: string, now: Date = new Date()) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(threadReplies).set({ status: "replied", repliedContent: content, repliedAt: now })
+    .where(and(eq(threadReplies.id, id), eq(threadReplies.accountId, accountId)));
+}
+
+/** 未読件数（サイドバーのバッジ表示用） */
+export async function countUnreadThreadReplies(accountId: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const rows = await db.select({ c: sql<number>`count(*)` }).from(threadReplies)
+    .where(and(eq(threadReplies.accountId, accountId), eq(threadReplies.status, "unread")));
+  return Number(rows[0]?.c ?? 0);
 }

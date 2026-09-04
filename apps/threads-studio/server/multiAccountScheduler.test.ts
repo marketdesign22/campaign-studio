@@ -33,10 +33,14 @@ vi.mock("./trends", () => ({
   runTrendFetchIfDue: vi.fn(),
   markDeletedSavedPosts: vi.fn(),
 }));
+vi.mock("./replies", () => ({
+  fetchRepliesForAccounts: vi.fn(),
+}));
 
 import * as db from "./db";
 import * as threadsApi from "./threadsApi";
 import * as trends from "./trends";
+import * as replies from "./replies";
 import { fetchAnalyticsForRecentPosts, runSlotForAccount, runTick } from "./scheduler";
 import { scopeOf } from "./accountScope";
 
@@ -287,5 +291,42 @@ describe("トレンド取得と投稿処理の分離", () => {
 
     await expect(runTick(NOW)).resolves.toBeTruthy();
     expect(db.upsertSettings).toHaveBeenCalledWith({ lastMaintenanceDate: "2026-09-01" });
+  });
+});
+
+describe("受信箱の取得と投稿処理の分離", () => {
+  it("返信取得はトレンド取得の後に、アクティブな全アカウントで呼ばれる", async () => {
+    vi.mocked(db.getNextPendingPost).mockResolvedValue(undefined);
+    vi.mocked(replies.fetchRepliesForAccounts).mockResolvedValue([]);
+
+    await runTick(NOW);
+
+    const [accounts] = vi.mocked(replies.fetchRepliesForAccounts).mock.calls[0];
+    expect(accounts.map((a) => a.id)).toEqual([1, 2]);
+  });
+
+  it("返信取得が例外を投げても、投稿は完了し結果が返る", async () => {
+    vi.mocked(db.getNextPendingPost).mockResolvedValue({ id: 1, content: "hello", imageUrl: null, categoryId: null } as never);
+    vi.mocked(threadsApi.publishTextPost).mockResolvedValue({ containerId: "c", postId: "p" });
+    vi.mocked(replies.fetchRepliesForAccounts).mockRejectedValue(new Error("Threads replies fetch failed (401): OAuthException"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const r = await runTick(NOW);
+
+    expect(r.fired.length).toBeGreaterThan(0);
+    expect(r.fired.every((f) => f.posted === "p")).toBe(true);
+    expect(warn.mock.calls.flat().join(" ")).not.toContain("OAuthException");
+    warn.mockRestore();
+  });
+
+  it("無効化されたアカウントは返信取得の対象から外れる", async () => {
+    vi.mocked(db.listAccounts).mockResolvedValue([SCSU, account(2, "creaw.usa", "x", false)]);
+    vi.mocked(db.getNextPendingPost).mockResolvedValue(undefined);
+    vi.mocked(replies.fetchRepliesForAccounts).mockResolvedValue([]);
+
+    await runTick(NOW);
+
+    const [accounts] = vi.mocked(replies.fetchRepliesForAccounts).mock.calls[0];
+    expect(accounts.map((a) => a.id)).toEqual([1]);
   });
 });

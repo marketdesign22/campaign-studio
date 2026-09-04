@@ -91,6 +91,10 @@ export const accounts = mysqlTable("accounts", {
    */
   slots: text("slots"),
   active: boolean("active").default(true).notNull(),
+  /** 受信箱: 直近の返信取得日時（成功・失敗いずれも記録） */
+  lastReplyFetchAt: timestamp("lastReplyFetchAt"),
+  /** 受信箱: 直近の返信取得で対処が必要だった失敗の種別。成功で null */
+  lastReplyFetchError: varchar("lastReplyFetchError", { length: 32 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -333,3 +337,35 @@ export const trendAnalyses = mysqlTable("trend_analyses", {
 });
 
 export type TrendAnalysis = typeof trendAnalyses.$inferSelect;
+
+/**
+ * Threadsの受信箱: 自社投稿についた公開返信。
+ * DM（ダイレクトメッセージ）は公式APIが公開されていないため対象外。
+ * (accountId, externalId) が重複排除のキー。利用者が付けた status・返信内容は
+ * 再取得で上書きしない（db.ts の upsertThreadReply を参照）。
+ */
+export const threadReplies = mysqlTable("thread_replies", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull(),
+  /** Threads側の返信メディアID */
+  externalId: varchar("externalId", { length: 128 }).notNull(),
+  /** 返信対象（自社投稿）のThreadsメディアID。取れない場合は NULL */
+  rootMediaId: varchar("rootMediaId", { length: 128 }),
+  rootPermalink: varchar("rootPermalink", { length: 512 }),
+  username: varchar("username", { length: 64 }),
+  /** 返信本文。投稿と同じ500文字制限で保存する */
+  text: varchar("text", { length: 600 }),
+  permalink: varchar("permalink", { length: 512 }),
+  postedAt: timestamp("postedAt"),
+  /** Threads側の非表示状態（例: HIDDEN） */
+  hideStatus: varchar("hideStatus", { length: 24 }),
+  status: mysqlEnum("status", ["unread", "read", "replied"]).default("unread").notNull(),
+  /** このアプリから送信した返信の本文（利用者が実際に送った内容） */
+  repliedContent: text("repliedContent"),
+  repliedAt: timestamp("repliedAt"),
+  firstSeenAt: timestamp("firstSeenAt").defaultNow().notNull(),
+  fetchedAt: timestamp("fetchedAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ThreadReply = typeof threadReplies.$inferSelect;
