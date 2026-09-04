@@ -125,6 +125,13 @@ describe("db:upgrade", () => {
     expect(tables.get("reply_templates")!.indexes.has("idx_reply_templates_account")).toBe(true);
   });
 
+  it("空のDBにエンゲージメント（コメント送信履歴）のテーブル・索引を作る", async () => {
+    await runUpgradeOnce();
+    expect(tables.has("engagement_comments")).toBe(true);
+    expect(tables.get("engagement_comments")!.indexes.has("idx_engagement_comments_account_sent")).toBe(true);
+    expect(tables.get("engagement_comments")!.indexes.has("idx_engagement_comments_target")).toBe(true);
+  });
+
   it("2回目以降はDDLを1本も流さない（冪等）", async () => {
     await runUpgradeOnce();
     const first = ddl.length;

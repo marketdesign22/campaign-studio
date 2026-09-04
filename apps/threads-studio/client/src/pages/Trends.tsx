@@ -9,11 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { toast } from "sonner";
 import {
-  AlertTriangle, Bookmark, BookmarkCheck, ExternalLink, EyeOff, Flame, Link2, RefreshCw,
-  RotateCcw, Sparkles, Trash2, TrendingUp,
+  AlertTriangle, Bookmark, BookmarkCheck, ExternalLink, EyeOff, Flame, Link2, MessageCircle, RefreshCw,
+  RotateCcw, Send, Sparkles, Trash2, TrendingUp,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useI18n } from "@/i18n";
@@ -53,6 +54,128 @@ function fmtDate(v: Date | string | null | undefined, locale: string) {
   return Number.isNaN(d.getTime()) ? "—" : d.toLocaleString(locale, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
+const ENGAGE_MAX_LENGTH = 500;
+type EngagePost = { id: number; hasReplies: boolean | null; summary: string };
+type ReplyOption = { id: string; username: string | null; text: string | null };
+type EngageTarget = { type: "post" } | { type: "reply"; reply: ReplyOption };
+
+/**
+ * トレンドで収集した他アカウントの投稿へコメントするための入力欄。
+ * 投稿本体、またはその投稿についた返信（他人のコメント）のどちらかを選べる。
+ * AIは案を1つ作るだけで、送信は必ずここの「送信」ボタンを押した時だけ行われる。
+ */
+function EngagementBox({ post, onClose }: { post: EngagePost; onClose: () => void }) {
+  const { t } = useI18n();
+  const utils = trpc.useUtils();
+  const [target, setTarget] = useState<EngageTarget>({ type: "post" });
+  const [content, setContent] = useState("");
+  const [showReplies, setShowReplies] = useState(false);
+
+  const repliesQ = trpc.engagement.listReplies.useQuery({ trendPostId: post.id }, { enabled: showReplies });
+  const countQ = trpc.engagement.countForTarget.useQuery({ trendPostId: post.id });
+  const suggestMut = trpc.engagement.suggestComment.useMutation({
+    onSuccess: (d) => setContent(d.comment),
+    onError: (e) => toast.error(e.message),
+  });
+  const sendMut = trpc.engagement.send.useMutation({
+    onSuccess: () => {
+      toast.success(t("コメントを送信しました"));
+      utils.engagement.countForTarget.invalidate({ trendPostId: post.id });
+      onClose();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  function suggest() {
+    if (target.type === "post") {
+      suggestMut.mutate({ trendPostId: post.id, targetType: "post" });
+    } else {
+      suggestMut.mutate({
+        trendPostId: post.id, targetType: "reply",
+        replyText: target.reply.text ?? "", replyUsername: target.reply.username ?? undefined,
+      });
+    }
+  }
+
+  function send() {
+    const trimmed = content.trim();
+    if (!trimmed) return;
+    if (target.type === "post") {
+      sendMut.mutate({ trendPostId: post.id, targetType: "post", content: trimmed });
+    } else {
+      sendMut.mutate({
+        trendPostId: post.id, targetType: "reply", targetExternalId: target.reply.id,
+        targetUsername: target.reply.username ?? undefined, targetSummary: (target.reply.text ?? "").slice(0, 255),
+        content: trimmed,
+      });
+    }
+  }
+
+  return (
+    <div className="space-y-2.5 pt-2.5 mt-2 border-t">
+      {!!countQ.data && (
+        <p className="text-[11px] text-amber-700">
+          {t("この投稿には既に")}{countQ.data}{t("件コメント済みです")}
+        </p>
+      )}
+      {post.hasReplies && (
+        <div className="space-y-1.5">
+          {!showReplies ? (
+            <Button size="sm" variant="ghost" className="h-6 text-[11px] px-2" onClick={() => setShowReplies(true)}>
+              {t("この投稿についた返信を見て、返信にコメントする")}
+            </Button>
+          ) : repliesQ.isLoading ? (
+            <p className="text-xs text-muted-foreground">{t("読み込み中...")}</p>
+          ) : repliesQ.data && !repliesQ.data.available ? (
+            <p className="text-xs text-muted-foreground">{repliesQ.data.errorMessage ?? t("返信を取得できませんでした")}</p>
+          ) : repliesQ.data && repliesQ.data.replies.length > 0 ? (
+            <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
+              <p className="text-[11px] text-muted-foreground">{t("コメント先を選んでください")}:</p>
+              <button
+                type="button"
+                className={`w-full text-left rounded-md border px-2 py-1 text-xs ${target.type === "post" ? "border-[var(--brand-accent)] bg-[var(--brand-accent)]/5" : ""}`}
+                onClick={() => setTarget({ type: "post" })}
+              >
+                {t("投稿本体にコメント")}
+              </button>
+              {repliesQ.data.replies.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  className={`w-full text-left rounded-md border px-2 py-1 text-xs ${target.type === "reply" && target.reply.id === r.id ? "border-[var(--brand-accent)] bg-[var(--brand-accent)]/5" : ""}`}
+                  onClick={() => setTarget({ type: "reply", reply: r })}
+                >
+                  <span className="font-medium">@{r.username ?? t("不明なユーザー")}</span>: {r.text}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">{t("返信はまだありません")}</p>
+          )}
+        </div>
+      )}
+
+      <Textarea
+        rows={2} value={content} maxLength={ENGAGE_MAX_LENGTH}
+        placeholder={t("コメントを入力...")}
+        onChange={(e) => setContent(e.target.value)}
+        className="resize-none text-sm"
+      />
+      <div className="flex items-center justify-between">
+        <span className="text-[11px] text-muted-foreground tabular-nums">{content.length}/{ENGAGE_MAX_LENGTH}</span>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" className="h-7 text-xs" disabled={suggestMut.isPending} onClick={suggest}>
+            <Sparkles className="h-3.5 w-3.5 mr-1.5" />{suggestMut.isPending ? t("作成中...") : t("AIで下書きを作る")}
+          </Button>
+          <Button size="sm" className="h-7 text-xs" disabled={!content.trim() || sendMut.isPending} onClick={send}>
+            <Send className="h-3.5 w-3.5 mr-1.5" />{sendMut.isPending ? t("送信中...") : t("送信")}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Trends() {
   const { t, lang, locale } = useI18n();
   const [, setLocation] = useLocation();
@@ -66,6 +189,7 @@ export default function Trends() {
   const [platform, setPlatform] = useState<"all" | "threads" | "instagram">("all");
   const [refUrl, setRefUrl] = useState("");
   const [refNote, setRefNote] = useState("");
+  const [engageOpenId, setEngageOpenId] = useState<number | null>(null);
 
   const listQ = trpc.trends.list.useQuery({
     period, status, platform: platform === "all" ? undefined : platform,
@@ -177,6 +301,9 @@ export default function Trends() {
 
         {/* ── 投稿 ── */}
         <TabsContent value="posts" className="space-y-4 mt-4">
+          <div className="rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground">
+            {t("「コメントする」では他アカウントの投稿へ公開コメントを送れます。AIが作るのは下書きの案だけで、実際にThreadsへ送るのは「送信」を押した時だけです。")}
+          </div>
           <div className="flex flex-wrap gap-2 items-end">
             <div className="space-y-1">
               <Label className="text-xs">{t("表示")}</Label>
@@ -302,8 +429,18 @@ export default function Trends() {
                           onClick={() => makeDraft(p.aiIdeas[0] ?? p.keyword ?? p.summary.slice(0, 80))}>
                           {t("この傾向から原稿を作る")}
                         </Button>
+                        {p.platform === "threads" && p.status !== "deleted" && (
+                          <Button size="sm" variant="outline" className="h-6 text-[11px] px-2"
+                            onClick={() => setEngageOpenId(engageOpenId === p.id ? null : p.id)}>
+                            <MessageCircle className="h-3 w-3 mr-1" />{t("コメントする")}
+                          </Button>
+                        )}
                       </div>
                     </div>
+
+                    {engageOpenId === p.id && (
+                      <EngagementBox post={p} onClose={() => setEngageOpenId(null)} />
+                    )}
                   </CardContent>
                 </Card>
               ))}
