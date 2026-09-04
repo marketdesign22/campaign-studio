@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { AlertTriangle, Check, ExternalLink, RefreshCw, Send } from "lucide-react";
+import { AlertTriangle, Check, ExternalLink, RefreshCw, Send, Sparkles } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useI18n } from "@/i18n";
 
@@ -29,14 +29,15 @@ function fmtDate(v: Date | string | null | undefined, locale: string) {
 }
 
 function ReplyBox({
-  replyId, maxLength, onSent,
+  replyId, maxLength, onSent, initialContent = "",
 }: {
   replyId: number;
   maxLength: number;
   onSent: () => void;
+  initialContent?: string;
 }) {
   const { t } = useI18n();
-  const [content, setContent] = useState("");
+  const [content, setContent] = useState(initialContent);
   const sendMut = trpc.replies.reply.useMutation({
     onSuccess: () => { toast.success(t("返信を送信しました")); setContent(""); onSent(); },
     onError: (e) => toast.error(e.message),
@@ -80,6 +81,11 @@ export default function Inbox() {
     onError: (e) => toast.error(e.message),
   });
   const markReadMut = trpc.replies.markRead.useMutation({ onSuccess: () => invalidate(), onError: (e) => toast.error(e.message) });
+  /** テンプレート提案を「この内容で送信」で使う。これも通常の返信送信と同じAPIを通る（自動送信はしない） */
+  const quickSendMut = trpc.replies.reply.useMutation({
+    onSuccess: () => { toast.success(t("返信を送信しました")); invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
 
   const replies = listQ.data?.replies ?? [];
 
@@ -153,6 +159,25 @@ export default function Inbox() {
 
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">{r.text}</p>
 
+                {r.suggestedReply && (
+                  <div className="rounded-md border border-[var(--brand-accent)]/30 bg-[var(--brand-accent)]/5 p-2.5 text-xs space-y-2">
+                    <p className="font-medium flex items-center gap-1 text-[var(--brand-accent-deep)]">
+                      <Sparkles className="h-3 w-3" />{t("キーワードに一致するテンプレートがあります")}
+                    </p>
+                    <p className="whitespace-pre-wrap">{r.suggestedReply}</p>
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="outline" className="h-7 text-xs"
+                        onClick={() => setOpenReplyId(r.id)}>
+                        {t("編集して送信")}
+                      </Button>
+                      <Button size="sm" className="h-7 text-xs" disabled={quickSendMut.isPending}
+                        onClick={() => quickSendMut.mutate({ id: r.id, content: r.suggestedReply! })}>
+                        <Send className="h-3.5 w-3.5 mr-1.5" />{t("この内容で送信")}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {r.status === "replied" && r.repliedContent && (
                   <div className="rounded-md bg-muted/50 border p-2.5 text-xs space-y-1">
                     <p className="font-medium">{t("送信した返信")}:</p>
@@ -181,7 +206,7 @@ export default function Inbox() {
 
                 {openReplyId === r.id && (
                   <ReplyBox replyId={r.id} maxLength={listQ.data?.maxReplyLength ?? 500}
-                    onSent={() => setOpenReplyId(null)} />
+                    onSent={() => setOpenReplyId(null)} initialContent={r.suggestedReply ?? ""} />
                 )}
               </CardContent>
             </Card>

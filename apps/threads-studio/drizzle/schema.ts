@@ -371,3 +371,22 @@ export const threadReplies = mysqlTable("thread_replies", {
 });
 
 export type ThreadReply = typeof threadReplies.$inferSelect;
+
+/**
+ * 受信箱: キーワードに一致した返信へ提案する定型文。
+ * ここに登録した内容は「案」として一覧に表示されるだけで、自動では送信しない。
+ * 送信は利用者が「この内容で送信」を押した時だけ（server/routers/replies.ts の reply と同じ経路）。
+ */
+export const replyTemplates = mysqlTable("reply_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull(),
+  /** 反応するキーワード JSON string[] */
+  keywords: text("keywords").notNull(),
+  /** 提案する返信の定型文 */
+  replyText: varchar("replyText", { length: 500 }).notNull(),
+  enabled: boolean("enabled").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ReplyTemplate = typeof replyTemplates.$inferSelect;

@@ -546,6 +546,25 @@ const en: Record<string, string> = {
   "Threadsに接続できませんでした。しばらくしてからもう一度お試しください。": "Could not reach Threads. Please try again shortly.",
   "取得に失敗しました。時間をおいて再度お試しください。": "Fetch failed. Please try again later.",
 
+  // ── Reply auto-suggest templates ────────────────────────────────────────
+  "自動返信テンプレート": "Auto-reply templates",
+  "キーワードに一致する返信があると、受信箱に候補として表示します。自動では送信せず、必ず利用者が内容を確認してから送信します。":
+    "When a reply matches a keyword, it's shown as a suggestion in the inbox. Nothing is sent automatically — a person always reviews it before it goes out.",
+  "反応するキーワード（カンマ区切り）": "Trigger keywords (comma-separated)",
+  "提案する返信文": "Suggested reply text",
+  "無効": "Disabled",
+  "保存中...": "Saving...",
+  "テンプレートを保存しました": "Template saved",
+  "テンプレートを削除しました": "Template deleted",
+  "このテンプレートを削除しますか？": "Delete this template?",
+  "まだテンプレートがありません。": "No templates yet.",
+  "新しいテンプレートを追加": "Add a new template",
+  "追加中...": "Adding...",
+  "テンプレートを追加しました": "Template added",
+  "キーワードに一致するテンプレートがあります": "A template matches this reply",
+  "この内容で送信": "Send as-is",
+  "編集して送信": "Edit and send",
+
   // ── Timezones ───────────────────────────────────────────────────────────
   "太平洋時間 (PT)": "Pacific (PT)",
   "東部時間 (ET)": "Eastern (ET)",

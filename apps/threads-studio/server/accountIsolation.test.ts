@@ -321,3 +321,29 @@ describe("受信箱（Threadsの返信管理）", () => {
     expect(updateClause).not.toMatch(/`repliedAt`/);
   });
 });
+
+describe("自動返信テンプレート", () => {
+  it("一覧・個別取得・更新・削除はすべて accountId で絞る", async () => {
+    const { listReplyTemplates, getOwnedReplyTemplate, updateReplyTemplate, deleteReplyTemplate } = await import("./db");
+    await listReplyTemplates(2);
+    scopedTo(2);
+    await getOwnedReplyTemplate(9, 2);
+    expect(lastQuery().sql).toMatch(/`id` = \?/);
+    scopedTo(2);
+    await updateReplyTemplate(9, 2, { enabled: false });
+    expect(lastQuery().sql).toMatch(/^update `reply_templates`/);
+    scopedTo(2);
+    await deleteReplyTemplate(9, 2);
+    expect(lastQuery().sql).toMatch(/^delete from `reply_templates`/);
+    scopedTo(2);
+  });
+
+  it("作成は指定したアカウントの行として保存される", async () => {
+    const { createReplyTemplate } = await import("./db");
+    await createReplyTemplate(2, ["ビザ"], "案内文");
+    const { sql, params } = lastQuery();
+    expect(sql).toMatch(/^insert into `reply_templates`/);
+    expect(params).toContain(2);
+    expect(params).toContain("案内文");
+  });
+});

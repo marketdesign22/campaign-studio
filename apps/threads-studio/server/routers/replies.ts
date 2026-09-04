@@ -9,12 +9,24 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import {
-  countUnreadThreadReplies, getOwnedThreadReply, listThreadReplies, markThreadReplyReplied, setThreadReplyStatus,
+  countUnreadThreadReplies, createReplyTemplate, deleteReplyTemplate, getOwnedReplyTemplate, getOwnedThreadReply,
+  listReplyTemplates, listThreadReplies, markThreadReplyReplied, setThreadReplyStatus, updateReplyTemplate,
 } from "../db";
 import { fetchRepliesForAccount, MAX_REPLY_LENGTH, sendReply } from "../replies";
+import {
+  MAX_KEYWORDS_PER_TEMPLATE, MAX_TEMPLATES_PER_ACCOUNT, matchReplyTemplate, parseTemplateKeywords,
+} from "../replyTemplates";
 import { classifyError, type ThreadsErrorKind } from "../threadsErrors";
 import { accountProcedure } from "../accountScope";
 import { router } from "../_core/trpc";
+
+const KEYWORDS_INPUT = z.array(z.string().trim().min(1).max(60)).min(1).max(MAX_KEYWORDS_PER_TEMPLATE);
+const REPLY_TEXT_INPUT = z.string().trim().min(1).max(MAX_REPLY_LENGTH);
+
+/** テンプレート行をクライアント向けの形に変換する */
+function toClientTemplate(r: { id: number; keywords: string; replyText: string; enabled: boolean }) {
+  return { id: r.id, keywords: parseTemplateKeywords(r.keywords), replyText: r.replyText, enabled: r.enabled };
+}
 
 /** 手動取得の連打防止（アカウントごと） */
 const FETCH_COOLDOWN_MS = 60_000;
@@ -34,20 +46,32 @@ const ERROR_MESSAGE: Record<ThreadsErrorKind, string> = {
 };
 
 export const repliesRouter = router({
-  /** 返信一覧。新しい順 */
+  /**
+   * 返信一覧。新しい順。
+   * 未返信の行は、登録済みテンプレートとキーワードが一致すれば `suggestedReply` を添える。
+   * これは案の提示だけで、送信は利用者が別途 `reply` を呼んだ時だけ行われる。
+   */
   list: accountProcedure
     .input(z.object({ status: z.enum(["all", "unread", "read", "replied"]).default("all") }).optional())
     .query(async ({ input, ctx }) => {
       const status = input?.status ?? "all";
-      const rows = await listThreadReplies(ctx.account.id, {
-        status: status === "all" ? undefined : [status], limit: 100,
-        excludeUsername: ctx.account.threadsUsername,
-      });
+      const [rows, templateRows] = await Promise.all([
+        listThreadReplies(ctx.account.id, {
+          status: status === "all" ? undefined : [status], limit: 100,
+          excludeUsername: ctx.account.threadsUsername,
+        }),
+        listReplyTemplates(ctx.account.id),
+      ]);
+      const templates = templateRows.map(toClientTemplate);
       return {
-        replies: rows.map((r) => ({
-          id: r.id, username: r.username, text: r.text, permalink: r.permalink, postedAt: r.postedAt,
-          status: r.status, hideStatus: r.hideStatus, repliedContent: r.repliedContent, repliedAt: r.repliedAt,
-        })),
+        replies: rows.map((r) => {
+          const match = r.status !== "replied" && r.text ? matchReplyTemplate(r.text, templates) : null;
+          return {
+            id: r.id, username: r.username, text: r.text, permalink: r.permalink, postedAt: r.postedAt,
+            status: r.status, hideStatus: r.hideStatus, repliedContent: r.repliedContent, repliedAt: r.repliedAt,
+            suggestedReply: match?.replyText ?? null,
+          };
+        }),
         lastFetchAt: ctx.account.lastReplyFetchAt,
         lastFetchError: ctx.account.lastReplyFetchError as ThreadsErrorKind | null,
         maxReplyLength: MAX_REPLY_LENGTH,
@@ -118,4 +142,53 @@ export const repliesRouter = router({
       await markThreadReplyReplied(input.id, ctx.account.id, input.content.trim());
       return { ok: true };
     }),
+
+  /**
+   * 自動返信テンプレート（キーワード一致で `list` の返信に案として添える）。
+   * ここでの登録・変更は提案文を変えるだけで、既存の返信を勝手に書き換えたり
+   * 自動送信したりはしない。送信は必ず `reply` を通す。
+   */
+  templates: router({
+    list: accountProcedure.query(async ({ ctx }) => (await listReplyTemplates(ctx.account.id)).map(toClientTemplate)),
+
+    create: accountProcedure
+      .input(z.object({ keywords: KEYWORDS_INPUT, replyText: REPLY_TEXT_INPUT }))
+      .mutation(async ({ input, ctx }) => {
+        const existing = await listReplyTemplates(ctx.account.id);
+        if (existing.length >= MAX_TEMPLATES_PER_ACCOUNT) {
+          throw new TRPCError({
+            code: "BAD_REQUEST", message: `テンプレートは${MAX_TEMPLATES_PER_ACCOUNT}件までです。`,
+          });
+        }
+        const id = await createReplyTemplate(ctx.account.id, Array.from(new Set(input.keywords)), input.replyText);
+        return { ok: true, id };
+      }),
+
+    update: accountProcedure
+      .input(z.object({
+        id: z.number().int(),
+        keywords: KEYWORDS_INPUT.optional(),
+        replyText: REPLY_TEXT_INPUT.optional(),
+        enabled: z.boolean().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const row = await getOwnedReplyTemplate(input.id, ctx.account.id);
+        if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "テンプレートが見つかりません。" });
+        await updateReplyTemplate(input.id, ctx.account.id, {
+          keywords: input.keywords ? Array.from(new Set(input.keywords)) : undefined,
+          replyText: input.replyText,
+          enabled: input.enabled,
+        });
+        return { ok: true };
+      }),
+
+    delete: accountProcedure
+      .input(z.object({ id: z.number().int() }))
+      .mutation(async ({ input, ctx }) => {
+        const row = await getOwnedReplyTemplate(input.id, ctx.account.id);
+        if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "テンプレートが見つかりません。" });
+        await deleteReplyTemplate(input.id, ctx.account.id);
+        return { ok: true };
+      }),
+  }),
 });

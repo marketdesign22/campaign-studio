@@ -16,6 +16,11 @@ vi.mock("./db", () => ({
   markThreadReplyReplied: vi.fn(),
   setThreadReplyStatus: vi.fn(),
   countUnreadThreadReplies: vi.fn(),
+  listReplyTemplates: vi.fn(),
+  getOwnedReplyTemplate: vi.fn(),
+  createReplyTemplate: vi.fn(),
+  updateReplyTemplate: vi.fn(),
+  deleteReplyTemplate: vi.fn(),
 }));
 vi.mock("./replies", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./replies")>();
@@ -56,7 +61,15 @@ beforeEach(() => {
   vi.mocked(db.listAccounts).mockResolvedValue([SCSU, CREAW] as never);
   vi.mocked(db.listThreadReplies).mockResolvedValue([]);
   vi.mocked(db.countUnreadThreadReplies).mockResolvedValue(0);
+  vi.mocked(db.listReplyTemplates).mockResolvedValue([]);
 });
+
+function templateRow(id: number, keywords: string[], replyText: string, enabled = true) {
+  return {
+    id, accountId: 1, keywords: JSON.stringify(keywords), replyText, enabled,
+    createdAt: new Date(), updatedAt: new Date(),
+  };
+}
 
 describe("repliesRouter.list", () => {
   it("選択中アカウントの返信だけを返し、内部専用フィールドは出さない", async () => {
@@ -73,6 +86,7 @@ describe("repliesRouter.list", () => {
     expect(r.replies[0]).toEqual({
       id: 9, username: "fan", text: "いいですね", permalink: "https://www.threads.net/@fan/post/ext-1",
       postedAt: expect.any(Date), status: "unread", hideStatus: "NOT_HUSHED", repliedContent: null, repliedAt: null,
+      suggestedReply: null,
     });
     expect(JSON.stringify(r)).not.toContain(TOKEN);
     // externalId は返信送信のための内部識別子。permalink とは別物で、画面へは返さない
@@ -98,6 +112,87 @@ describe("repliesRouter.list", () => {
     const { repliesRouter } = await import("./routers/replies");
     const r = await repliesRouter.createCaller(ctx(1)).list({ status: "all" });
     expect(r.lastFetchError).toBe("permission");
+  });
+
+  it("未返信でキーワードに一致すればテンプレートの案を添える。返信済みには添えない", async () => {
+    vi.mocked(db.listThreadReplies).mockResolvedValue([
+      { id: 1, accountId: 1, externalId: "e1", rootMediaId: null, rootPermalink: null, username: "fan",
+        text: "ビザについて教えてください", permalink: null, postedAt: new Date(), hideStatus: null,
+        status: "unread", repliedContent: null, repliedAt: null,
+        firstSeenAt: new Date(), fetchedAt: new Date(), updatedAt: new Date() },
+      { id: 2, accountId: 1, externalId: "e2", rootMediaId: null, rootPermalink: null, username: "fan2",
+        text: "ビザの相談です", permalink: null, postedAt: new Date(), hideStatus: null,
+        status: "replied", repliedContent: "対応済み", repliedAt: new Date(),
+        firstSeenAt: new Date(), fetchedAt: new Date(), updatedAt: new Date() },
+    ] as never);
+    vi.mocked(db.listReplyTemplates).mockResolvedValue([templateRow(1, ["ビザ", "在留資格"], "学生ビザのサポートも行っています。ご相談ください。")] as never);
+    const { repliesRouter } = await import("./routers/replies");
+    const r = await repliesRouter.createCaller(ctx(1)).list({ status: "all" });
+    expect(r.replies[0].suggestedReply).toBe("学生ビザのサポートも行っています。ご相談ください。");
+    expect(r.replies[1].suggestedReply).toBeNull(); // 返信済みには添えない
+  });
+
+  it("無効化されたテンプレートは提案しない", async () => {
+    vi.mocked(db.listThreadReplies).mockResolvedValue([
+      { id: 1, accountId: 1, externalId: "e1", rootMediaId: null, rootPermalink: null, username: "fan",
+        text: "ビザについて", permalink: null, postedAt: new Date(), hideStatus: null,
+        status: "unread", repliedContent: null, repliedAt: null,
+        firstSeenAt: new Date(), fetchedAt: new Date(), updatedAt: new Date() },
+    ] as never);
+    vi.mocked(db.listReplyTemplates).mockResolvedValue([templateRow(1, ["ビザ"], "案内文", false)] as never);
+    const { repliesRouter } = await import("./routers/replies");
+    const r = await repliesRouter.createCaller(ctx(1)).list({ status: "all" });
+    expect(r.replies[0].suggestedReply).toBeNull();
+  });
+});
+
+describe("repliesRouter.templates", () => {
+  it("キーワードとテンプレート文を返す（内部のenabledフラグ等も含め、生JSON列は返さない）", async () => {
+    vi.mocked(db.listReplyTemplates).mockResolvedValue([templateRow(1, ["ビザ", "学費"], "ご案内文")] as never);
+    const { repliesRouter } = await import("./routers/replies");
+    const r = await repliesRouter.createCaller(ctx(1)).templates.list();
+    expect(r).toEqual([{ id: 1, keywords: ["ビザ", "学費"], replyText: "ご案内文", enabled: true }]);
+  });
+
+  it("作成すると重複キーワードを除いて保存する", async () => {
+    const { repliesRouter } = await import("./routers/replies");
+    await repliesRouter.createCaller(ctx(1)).templates.create({ keywords: ["ビザ", "ビザ", "学費"], replyText: "案内" });
+    expect(db.createReplyTemplate).toHaveBeenCalledWith(1, ["ビザ", "学費"], "案内");
+  });
+
+  it("上限件数を超えると作成できない", async () => {
+    vi.mocked(db.listReplyTemplates).mockResolvedValue(
+      Array.from({ length: 20 }, (_, i) => templateRow(i, ["k"], "r")) as never
+    );
+    const { repliesRouter } = await import("./routers/replies");
+    await expect(repliesRouter.createCaller(ctx(1)).templates.create({ keywords: ["新規"], replyText: "案内" }))
+      .rejects.toThrow(/20件/);
+    expect(db.createReplyTemplate).not.toHaveBeenCalled();
+  });
+
+  it("他アカウントのテンプレートは更新・削除できない", async () => {
+    vi.mocked(db.getOwnedReplyTemplate).mockResolvedValue(undefined);
+    const { repliesRouter } = await import("./routers/replies");
+    await expect(repliesRouter.createCaller(ctx(2)).templates.update({ id: 1, enabled: false }))
+      .rejects.toThrow(/見つかりません/);
+    await expect(repliesRouter.createCaller(ctx(2)).templates.delete({ id: 1 }))
+      .rejects.toThrow(/見つかりません/);
+    expect(db.updateReplyTemplate).not.toHaveBeenCalled();
+    expect(db.deleteReplyTemplate).not.toHaveBeenCalled();
+  });
+
+  it("有効/無効の切替だけを送っても他の項目は書き換えない", async () => {
+    vi.mocked(db.getOwnedReplyTemplate).mockResolvedValue(templateRow(1, ["ビザ"], "案内") as never);
+    const { repliesRouter } = await import("./routers/replies");
+    await repliesRouter.createCaller(ctx(1)).templates.update({ id: 1, enabled: false });
+    expect(db.updateReplyTemplate).toHaveBeenCalledWith(1, 1, { keywords: undefined, replyText: undefined, enabled: false });
+  });
+
+  it("削除できる", async () => {
+    vi.mocked(db.getOwnedReplyTemplate).mockResolvedValue(templateRow(1, ["ビザ"], "案内") as never);
+    const { repliesRouter } = await import("./routers/replies");
+    await repliesRouter.createCaller(ctx(1)).templates.delete({ id: 1 });
+    expect(db.deleteReplyTemplate).toHaveBeenCalledWith(1, 1);
   });
 });
 
