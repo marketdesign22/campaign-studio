@@ -37,6 +37,7 @@ function account(id: number, name: string, lastReplyFetchError: string | null = 
     morningHour: 8, morningMinute: 0, eveningHour: 18, eveningMinute: 0,
     timezone: "JP" as const, slots: null, active: true,
     lastReplyFetchAt: new Date("2026-09-04T03:00:00Z"), lastReplyFetchError,
+    threadsUsername: null as string | null,
     createdAt: new Date(), updatedAt: new Date(),
   };
 }
@@ -67,7 +68,7 @@ describe("repliesRouter.list", () => {
       firstSeenAt: new Date(), fetchedAt: new Date(), updatedAt: new Date(),
     }] as never);
     const r = await repliesRouter.createCaller(ctx(1)).list({ status: "all" });
-    expect(db.listThreadReplies).toHaveBeenCalledWith(1, { status: undefined, limit: 100 });
+    expect(db.listThreadReplies).toHaveBeenCalledWith(1, { status: undefined, limit: 100, excludeUsername: null });
     expect(r.replies).toHaveLength(1);
     expect(r.replies[0]).toEqual({
       id: 9, username: "fan", text: "いいですね", permalink: "https://www.threads.net/@fan/post/ext-1",
@@ -82,7 +83,14 @@ describe("repliesRouter.list", () => {
   it("status を渡すとその状態だけに絞る", async () => {
     const { repliesRouter } = await import("./routers/replies");
     await repliesRouter.createCaller(ctx(1)).list({ status: "unread" });
-    expect(db.listThreadReplies).toHaveBeenCalledWith(1, { status: ["unread"], limit: 100 });
+    expect(db.listThreadReplies).toHaveBeenCalledWith(1, { status: ["unread"], limit: 100, excludeUsername: null });
+  });
+
+  it("自分自身のユーザー名を除外条件として渡す（スレッドの続きを受信箱に出さない）", async () => {
+    vi.mocked(db.listAccounts).mockResolvedValue([{ ...SCSU, threadsUsername: "scsu.japan" }, CREAW] as never);
+    const { repliesRouter } = await import("./routers/replies");
+    await repliesRouter.createCaller(ctx(1)).list({ status: "all" });
+    expect(db.listThreadReplies).toHaveBeenCalledWith(1, { status: undefined, limit: 100, excludeUsername: "scsu.japan" });
   });
 
   it("前回の取得失敗（権限不足など）を一覧に含め、画面で案内できるようにする", async () => {
@@ -188,6 +196,13 @@ describe("repliesRouter.unreadCount", () => {
     const { repliesRouter } = await import("./routers/replies");
     vi.mocked(db.countUnreadThreadReplies).mockResolvedValue(4);
     expect(await repliesRouter.createCaller(ctx(2)).unreadCount()).toBe(4);
-    expect(db.countUnreadThreadReplies).toHaveBeenCalledWith(2);
+    expect(db.countUnreadThreadReplies).toHaveBeenCalledWith(2, null);
+  });
+
+  it("自分自身の返信は未読件数から除く", async () => {
+    vi.mocked(db.listAccounts).mockResolvedValue([SCSU, { ...CREAW, threadsUsername: "creaw.usa" }] as never);
+    const { repliesRouter } = await import("./routers/replies");
+    await repliesRouter.createCaller(ctx(2)).unreadCount();
+    expect(db.countUnreadThreadReplies).toHaveBeenCalledWith(2, "creaw.usa");
   });
 });

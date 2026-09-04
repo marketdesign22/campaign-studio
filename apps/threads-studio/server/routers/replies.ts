@@ -41,6 +41,7 @@ export const repliesRouter = router({
       const status = input?.status ?? "all";
       const rows = await listThreadReplies(ctx.account.id, {
         status: status === "all" ? undefined : [status], limit: 100,
+        excludeUsername: ctx.account.threadsUsername,
       });
       return {
         replies: rows.map((r) => ({
@@ -54,7 +55,7 @@ export const repliesRouter = router({
     }),
 
   /** サイドバーのバッジ用。未読件数だけを返す */
-  unreadCount: accountProcedure.query(({ ctx }) => countUnreadThreadReplies(ctx.account.id)),
+  unreadCount: accountProcedure.query(({ ctx }) => countUnreadThreadReplies(ctx.account.id, ctx.account.threadsUsername)),
 
   /** 既読にする */
   markRead: accountProcedure

@@ -16,7 +16,7 @@
 
 追加型・冪等（`server/scripts/upgradeDb.ts`）。既存テーブル・列は変更しません。
 
-- `accounts.lastReplyFetchAt`, `accounts.lastReplyFetchError`（NULL許容の追加列）
+- `accounts.lastReplyFetchAt`, `accounts.lastReplyFetchError`, `accounts.threadsUsername`（NULL許容の追加列）
 - `thread_replies`（`UNIQUE (accountId, externalId)`）
 
 保存するのは返信本文（最大500文字）・投稿者名・出典URL・投稿日時・非表示状態のみ。返信対象の自社投稿IDは持つが、DMやプロフィール情報などの追加PIIは保存しません。
@@ -24,6 +24,7 @@
 ## Threads API
 
 - 取得: `GET /{threads-user-id}/replies`（`threads_read_replies`）。自社投稿への公開返信を一括で返す
+- **自分自身の返信（スレッドの続き）は除外する**。`GET /{threads-user-id}/replies` は他人からの返信と、自分がスレッドを続けるために自分自身に返信したものを区別せずに返すため、`accounts.threadsUsername`（このアカウント自身のThreadsユーザー名）と一致する返信は保存・表示しない。`threadsUsername` が未登録の場合は初回の取得時に一度だけ自動解決して保存する（再接続は不要）。既に保存済みの行も一覧取得時に除外するので、この修正はデプロイ直後から効く
 - 送信: 通常投稿と同じ2段階（コンテナ作成→公開）に `reply_to_id` を足すだけ（`threads_manage_replies`）
 - **既存アカウントは再接続が必要**（設定画面の「アカウントを追加」から同じ表示名で連携リンクを再発行）
 

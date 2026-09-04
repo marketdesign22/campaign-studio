@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { createPool } from "mysql2";
 import { buildDbConfig } from "./dbConfig";
@@ -1099,12 +1099,20 @@ export async function upsertThreadReply(row: UpsertThreadReply) {
 /** 指定アカウントの返信一覧。新しい順 */
 export async function listThreadReplies(
   accountId: number,
-  opts: { status?: ("unread" | "read" | "replied")[]; limit?: number } = {}
+  opts: {
+    status?: ("unread" | "read" | "replied")[]; limit?: number;
+    /** 自分自身の返信（スレッドの続き）を除く。既に保存済みの行にも効く（削除はしない） */
+    excludeUsername?: string | null;
+  } = {}
 ) {
   const db = await getDb();
   if (!db) return [];
   const conds = [eq(threadReplies.accountId, accountId)];
   if (opts.status?.length) conds.push(inArray(threadReplies.status, opts.status));
+  if (opts.excludeUsername) {
+    // or() は型上 undefined を返しうるが、ここは常に2件渡すので実際には起きない
+    conds.push(or(isNull(threadReplies.username), ne(threadReplies.username, opts.excludeUsername))!);
+  }
   return db.select().from(threadReplies).where(and(...conds))
     .orderBy(desc(threadReplies.postedAt)).limit(opts.limit ?? 100);
 }
@@ -1133,10 +1141,13 @@ export async function markThreadReplyReplied(id: number, accountId: number, cont
 }
 
 /** 未読件数（サイドバーのバッジ表示用） */
-export async function countUnreadThreadReplies(accountId: number): Promise<number> {
+export async function countUnreadThreadReplies(accountId: number, excludeUsername?: string | null): Promise<number> {
   const db = await getDb();
   if (!db) return 0;
-  const rows = await db.select({ c: sql<number>`count(*)` }).from(threadReplies)
-    .where(and(eq(threadReplies.accountId, accountId), eq(threadReplies.status, "unread")));
+  const conds = [eq(threadReplies.accountId, accountId), eq(threadReplies.status, "unread")];
+  if (excludeUsername) {
+    conds.push(or(isNull(threadReplies.username), ne(threadReplies.username, excludeUsername))!);
+  }
+  const rows = await db.select({ c: sql<number>`count(*)` }).from(threadReplies).where(and(...conds));
   return Number(rows[0]?.c ?? 0);
 }

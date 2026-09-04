@@ -95,6 +95,8 @@ export const accounts = mysqlTable("accounts", {
   lastReplyFetchAt: timestamp("lastReplyFetchAt"),
   /** 受信箱: 直近の返信取得で対処が必要だった失敗の種別。成功で null */
   lastReplyFetchError: varchar("lastReplyFetchError", { length: 32 }),
+  /** 受信箱: このアカウント自身のThreads上のユーザー名（@なし）。自分自身の返信（スレッドの続き）を一覧から除くために使う */
+  threadsUsername: varchar("threadsUsername", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

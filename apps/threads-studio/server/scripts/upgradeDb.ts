@@ -417,6 +417,9 @@ async function main() {
   // ── 受信箱（Threadsの返信管理） ────────────────────────────────────────────
   await addColumn("accounts", "lastReplyFetchAt", "`lastReplyFetchAt` timestamp NULL");
   await addColumn("accounts", "lastReplyFetchError", "`lastReplyFetchError` varchar(32) NULL");
+  // 自分自身の返信（スレッドの続き）を受信箱から除くために必要。未設定の既存アカウントは
+  // 次回の返信取得時に自動で埋まる（server/replies.ts fetchRepliesForAccount 参照）
+  await addColumn("accounts", "threadsUsername", "`threadsUsername` varchar(64) NULL");
 
   await createTable("thread_replies", `
     CREATE TABLE \`thread_replies\` (

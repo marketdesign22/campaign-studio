@@ -280,6 +280,13 @@ describe("受信箱（Threadsの返信管理）", () => {
     scopedTo(2);
   });
 
+  it("自分自身の返信の除外もアカウントの絞り込みを崩さない", async () => {
+    const { listThreadReplies } = await import("./db");
+    await listThreadReplies(2, { excludeUsername: "creaw.usa" });
+    scopedTo(2);
+    expect(lastQuery().params).toContain("creaw.usa");
+  });
+
   it("個別の返信の取得・状態変更は id と accountId の両方で絞る", async () => {
     const { getOwnedThreadReply, setThreadReplyStatus, markThreadReplyReplied } = await import("./db");
     await getOwnedThreadReply(9, 2);

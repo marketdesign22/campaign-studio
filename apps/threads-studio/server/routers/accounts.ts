@@ -126,6 +126,8 @@ export const accountsRouter = router({
         threadsUserId: profile.id,
         tokenRefreshedAt: new Date(),
         tokenExpiresAt: null,
+        // username が取れた時だけ更新する（失敗時に既存の値を消さないため）
+        ...(profile.username ? { threadsUsername: profile.username } : {}),
       });
       return { ok: true, threadsUserId: profile.id };
     }),

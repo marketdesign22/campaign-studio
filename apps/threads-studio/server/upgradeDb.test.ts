@@ -113,6 +113,7 @@ describe("db:upgrade", () => {
     expect(tables.has("thread_replies")).toBe(true);
     expect(tables.get("accounts")!.columns.has("lastReplyFetchAt")).toBe(true);
     expect(tables.get("accounts")!.columns.has("lastReplyFetchError")).toBe(true);
+    expect(tables.get("accounts")!.columns.has("threadsUsername")).toBe(true);
     expect(tables.get("thread_replies")!.indexes.has("uniq_thread_reply")).toBe(true);
     expect(tables.get("thread_replies")!.indexes.has("idx_thread_replies_account_status")).toBe(true);
     expect(tables.get("thread_replies")!.indexes.has("idx_thread_replies_account_posted")).toBe(true);
