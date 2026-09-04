@@ -5,6 +5,9 @@
  */
 
 const THREADS_API_BASE = "https://graph.threads.net/v1.0";
+const THREADS_API_ORIGIN = new URL(THREADS_API_BASE).origin;
+const KEYWORD_SEARCH_TIMEOUT_MS = 12_000;
+const KEYWORD_SEARCH_MAX_PAGES = 3;
 
 
 /**
@@ -297,16 +300,48 @@ export async function searchThreadsKeyword(
   );
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("access_token", accessToken);
-  const res = await fetch(url.toString());
-  if (!res.ok) {
-    // 本文は分類に使うだけなので先頭だけ持つ（ログや画面にはこのメッセージを出さない）
-    const body = (await res.text()).slice(0, 300);
-    throw new Error(`Threads keyword search failed (${res.status}): ${body}`);
+  const output: ThreadsSearchResult[] = [];
+  const seen = new Set<string>();
+  let next: string | null = url.toString();
+
+  for (let page = 0; next && page < KEYWORD_SEARCH_MAX_PAGES; page++) {
+    const pageUrl = new URL(next);
+    // Metaの応答に含まれる paging.next を追う際に、トークンを別ホストへ送らない。
+    if (pageUrl.origin !== THREADS_API_ORIGIN || !pageUrl.pathname.startsWith("/v1.0/")) {
+      throw new Error("Threads keyword search invalid response: unsafe paging URL");
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), KEYWORD_SEARCH_TIMEOUT_MS);
+    let res: Response;
+    try {
+      res = await fetch(pageUrl.toString(), { signal: controller.signal });
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error("Threads keyword search timed out");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
+    if (!res.ok) {
+      const body = (await res.text()).slice(0, 500);
+      throw new Error(`Threads keyword search failed (${res.status}): ${body}`);
+    }
+    const data: unknown = await res.json();
+    if (!data || typeof data !== "object" || !Array.isArray((data as { data?: unknown }).data)) {
+      throw new Error("Threads keyword search invalid response: data is not an array");
+    }
+    for (const raw of (data as { data: Record<string, unknown>[] }).data) {
+      const item = normalizeSearchItem(raw);
+      if (item && !seen.has(item.id)) {
+        seen.add(item.id);
+        output.push(item);
+      }
+    }
+    const candidate = (data as { paging?: { next?: unknown } }).paging?.next;
+    next = typeof candidate === "string" && candidate.length > 0 ? candidate : null;
   }
-  const data = (await res.json()) as { data?: Record<string, unknown>[] };
-  return (data.data ?? [])
-    .map(normalizeSearchItem)
-    .filter((x): x is ThreadsSearchResult => x !== null);
+  return output;
 }
 
 /**

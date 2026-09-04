@@ -22,11 +22,14 @@ vi.mock("./db", () => ({
   updateAccount: vi.fn(),
   getSettings: vi.fn(),
   upsertSettings: vi.fn(),
+  getTrendSettings: vi.fn(),
+  recordFollowerSnapshot: vi.fn(),
 }));
 vi.mock("./threadsApi", () => ({
   publishTextPost: vi.fn(),
   fetchPostInsights: vi.fn(),
   refreshLongLivedToken: vi.fn(),
+  fetchFollowerCount: vi.fn(),
 }));
 vi.mock("./_core/notification", () => ({ notifyOwner: vi.fn() }));
 vi.mock("./trends", () => ({
@@ -79,6 +82,7 @@ beforeEach(() => {
   vi.mocked(db.hasSlotLogInRange).mockResolvedValue(false);
   vi.mocked(db.getNextPendingPost).mockResolvedValue(undefined);
   vi.mocked(db.getSettings).mockResolvedValue({ lastMaintenanceDate: "2026-09-01" } as never);
+  vi.mocked(db.getTrendSettings).mockResolvedValue({ autoFetch: false, keywords: [] } as never);
 });
 
 describe("runSlotForAccount", () => {

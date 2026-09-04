@@ -9,6 +9,25 @@ import { accountHeaders } from "./lib/accountStore";
 import { startLogin } from "./const";
 import "./index.css";
 
+function installAnalytics() {
+  const endpoint = import.meta.env.VITE_ANALYTICS_ENDPOINT?.trim();
+  const websiteId = import.meta.env.VITE_ANALYTICS_WEBSITE_ID?.trim();
+  if (!endpoint || !websiteId) return;
+  try {
+    const url = new URL("umami", endpoint.endsWith("/") ? endpoint : `${endpoint}/`);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return;
+    const script = document.createElement("script");
+    script.defer = true;
+    script.src = url.toString();
+    script.dataset.websiteId = websiteId;
+    document.head.appendChild(script);
+  } catch {
+    console.warn("[analytics] VITE_ANALYTICS_ENDPOINT is not a valid URL");
+  }
+}
+
+installAnalytics();
+
 const queryClient = new QueryClient();
 
 const redirectToLoginIfUnauthorized = (error: unknown) => {

@@ -53,6 +53,13 @@ function ctx(accountId = 1, role: "admin" | "user" = "admin") {
 function llmReply(content: string) {
   return { id: "m", model: "gpt", choices: [{ index: 0, message: { role: "assistant", content }, finish_reason: "stop" }] };
 }
+function trendDrafts(first = "案1") {
+  return JSON.stringify({ drafts: [
+    { content: first, angle: "体験談" },
+    { content: "案2", angle: "事実" },
+    { content: "案3", angle: "問いかけ" },
+  ] });
+}
 const SETTINGS = {
   keywords: ["留学"], excludeKeywords: ["詐欺"], refAccounts: [], language: "ja", region: "JP", industry: "教育",
   fetchTimes: [{ hour: 9, minute: 0 }, { hour: 18, minute: 0 }], autoFetch: true, retentionDays: 30, aiDailyLimit: 20,
@@ -118,7 +125,7 @@ describe("トレンド反映の原稿生成 (ai.generateDrafts)", () => {
 
   it("プロンプトに過去投稿は8件まで、禁止表現・傾向・複製禁止を含み、Secretは含まない", async () => {
     const l = await import("./_core/llm");
-    vi.mocked(l.invokeLLM).mockResolvedValue(llmReply(JSON.stringify({ drafts: [{ content: "案" }] })) as never);
+    vi.mocked(l.invokeLLM).mockResolvedValue(llmReply(trendDrafts("案")) as never);
     const { aiRouter } = await import("./routers/ai");
     await aiRouter.createCaller(ctx(1)).generateDrafts({ topic: "留学準備", trend: { analysisId: 5 } });
     const sent = JSON.stringify(vi.mocked(l.invokeLLM).mock.calls[0][0]);
@@ -141,10 +148,20 @@ describe("トレンド反映の原稿生成 (ai.generateDrafts)", () => {
 
   it("500文字を超える案は切り詰める", async () => {
     const l = await import("./_core/llm");
-    vi.mocked(l.invokeLLM).mockResolvedValue(llmReply(JSON.stringify({ drafts: [{ content: "あ".repeat(700) }] })) as never);
+    vi.mocked(l.invokeLLM).mockResolvedValue(llmReply(trendDrafts("あ".repeat(700))) as never);
     const { aiRouter } = await import("./routers/ai");
     const r = await aiRouter.createCaller(ctx(1)).generateDrafts({ topic: "x", trend: { analysisId: 5 } });
     expect(Array.from(r.variants[0].content).length).toBe(500);
+  });
+
+  it("トレンド生成は3案未満や重複案を成功扱いしない", async () => {
+    const l = await import("./_core/llm");
+    vi.mocked(l.invokeLLM).mockResolvedValue(llmReply(JSON.stringify({
+      drafts: [{ content: "同じ", angle: "同じ" }, { content: "同じ", angle: "同じ" }],
+    })) as never);
+    const { aiRouter } = await import("./routers/ai");
+    await expect(aiRouter.createCaller(ctx(1)).generateDrafts({ topic: "x", trend: { analysisId: 5 } }))
+      .rejects.toThrow(/AI処理に失敗/);
   });
 });
 

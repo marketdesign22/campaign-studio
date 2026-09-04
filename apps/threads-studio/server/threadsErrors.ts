@@ -11,7 +11,7 @@ export function classifyThreadsError(message: string): ThreadsErrorKind {
   if (/\(429\)/.test(m) || m.includes("rate limit") || m.includes("too many") || m.includes("\"code\":4,") || m.includes("\"code\":17,")) return "rate_limited";
   if (m.includes("threads_keyword_search") || m.includes("threads_manage_replies") || m.includes("threads_read_replies") || m.includes("permission") || m.includes("subcode\":10") || /\(403\)/.test(m)) return "permission";
   if (/\(401\)/.test(m) || m.includes("oauthexception") || m.includes("expired") || m.includes("\"code\":190")) return "auth";
-  if (m.includes("fetch failed") || m.includes("network") || m.includes("etimedout") || m.includes("econnreset") || /\(5\d{2}\)/.test(m)) return "network";
+  if (m.includes("fetch failed") || m.includes("network") || m.includes("timed out") || m.includes("etimedout") || m.includes("econnreset") || /\(5\d{2}\)/.test(m)) return "network";
   return "unknown";
 }
 

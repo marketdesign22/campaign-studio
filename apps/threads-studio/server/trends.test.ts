@@ -38,8 +38,9 @@ import * as db from "./db";
 import * as api from "./threadsApi";
 import * as llm from "./_core/llm";
 import {
-  _test, analyzeTrends, classifyThreadsError, COLLECTORS, dueFetchKey, fetchTrendsForAccount,
-  parseTrendAnalysis, periodSince, runTrendFetchIfDue, shouldSkip, worstError,
+  analyzeTrends, classifyThreadsError, COLLECTORS, dueFetchKey, fetchTrendsForAccount,
+  isMeaningfulTrendAnalysis, parseTrendAnalysis, periodSince, runTrendFetchIfDue, shouldSkip, _test,
+  worstError
 } from "./trends";
 import { DEFAULT_TREND_SETTINGS } from "./dbDefaults.test-helper";
 
@@ -94,6 +95,7 @@ describe("classifyThreadsError", () => {
     expect(classifyThreadsError("Threads API error (429): rate limit")).toBe("rate_limited");
     expect(classifyThreadsError("fetch failed")).toBe("network");
     expect(classifyThreadsError("Threads API error (503)")).toBe("network");
+    expect(classifyThreadsError("Threads keyword search timed out")).toBe("network");
     expect(classifyThreadsError("weird")).toBe("unknown");
   });
   it("Meta のエラーコードでも判定できる", () => {
@@ -293,6 +295,10 @@ describe("parseTrendAnalysis", () => {
   it("コードブロック付きでも読める", () => {
     expect(parseTrendAnalysis('```json\n{"tone":"丁寧"}\n```').tone).toBe("丁寧");
   });
+  it("空のAI応答は使用可能な分析とみなさない", () => {
+    expect(isMeaningfulTrendAnalysis(parseTrendAnalysis("{}"))).toBe(false);
+    expect(isMeaningfulTrendAnalysis(parseTrendAnalysis('{"themes":["準備"]}'))).toBe(true);
+  });
 });
 
 describe("periodSince", () => {
@@ -343,5 +349,12 @@ describe("analyzeTrends", () => {
     expect(db.setTrendPostAi).toHaveBeenCalledTimes(1);
     expect(db.setTrendPostAi).toHaveBeenCalledWith(11, 1, "r", ["i"]);
     expect(db.createTrendAnalysis).toHaveBeenCalledWith(1, "7d", expect.objectContaining({ themes: ["準備"] }), 2);
+  });
+
+  it("使える項目のないAI応答をDBに保存しない", async () => {
+    vi.mocked(db.countTrendAnalysesToday).mockResolvedValue(0);
+    vi.mocked(llm.invokeLLM).mockResolvedValue({ choices: [{ message: { content: "{}" } }] } as never);
+    await expect(analyzeTrends(SCSU, "7d", NOW)).rejects.toThrow(/invalid AI response/);
+    expect(db.createTrendAnalysis).not.toHaveBeenCalled();
   });
 });

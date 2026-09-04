@@ -210,7 +210,15 @@ export const aiRouter = router({
               })
               .filter((v): v is NonNullable<typeof v> => v !== null && v.content.trim().length > 0)
           : [];
-        if (variants.length === 0) throw new Error("empty drafts");
+        if (input.trend) {
+          const uniqueContents = new Set(variants.map((v) => v.content.trim()));
+          const uniqueAngles = new Set(variants.map((v) => v.angle?.trim()).filter(Boolean));
+          if (variants.length !== 3 || uniqueContents.size !== 3 || uniqueAngles.size !== 3) {
+            throw new Error("invalid trend drafts: exactly three distinct variants are required");
+          }
+        } else if (variants.length === 0) {
+          throw new Error("empty drafts");
+        }
         return {
           drafts: variants.map((v) => v.content),
           variants,
