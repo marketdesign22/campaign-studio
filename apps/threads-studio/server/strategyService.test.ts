@@ -4,7 +4,7 @@ vi.mock("./_core/llm", () => ({ invokeLLM: vi.fn() }));
 vi.mock("./db", () => ({
   createContentStrategy: vi.fn(), createWeeklyReview: vi.fn(), getAccountSettings: vi.fn(), getClientProfile: vi.fn(),
   getLatestTrendAnalysis: vi.fn(), getWeeklyReviewForStrategy: vi.fn(), listAccounts: vi.fn(), listContentStrategies: vi.fn(),
-  listPostOutcomes: vi.fn(), listPosts: vi.fn(),
+  listFollowerSnapshots: vi.fn(), listPostOutcomes: vi.fn(), listPosts: vi.fn(),
 }));
 vi.mock("./_core/env", () => ({ ENV: { openaiApiKey: "test-key" } }));
 
@@ -20,6 +20,7 @@ beforeEach(() => {
   vi.mocked(db.getAccountSettings).mockResolvedValue({ weeklyPostCount: 7, defaultCta: null, purposeRatios: null } as never);
   vi.mocked(db.getClientProfile).mockResolvedValue(undefined); vi.mocked(db.getLatestTrendAnalysis).mockResolvedValue(undefined);
   vi.mocked(db.listPosts).mockResolvedValue([]); vi.mocked(db.listPostOutcomes).mockResolvedValue([]);
+  vi.mocked(db.listFollowerSnapshots).mockResolvedValue([]);
   vi.mocked(db.listAccounts).mockResolvedValue([]); vi.mocked(db.listContentStrategies).mockResolvedValue([]); vi.mocked(db.getWeeklyReviewForStrategy).mockResolvedValue(undefined);
   vi.mocked(db.createContentStrategy).mockResolvedValue(42);
 });
@@ -45,6 +46,18 @@ describe("週間戦略サービス", () => {
     vi.mocked(db.getWeeklyReviewForStrategy).mockResolvedValue({ id: 9, result: JSON.stringify(review) } as never);
     const result = await reviewAccountStrategy(7, { accountId: 7, includeLegacy: false }, { id: 5, startDate: "2026-09-04" } as never);
     expect(result.duplicate).toBe(true); expect(invokeLLM).not.toHaveBeenCalled(); expect(db.createWeeklyReview).not.toHaveBeenCalled();
+  });
+
+  it("振り返りへ戦略項目の成果とフォロワー増減を渡す", async () => {
+    const review = { summary: "振り返り", topPost: "#1", lowPost: null, continueThemes: ["教育"], stopThemes: [], nextHypotheses: ["CTAを試す"], confidence: 0.6, sampleWarning: null };
+    vi.mocked(db.listPostOutcomes).mockResolvedValue([{ postedAt: new Date("2026-09-05T00:00:00Z"), strategyItemId: 88, postId: 1, content: "投稿" }] as never);
+    vi.mocked(db.listFollowerSnapshots).mockResolvedValue([{ capturedDate: "2026-09-04", followerCount: 100 }, { capturedDate: "2026-09-10", followerCount: 108 }] as never);
+    vi.mocked(db.createWeeklyReview).mockResolvedValue(12);
+    vi.mocked(invokeLLM).mockResolvedValue({ id: "x", model: "test", choices: [{ index: 0, finish_reason: null, message: { role: "assistant", content: JSON.stringify(review) } }] });
+    const result = await reviewAccountStrategy(7, { accountId: 7, includeLegacy: false }, { id: 5, startDate: "2026-09-04", items: [{ id: 88, purpose: "education", theme: "教育" }] } as never);
+    expect(result.duplicate).toBe(false); expect(db.createWeeklyReview).toHaveBeenCalledWith(7, 5, review, 1);
+    const prompt = vi.mocked(invokeLLM).mock.calls[0][0].messages[1].content;
+    expect(prompt).toContain('"strategyItemId":88'); expect(prompt).toContain('"followerChange":8');
   });
 
   it("自動作成ONで当週の戦略がない場合だけ下書き戦略を作る", async () => {

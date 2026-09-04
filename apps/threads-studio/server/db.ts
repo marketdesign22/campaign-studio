@@ -1239,7 +1239,7 @@ export async function listPostOutcomes(scope: AccountScope, since: Date) {
   const byLog = await analyticsByLogId(logs.map((l) => l.id));
   const postIds = logs.map((l) => l.postId).filter((id): id is number => id !== null);
   const postRows = postIds.length
-    ? await db.select({ id: posts.id, trendAnalysisId: posts.trendAnalysisId, trendMeta: posts.trendMeta, creationSource: posts.creationSource })
+    ? await db.select({ id: posts.id, trendAnalysisId: posts.trendAnalysisId, trendMeta: posts.trendMeta, creationSource: posts.creationSource, strategyItemId: posts.strategyItemId })
         .from(posts).where(inArray(posts.id, postIds))
     : [];
   const postById = new Map(postRows.map((p) => [p.id, p]));
@@ -1252,6 +1252,7 @@ export async function listPostOutcomes(scope: AccountScope, since: Date) {
       usedTrend: !!p?.trendAnalysisId,
       trendMeta: p?.trendMeta ?? null,
       creationSource: p?.creationSource ?? "manual",
+      strategyItemId: p?.strategyItemId ?? null,
       likes, replies, reposts, views,
       /** 分析値が1件も無い投稿は「未取得」として率を出さない */
       hasAnalytics: !!a,
