@@ -425,11 +425,16 @@ const en: Record<string, string> = {
   "件を取得しました": " posts fetched",
   "件のキーワードで失敗": " keyword(s) failed",
   "傾向を分析しました": "Analysis complete",
-  "認証エラー（再接続が必要）": "Auth error (reconnect required)",
-  "権限不足（threads_keyword_search）": "Missing permission (threads_keyword_search)",
-  "レート制限": "Rate limited",
-  "通信エラー": "Network error",
-  "不明なエラー": "Unknown error",
+  "前回の取得に失敗しました": "The last fetch failed",
+  "設定画面で再接続する": "Reconnect in Settings",
+  "Threads の認証が切れています。設定画面の「アカウントを追加」から同じ表示名で連携リンクを発行し、このアカウントで再接続してください。":
+    "Threads authorization has expired. In Settings, use \"Add account\" with the same display name to issue a connect link and reconnect this account.",
+  "検索の権限（threads_keyword_search）がありません。設定画面の「アカウントを追加」から同じ表示名で連携リンクを発行し、このアカウントで再接続すると付与されます。":
+    "The search permission (threads_keyword_search) is missing. In Settings, use \"Add account\" with the same display name to issue a connect link and reconnect this account to grant it.",
+  "Threads の検索回数の上限に達しました。次回の自動取得（15分後以降）で再試行します。キーワード数や取得回数を減らすと発生しにくくなります。":
+    "Threads search limit reached. It will retry on the next automatic fetch (15+ minutes). Fewer keywords or fetch runs make this less likely.",
+  "Threads に接続できませんでした。しばらくしてからもう一度お試しください。": "Could not reach Threads. Please try again shortly.",
+  "取得に失敗しました。時間をおいて再度お試しください。続く場合は担当者にご連絡ください。": "Fetch failed. Try again later; if it persists, contact your administrator.",
   "まだ分析がありません。「AIで分析」を実行してください。": "No analysis yet. Run \"Analyze with AI\".",
   "AI設定が必要です。収集・保存・除外はAIなしでも利用できます。": "AI is not configured. Collecting, saving and excluding work without AI.",
   "AIの分析は推測を含みます。数字・事実・固有名詞は必ず元の投稿で確認してください。他人の文章をそのまま使うことは避けてください。":

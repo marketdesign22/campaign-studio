@@ -797,6 +797,7 @@ export const DEFAULT_TREND_SETTINGS = {
   aiDailyLimit: 20,
   lastFetchKey: null as string | null,
   lastFetchAt: null as Date | null,
+  lastFetchError: null as string | null,
 };
 
 export type TrendSettingsValues = typeof DEFAULT_TREND_SETTINGS;
@@ -845,6 +846,7 @@ export async function getTrendSettings(accountId: number): Promise<TrendSettings
     aiDailyLimit: r.aiDailyLimit,
     lastFetchKey: r.lastFetchKey,
     lastFetchAt: r.lastFetchAt,
+    lastFetchError: r.lastFetchError ?? null,
   };
 }
 
@@ -855,7 +857,7 @@ export async function upsertTrendSettings(
     language: string; region: string; industry: string | null;
     fetchTimes: { hour: number; minute: number }[]; autoFetch: boolean;
     retentionDays: number; aiDailyLimit: number;
-    lastFetchKey: string | null; lastFetchAt: Date | null;
+    lastFetchKey: string | null; lastFetchAt: Date | null; lastFetchError: string | null;
   }>
 ) {
   const db = await getDb();
@@ -873,6 +875,7 @@ export async function upsertTrendSettings(
   if (data.aiDailyLimit !== undefined) set.aiDailyLimit = data.aiDailyLimit;
   if (data.lastFetchKey !== undefined) set.lastFetchKey = data.lastFetchKey;
   if (data.lastFetchAt !== undefined) set.lastFetchAt = data.lastFetchAt;
+  if (data.lastFetchError !== undefined) set.lastFetchError = data.lastFetchError;
 
   const rows = await db.select({ id: trendSettings.id }).from(trendSettings)
     .where(eq(trendSettings.accountId, accountId)).limit(1);

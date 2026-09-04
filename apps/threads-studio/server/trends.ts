@@ -5,6 +5,7 @@
  * - 同じ投稿は (accountId, platform, externalId) で1件に畳む
  * - 反応数が取れない投稿は null のまま保存し、スコアは取れた指標だけで正規化する
  * - 本文は要約（先頭140文字）しか持たない。全文転載も、AIへの全文投入もしない
+ * - ログにはトークン・本文・APIの生レスポンスを出さず、失敗の種別だけ残す
  */
 import type { Account } from "../drizzle/schema";
 import {
@@ -22,20 +23,49 @@ import { parseJsonLoose } from "./aiSupport";
 
 /** 1回の取得で使うキーワード数の上限。2種類の検索 × 1日2回でも 2,200/日 の制限に対して十分余裕がある */
 export const MAX_KEYWORDS_PER_FETCH = 20;
-/** 取得失敗の再試行回数（ネットワーク・5xxのみ） */
+/** 取得失敗の再試行回数（ネットワーク・5xx・レート制限のみ） */
 const RETRIES = 1;
+/** 再試行までの待ち時間。テストから差し替えられるようにしておく */
+export const RETRY_DELAY_MS: Record<"network" | "rate_limited", number> = { network: 1000, rate_limited: 5000 };
+export const _test = { sleep: (ms: number) => new Promise<void>((r) => setTimeout(r, ms)) };
 
 export type TrendErrorKind = "auth" | "permission" | "rate_limited" | "network" | "unknown";
+export type TrendPlatform = "threads" | "instagram";
 
 /** Threads API の失敗を画面に出せる粒度へ丸める。生の本文は返さない */
 export function classifyThreadsError(message: string): TrendErrorKind {
   const m = message.toLowerCase();
-  if (/\(429\)/.test(m) || m.includes("rate limit") || m.includes("too many")) return "rate_limited";
+  if (/\(429\)/.test(m) || m.includes("rate limit") || m.includes("too many") || m.includes("\"code\":4,") || m.includes("\"code\":17,")) return "rate_limited";
   if (m.includes("threads_keyword_search") || m.includes("permission") || m.includes("subcode\":10") || /\(403\)/.test(m)) return "permission";
-  if (/\(401\)/.test(m) || m.includes("oauthexception") || m.includes("expired")) return "auth";
-  if (m.includes("fetch failed") || m.includes("network") || m.includes("etimedout") || /\(5\d{2}\)/.test(m)) return "network";
+  if (/\(401\)/.test(m) || m.includes("oauthexception") || m.includes("expired") || m.includes("\"code\":190")) return "auth";
+  if (m.includes("fetch failed") || m.includes("network") || m.includes("etimedout") || m.includes("econnreset") || /\(5\d{2}\)/.test(m)) return "network";
   return "unknown";
 }
+
+/** 複数の失敗から、利用者が対処すべきものを1つ選ぶ（深刻な順） */
+const SEVERITY: TrendErrorKind[] = ["auth", "permission", "rate_limited", "network", "unknown"];
+export function worstError(kinds: TrendErrorKind[]): TrendErrorKind | null {
+  for (const k of SEVERITY) if (kinds.includes(k)) return k;
+  return null;
+}
+
+/**
+ * プラットフォームごとの収集口。
+ * Threads は公式 keyword_search。Instagram は公式 Graph API の連携がこのアプリに無いため
+ * 未接続（null）で、手動URL登録だけを提供する。接続する場合はここに collector を足す。
+ */
+export type TrendCollector = {
+  platform: TrendPlatform;
+  search(account: Account, keyword: string, type: "TOP" | "RECENT"): Promise<ThreadsSearchResult[]>;
+};
+const threadsCollector: TrendCollector = {
+  platform: "threads",
+  search: (account, keyword, type) => searchThreadsKeyword(account.threadsAccessToken, keyword, type),
+};
+export const COLLECTORS: Record<TrendPlatform, TrendCollector | null> = {
+  threads: threadsCollector,
+  instagram: null,
+};
 
 /**
  * 自動取得の枠キー。取得時刻を過ぎた最新の枠を "YYYY-MM-DD/idx" で返す。
@@ -59,6 +89,11 @@ export function shouldSkip(item: ThreadsSearchResult, excludeKeywords: string[])
   return excludeKeywords.some((k) => k && lower.includes(k.toLowerCase()));
 }
 
+function kindOf(e: unknown): TrendErrorKind {
+  return classifyThreadsError(e instanceof Error ? e.message : String(e));
+}
+
+/** 通信エラーとレート制限だけ、間を空けて1回再試行する。認証・権限は再試行しても無駄 */
 async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
   let last: unknown;
   for (let attempt = 0; attempt <= RETRIES; attempt++) {
@@ -66,10 +101,9 @@ async function withRetry<T>(fn: () => Promise<T>): Promise<T> {
       return await fn();
     } catch (e) {
       last = e;
-      const kind = classifyThreadsError(e instanceof Error ? e.message : String(e));
-      // 認証・権限・レート制限は再試行しても無駄
-      if (kind !== "network") break;
-      await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+      const kind = kindOf(e);
+      if (kind !== "network" && kind !== "rate_limited") break;
+      if (attempt < RETRIES) await _test.sleep(RETRY_DELAY_MS[kind] * (attempt + 1));
     }
   }
   throw last;
@@ -86,6 +120,7 @@ export type FetchResult = {
 /**
  * 1アカウント分の収集。キーワードごとに TOP と RECENT を引き、
  * 重複を畳んでスコアを付けて保存する。既存データは失敗しても消さない。
+ * 最後に失敗の種別（対処が必要なもの）を設定行に記録し、画面で案内できるようにする。
  */
 export async function fetchTrendsForAccount(
   account: Account,
@@ -102,62 +137,72 @@ export async function fetchTrendsForAccount(
   const own = (await listPostLogs(30, scope)).filter((l) => l.status === "posted").map((l) => l.content);
 
   const dayMs = 86_400_000;
+  const collectors = (Object.values(COLLECTORS) as (TrendCollector | null)[]).filter((c): c is TrendCollector => c !== null);
+
+  outer:
   for (const keyword of keywords) {
-    const seen = new Map<string, ThreadsSearchResult>();
-    let failed: TrendErrorKind | null = null;
-    for (const type of ["TOP", "RECENT"] as const) {
-      try {
-        const items = await withRetry(() => searchThreadsKeyword(account.threadsAccessToken, keyword, type));
-        for (const it of items) if (!seen.has(it.id)) seen.set(it.id, it);
-      } catch (e) {
-        failed = classifyThreadsError(e instanceof Error ? e.message : String(e));
-        // 本文にトークンやレスポンス全文を残さない。種別だけ記録する
-        console.warn(`[trends] keyword search failed (account ${account.id}, ${type}): ${failed}`);
-        break;
+    for (const collector of collectors) {
+      const seen = new Map<string, ThreadsSearchResult>();
+      let failed: TrendErrorKind | null = null;
+      for (const type of ["TOP", "RECENT"] as const) {
+        try {
+          const items = await withRetry(() => collector.search(account, keyword, type));
+          for (const it of items) if (!seen.has(it.id)) seen.set(it.id, it);
+        } catch (e) {
+          failed = kindOf(e);
+          // トークン・レスポンス本文はログに残さない。種別だけ記録する
+          console.warn(`[trends] keyword search failed (account ${account.id}, ${collector.platform} ${type}): ${failed}`);
+          break;
+        }
       }
-    }
-    if (failed) {
-      result.errors.push({ keyword, kind: failed });
-      if (failed === "auth" || failed === "permission" || failed === "rate_limited") break; // 以降のキーワードも同じ結果になる
-      continue;
-    }
+      if (failed) {
+        result.errors.push({ keyword, kind: failed });
+        // 認証・権限・レート制限は以降のキーワードも同じ結果になるので打ち切る
+        if (failed === "auth" || failed === "permission" || failed === "rate_limited") break outer;
+        continue;
+      }
 
-    // キーワード出現の伸び: 直近24h ÷ その前24h（前日分が無ければ null）
-    const recent = await countTrendPostsForKeyword(account.id, keyword, new Date(now.getTime() - dayMs), now);
-    const prior = await countTrendPostsForKeyword(account.id, keyword, new Date(now.getTime() - 2 * dayMs), new Date(now.getTime() - dayMs));
-    const growth = prior > 0 ? recent / prior : null;
+      // キーワード出現の伸び: 直近24h ÷ その前24h（前日分が無ければ null）
+      const recent = await countTrendPostsForKeyword(account.id, keyword, new Date(now.getTime() - dayMs), now);
+      const prior = await countTrendPostsForKeyword(account.id, keyword, new Date(now.getTime() - 2 * dayMs), new Date(now.getTime() - dayMs));
+      const growth = prior > 0 ? recent / prior : null;
 
-    for (const it of Array.from(seen.values())) {
-      result.fetched++;
-      if (shouldSkip(it, cfg.excludeKeywords)) continue;
-      const summary = summarize(it.text ?? "");
-      const scored = computeTrendScore({
-        postedAt: it.timestamp, now,
-        likes: null, replies: null, reposts: null, views: null, saves: null, // keyword_search では取れない
-        hasReplies: it.hasReplies,
-        keywordGrowth: growth,
-        themeFit: themeFitScore(summary, own),
-      });
-      await upsertTrendPost({
-        accountId: account.id, platform: "threads", source: "keyword", keyword,
-        externalId: it.id, permalink: it.permalink, username: it.username, postedAt: it.timestamp,
-        mediaType: it.mediaType, summary, hasReplies: it.hasReplies,
-        likes: null, replies: null, reposts: null, views: null, saves: null,
-        score: scored.score, scoreBreakdown: JSON.stringify(scored.breakdown), isRising: scored.isRising,
-      });
-      result.stored++;
+      for (const it of Array.from(seen.values())) {
+        result.fetched++;
+        if (shouldSkip(it, cfg.excludeKeywords)) continue;
+        const summary = summarize(it.text ?? "");
+        const scored = computeTrendScore({
+          postedAt: it.timestamp, now,
+          likes: null, replies: null, reposts: null, views: null, saves: null, // keyword_search では取れない
+          hasReplies: it.hasReplies,
+          keywordGrowth: growth,
+          themeFit: themeFitScore(summary, own),
+        });
+        await upsertTrendPost({
+          accountId: account.id, platform: collector.platform, source: "keyword", keyword,
+          externalId: it.id, permalink: it.permalink, username: it.username, postedAt: it.timestamp,
+          mediaType: it.mediaType, summary, hasReplies: it.hasReplies,
+          likes: null, replies: null, reposts: null, views: null, saves: null,
+          score: scored.score, scoreBreakdown: JSON.stringify(scored.breakdown), isRising: scored.isRising,
+        });
+        result.stored++;
+      }
     }
   }
 
   // 保存期間を過ぎたものを片付ける（利用者が保存したものは残る）
   await pruneTrendPosts(account.id, cfg.retentionDays);
-  await upsertTrendSettings(account.id, { lastFetchAt: now });
+  await upsertTrendSettings(account.id, {
+    lastFetchAt: now,
+    lastFetchError: worstError(result.errors.map((e) => e.kind)),
+  });
   return result;
 }
 
 /**
  * スケジューラから呼ぶ。設定した取得時刻を過ぎていて、その枠をまだ取っていない
  * アカウントだけ収集する。
+ * レート制限で何も取れなかった場合はロックを戻し、次回の tick（15分後）で再試行する。
  */
 export async function runTrendFetchIfDue(
   accounts: Account[],
@@ -173,10 +218,14 @@ export async function runTrendFetchIfDue(
       if (!key || key === cfg.lastFetchKey) continue;
       // 先にロックを取り、同じ枠で二重に走らないようにする
       await upsertTrendSettings(account.id, { lastFetchKey: key });
-      out.push(await fetchTrendsForAccount(account, scopeOf(account), now, cfg));
+      const r = await fetchTrendsForAccount(account, scopeOf(account), now, cfg);
+      out.push(r);
+      if (r.stored === 0 && r.errors.some((e) => e.kind === "rate_limited")) {
+        await upsertTrendSettings(account.id, { lastFetchKey: cfg.lastFetchKey });
+      }
     } catch (e) {
-      // 1アカウントの失敗で他を止めない
-      console.warn(`[trends] fetch failed for account ${account.id}:`, e instanceof Error ? e.message.slice(0, 120) : e);
+      // 1アカウントの失敗で他を止めない。内容は種別と例外名だけ残す
+      console.warn(`[trends] fetch failed for account ${account.id}: ${kindOf(e)} (${e instanceof Error ? e.name : "error"})`);
     }
   }
   return out;

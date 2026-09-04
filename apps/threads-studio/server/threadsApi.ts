@@ -271,7 +271,9 @@ export async function searchThreadsKeyword(
   url.searchParams.set("access_token", accessToken);
   const res = await fetch(url.toString());
   if (!res.ok) {
-    throw new Error(`Threads keyword search failed (${res.status}): ${await res.text()}`);
+    // 本文は分類に使うだけなので先頭だけ持つ（ログや画面にはこのメッセージを出さない）
+    const body = (await res.text()).slice(0, 300);
+    throw new Error(`Threads keyword search failed (${res.status}): ${body}`);
   }
   const data = (await res.json()) as { data?: Record<string, unknown>[] };
   return (data.data ?? [])

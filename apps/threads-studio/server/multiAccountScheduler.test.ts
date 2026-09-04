@@ -29,9 +29,14 @@ vi.mock("./threadsApi", () => ({
   refreshLongLivedToken: vi.fn(),
 }));
 vi.mock("./_core/notification", () => ({ notifyOwner: vi.fn() }));
+vi.mock("./trends", () => ({
+  runTrendFetchIfDue: vi.fn(),
+  markDeletedSavedPosts: vi.fn(),
+}));
 
 import * as db from "./db";
 import * as threadsApi from "./threadsApi";
+import * as trends from "./trends";
 import { fetchAnalyticsForRecentPosts, runSlotForAccount, runTick } from "./scheduler";
 import { scopeOf } from "./accountScope";
 
@@ -235,5 +240,52 @@ describe("分析データの取得", () => {
     });
     await fetchAnalyticsForRecentPosts();
     expect(threadsApi.fetchPostInsights).toHaveBeenCalledWith("token-for-SCSU.Japan", "legacy-1");
+  });
+});
+
+describe("トレンド取得と投稿処理の分離", () => {
+  it("トレンド取得は投稿処理の後に、投稿対象アカウントのスコープで呼ばれる", async () => {
+    const order: string[] = [];
+    vi.mocked(db.getNextPendingPost).mockImplementation(async () => {
+      order.push("post");
+      return { id: 1, content: "hello", imageUrl: null, categoryId: null } as never;
+    });
+    vi.mocked(threadsApi.publishTextPost).mockResolvedValue({ containerId: "c", postId: "p" });
+    vi.mocked(trends.runTrendFetchIfDue).mockImplementation(async () => { order.push("trends"); return []; });
+
+    await runTick(NOW);
+
+    expect(order.indexOf("trends")).toBeGreaterThan(order.lastIndexOf("post"));
+    const [accounts, scopeFn] = vi.mocked(trends.runTrendFetchIfDue).mock.calls[0];
+    expect(accounts.map((a) => a.id)).toEqual([1, 2]);
+    expect(scopeFn(CREAW)).toEqual({ accountId: 2, includeLegacy: false });
+    expect(scopeFn(SCSU)).toEqual({ accountId: 1, includeLegacy: true });
+  });
+
+  it("トレンド取得が例外を投げても、投稿は完了し結果が返る", async () => {
+    vi.mocked(db.getNextPendingPost).mockResolvedValue({ id: 1, content: "hello", imageUrl: null, categoryId: null } as never);
+    vi.mocked(threadsApi.publishTextPost).mockResolvedValue({ containerId: "c", postId: "p" });
+    vi.mocked(trends.runTrendFetchIfDue).mockRejectedValue(new Error("Threads keyword search failed (429): rate limit"));
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const r = await runTick(NOW);
+
+    expect(r.fired.length).toBeGreaterThan(0);
+    expect(r.fired.every((f) => f.posted === "p")).toBe(true);
+    expect(db.createPostLog).toHaveBeenCalled();
+    // ログには例外名だけで、メッセージ本文（レスポンス）は出さない
+    expect(warn.mock.calls.flat().join(" ")).not.toContain("429");
+    warn.mockRestore();
+  });
+
+  it("日次の削除確認が失敗しても、トークン更新・分析取得は影響を受けない", async () => {
+    vi.mocked(db.getSettings).mockResolvedValue({ lastMaintenanceDate: "2026-08-31" } as never);
+    vi.mocked(db.listActiveAccounts).mockResolvedValue([SCSU]);
+    vi.mocked(trends.markDeletedSavedPosts).mockRejectedValue(new Error("boom"));
+    vi.mocked(trends.runTrendFetchIfDue).mockResolvedValue([]);
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    await expect(runTick(NOW)).resolves.toBeTruthy();
+    expect(db.upsertSettings).toHaveBeenCalledWith({ lastMaintenanceDate: "2026-09-01" });
   });
 });

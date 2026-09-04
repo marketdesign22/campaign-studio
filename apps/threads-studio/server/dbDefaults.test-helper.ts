@@ -15,4 +15,5 @@ export const DEFAULT_TREND_SETTINGS = {
   aiDailyLimit: 20,
   lastFetchKey: null as string | null,
   lastFetchAt: null as Date | null,
+  lastFetchError: null as string | null,
 };

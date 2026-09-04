@@ -38,8 +38,8 @@ import * as db from "./db";
 import * as api from "./threadsApi";
 import * as llm from "./_core/llm";
 import {
-  analyzeTrends, classifyThreadsError, dueFetchKey, fetchTrendsForAccount, parseTrendAnalysis,
-  periodSince, runTrendFetchIfDue, shouldSkip,
+  _test, analyzeTrends, classifyThreadsError, COLLECTORS, dueFetchKey, fetchTrendsForAccount,
+  parseTrendAnalysis, periodSince, runTrendFetchIfDue, shouldSkip, worstError,
 } from "./trends";
 import { DEFAULT_TREND_SETTINGS } from "./dbDefaults.test-helper";
 
@@ -73,8 +73,13 @@ function settings(overrides: Partial<typeof DEFAULT_TREND_SETTINGS> = {}) {
   return { ...DEFAULT_TREND_SETTINGS, keywords: ["留学"], ...overrides };
 }
 
+const sleeps: number[] = [];
 beforeEach(() => {
   vi.clearAllMocks();
+  sleeps.length = 0;
+  // 再試行の待ち時間は記録するだけで実際には待たない
+  _test.sleep = async (ms) => { sleeps.push(ms); };
+  vi.spyOn(console, "warn").mockImplementation(() => {});
   vi.mocked(db.listPostLogs).mockResolvedValue([]);
   vi.mocked(db.countTrendPostsForKeyword).mockResolvedValue(0);
   vi.mocked(db.upsertTrendPost).mockResolvedValue(undefined);
@@ -90,6 +95,21 @@ describe("classifyThreadsError", () => {
     expect(classifyThreadsError("fetch failed")).toBe("network");
     expect(classifyThreadsError("Threads API error (503)")).toBe("network");
     expect(classifyThreadsError("weird")).toBe("unknown");
+  });
+  it("Meta のエラーコードでも判定できる", () => {
+    expect(classifyThreadsError('(400): {"error":{"message":"x","type":"OAuthException","code":190}}')).toBe("auth");
+    expect(classifyThreadsError('(400): {"error":{"message":"Application request limit reached","code":4,"type":"OAuthException"}}')).toBe("rate_limited");
+  });
+  it("worstError は対処が必要な順に選ぶ", () => {
+    expect(worstError(["network", "permission", "unknown"])).toBe("permission");
+    expect(worstError([])).toBeNull();
+  });
+});
+
+describe("収集口", () => {
+  it("Threads は公式検索、Instagram は未接続（自動収集を実装したように見せない）", () => {
+    expect(COLLECTORS.threads?.platform).toBe("threads");
+    expect(COLLECTORS.instagram).toBeNull();
   });
 });
 
@@ -151,7 +171,37 @@ describe("fetchTrendsForAccount", () => {
     expect(r.errors).toEqual([{ keyword: "留学", kind: "auth" }]); // 認証失敗以降のキーワードは打ち切る
     expect(r.stored).toBe(0);
     expect(db.upsertTrendPost).not.toHaveBeenCalled();
+    expect(db.pruneTrendPosts).toHaveBeenCalledWith(1, 30); // 通常の保存期間整理だけ。失敗理由での削除はしない
     expect(JSON.stringify(r)).not.toContain("SECRET");
+    // 画面で再接続を案内できるよう、失敗種別を設定行に残す
+    expect(db.upsertTrendSettings).toHaveBeenCalledWith(1, expect.objectContaining({ lastFetchError: "auth" }));
+    // ログにもトークンや本文は出ない
+    const logged = vi.mocked(console.warn).mock.calls.flat().join(" ");
+    expect(logged).not.toContain("SECRET");
+    expect(logged).toContain("auth");
+  });
+
+  it("成功したら失敗種別を消す", async () => {
+    vi.mocked(api.searchThreadsKeyword).mockResolvedValue([item("a")]);
+    await fetchTrendsForAccount(SCSU, scopeOf(SCSU), NOW, settings());
+    expect(db.upsertTrendSettings).toHaveBeenCalledWith(1, expect.objectContaining({ lastFetchError: null }));
+  });
+
+  it("レート制限は間を空けて1回だけ再試行し、駄目なら以降のキーワードを打ち切る", async () => {
+    vi.mocked(api.searchThreadsKeyword).mockRejectedValue(new Error("Threads keyword search failed (429): rate limit"));
+    const r = await fetchTrendsForAccount(SCSU, scopeOf(SCSU), NOW, settings({ keywords: ["a", "b", "c"] }));
+    expect(api.searchThreadsKeyword).toHaveBeenCalledTimes(2); // 初回 + 再試行
+    expect(sleeps).toEqual([5000]);
+    expect(r.errors).toEqual([{ keyword: "a", kind: "rate_limited" }]);
+    expect(db.upsertTrendSettings).toHaveBeenCalledWith(1, expect.objectContaining({ lastFetchError: "rate_limited" }));
+  });
+
+  it("権限不足は再試行せずに打ち切る", async () => {
+    vi.mocked(api.searchThreadsKeyword).mockRejectedValue(new Error("Threads keyword search failed (403): requires threads_keyword_search"));
+    const r = await fetchTrendsForAccount(SCSU, scopeOf(SCSU), NOW, settings({ keywords: ["a", "b"] }));
+    expect(api.searchThreadsKeyword).toHaveBeenCalledTimes(1);
+    expect(sleeps).toEqual([]);
+    expect(r.errors[0].kind).toBe("permission");
   });
 
   it("通信エラーは1回だけ再試行し、成功すれば保存する", async () => {
@@ -162,6 +212,7 @@ describe("fetchTrendsForAccount", () => {
     const r = await fetchTrendsForAccount(SCSU, scopeOf(SCSU), NOW, settings());
     expect(r.errors).toEqual([]);
     expect(r.stored).toBe(1);
+    expect(sleeps).toEqual([1000]);
   });
 
   it("キーワードは20個までに制限する", async () => {
@@ -201,6 +252,23 @@ describe("runTrendFetchIfDue", () => {
       .mockResolvedValueOnce(settings({ keywords: [] }));
     const out = await runTrendFetchIfDue([SCSU, CREAW], scopeOf, NOW);
     expect(out).toHaveLength(0);
+  });
+
+  it("レート制限で何も取れなかった枠はロックを戻し、次回 tick で再試行する", async () => {
+    vi.mocked(db.getTrendSettings).mockResolvedValue(settings({ lastFetchKey: "2026-09-03/1" }));
+    vi.mocked(api.searchThreadsKeyword).mockRejectedValue(new Error("Threads keyword search failed (429): rate limit"));
+    await runTrendFetchIfDue([SCSU], scopeOf, NOW);
+    const calls = vi.mocked(db.upsertTrendSettings).mock.calls.map((c) => c[1]);
+    expect(calls[0]).toEqual({ lastFetchKey: "2026-09-04/0" });
+    expect(calls[calls.length - 1]).toEqual({ lastFetchKey: "2026-09-03/1" });
+  });
+
+  it("認証失敗ではロックを保つ（枠ごとに1回しか試さない）", async () => {
+    vi.mocked(db.getTrendSettings).mockResolvedValue(settings({ lastFetchKey: null }));
+    vi.mocked(api.searchThreadsKeyword).mockRejectedValue(new Error("Threads keyword search failed (401): OAuthException"));
+    await runTrendFetchIfDue([SCSU], scopeOf, NOW);
+    const keys = vi.mocked(db.upsertTrendSettings).mock.calls.map((c) => c[1]).filter((v) => "lastFetchKey" in v);
+    expect(keys).toEqual([{ lastFetchKey: "2026-09-04/0" }]);
   });
 
   it("1アカウントの失敗が他アカウントを止めない", async () => {

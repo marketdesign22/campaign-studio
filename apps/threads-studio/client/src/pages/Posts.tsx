@@ -278,6 +278,8 @@ export default function Posts() {
     const q = new URLSearchParams(search);
     if (q.get("ai") !== "1") return;
     const trendId = Number(q.get("trend"));
+    const period = q.get("period");
+    if (period === "24h" || period === "7d" || period === "30d") setAiTrendPeriod(period);
     setAiTopic(q.get("topic") ?? "");
     setAiTrendOn(Number.isInteger(trendId) && trendId > 0);
     setAiVariants([]);

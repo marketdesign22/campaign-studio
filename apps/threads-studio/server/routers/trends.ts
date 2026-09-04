@@ -101,6 +101,8 @@ export const trendsRouter = router({
       return {
         posts: rows.map(toClientPost),
         lastFetchAt: cfg.lastFetchAt,
+        /** 直近の取得で対処が必要な失敗（null なら正常）。画面で再接続などを案内する */
+        lastFetchError: cfg.lastFetchError,
         keywordCount: cfg.keywords.length,
         autoFetch: cfg.autoFetch,
         aiAvailable: !!ENV.openaiApiKey,
@@ -201,6 +203,7 @@ export const trendsRouter = router({
       retentionDays: cfg.retentionDays,
       aiDailyLimit: cfg.aiDailyLimit,
       lastFetchAt: cfg.lastFetchAt,
+      lastFetchError: cfg.lastFetchError,
       timezone: primaryTimezone(ctx.account),
     };
   }),

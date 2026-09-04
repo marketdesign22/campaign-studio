@@ -20,7 +20,7 @@ Threads / Instagram の話題を収集し、話題性スコア・AI分析・原�
 すべて追加型・冪等（`server/scripts/upgradeDb.ts`）。既存テーブル・列は変更しません。
 
 - `posts.trendAnalysisId`, `posts.trendMeta`（NULL許容の追加列）
-- `trend_settings`（accountId ユニーク）
+- `trend_settings`（accountId ユニーク。`lastFetchError` は既存環境向けに `addColumn` で追加）
 - `trend_posts`（`UNIQUE (accountId, platform, externalId)`）
 - `trend_analyses`
 
@@ -44,4 +44,7 @@ Threads / Instagram の話題を収集し、話題性スコア・AI分析・原�
 - AI分析の画面には「推測を含む・事実は元投稿で確認」の警告を常時表示
 - AI生成結果は原稿の「案」として返すだけで、既存の承認フロー（`requireApproval`）をそのまま通る。自動投稿はしない
 - 手動取得は管理者のみ・5分間隔、AI分析は 1日 `aiDailyLimit` 回（既定20）
-- 通信エラーのみ1回再試行。認証・権限・レート制限は即中断して種別を返す
+- 通信エラーとレート制限は間を空けて1回だけ再試行。認証・権限は即中断して種別を返す
+- 失敗種別は `trend_settings.lastFetchError` に残し、トレンド画面で「次に何をすればよいか」（再接続など）を案内する
+- レート制限で何も取れなかった枠はロックを戻し、次回の tick（15分後）で再試行する。認証・権限失敗は枠ごとに1回しか試さない
+- スケジューラでは投稿処理の後に呼び、独立した try/catch で囲む。取得失敗が投稿・トークン更新・分析取得を止めることはない

@@ -363,10 +363,13 @@ async function main() {
       \`aiDailyLimit\` int NOT NULL DEFAULT 20,
       \`lastFetchKey\` varchar(24) NULL,
       \`lastFetchAt\` timestamp NULL,
+      \`lastFetchError\` varchar(32) NULL,
       \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
       \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )
   `);
+  // 既にテーブルがある環境向け（作成済みなら上の CREATE は走らないので個別に足す）
+  await addColumn("trend_settings", "lastFetchError", "`lastFetchError` varchar(32) NULL");
 
   await createTable("trend_posts", `
     CREATE TABLE \`trend_posts\` (

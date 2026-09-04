@@ -272,6 +272,8 @@ export const trendSettings = mysqlTable("trend_settings", {
   /** 直近に自動取得した枠 "YYYY-MM-DD/index"（同じ枠を二度取らないためのロック） */
   lastFetchKey: varchar("lastFetchKey", { length: 24 }),
   lastFetchAt: timestamp("lastFetchAt"),
+  /** 直近の取得で対処が必要だった失敗の種別（auth / permission / rate_limited / network / unknown）。成功で null */
+  lastFetchError: varchar("lastFetchError", { length: 32 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

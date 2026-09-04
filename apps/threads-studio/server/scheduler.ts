@@ -330,11 +330,16 @@ async function runDailyMaintenance(now: Date) {
   await refreshTokensIfNeeded(now);
   await fetchAnalyticsForRecentPosts();
   await fetchFollowerCounts(now);
-  // 保存済みトレンド投稿が削除されていないかの確認（ベストエフォート、1日1回）
-  for (const account of await listActiveAccounts()) {
-    await markDeletedSavedPosts(account, now).catch((e) =>
-      console.warn(`[scheduler] trend deleted-check failed for account ${account.id}:`, e instanceof Error ? e.message.slice(0, 120) : e)
-    );
+  // 保存済みトレンド投稿が削除されていないかの確認（ベストエフォート、1日1回）。
+  // トレンド関連の失敗は投稿・トークン更新・分析取得に影響させない
+  try {
+    for (const account of await listActiveAccounts()) {
+      await markDeletedSavedPosts(account, now).catch((e) =>
+        console.warn(`[scheduler] trend deleted-check failed for account ${account.id}: ${e instanceof Error ? e.name : "error"}`)
+      );
+    }
+  } catch (e) {
+    console.warn(`[scheduler] trend deleted-check skipped: ${e instanceof Error ? e.name : "error"}`);
   }
 }
 
@@ -358,7 +363,7 @@ export async function runTick(now: Date = new Date()) {
   try {
     await runTrendFetchIfDue(all.filter((a) => a.active), (a) => scopeOf(a, primaryId), now);
   } catch (e) {
-    console.warn("[scheduler] trend fetch failed:", e instanceof Error ? e.message.slice(0, 120) : e);
+    console.warn(`[scheduler] trend fetch failed: ${e instanceof Error ? e.name : "error"}`);
   }
   return { fired: results };
 }

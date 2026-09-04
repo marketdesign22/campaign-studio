@@ -78,7 +78,12 @@ export default function Trends() {
     onSuccess: (d) => {
       const failed = d.errors.length;
       if (failed === 0) toast.success(`${d.stored}${t("件を取得しました")}`);
-      else toast.warning(`${d.stored}${t("件を取得しました")} / ${failed}${t("件のキーワードで失敗")}: ${d.errors.map((e) => t(ERROR_LABEL[e.kind] ?? e.kind)).join(", ")}`);
+      else {
+        const worst = ["auth", "permission", "rate_limited", "network", "unknown"].find((k) => d.errors.some((e) => e.kind === k)) ?? "unknown";
+        toast.warning(`${d.stored}${t("件を取得しました")} / ${failed}${t("件のキーワードで失敗")}`, {
+          description: t(ERROR_LABEL[worst]), duration: 10_000,
+        });
+      }
       invalidate();
     },
     onError: (e) => toast.error(e.message),
@@ -103,7 +108,7 @@ export default function Trends() {
   /** 原稿作成へ。分析IDとテーマをクエリで渡し、投稿原稿画面のAIダイアログを開く */
   function makeDraft(topic: string) {
     if (!analysis) { toast.error(t("先に「AIで分析」を実行してください")); return; }
-    const q = new URLSearchParams({ ai: "1", trend: String(analysis.analysisId), topic: topic.slice(0, 300) });
+    const q = new URLSearchParams({ ai: "1", trend: String(analysis.analysisId), period, topic: topic.slice(0, 300) });
     setLocation(`/posts?${q.toString()}`);
   }
 
@@ -147,6 +152,21 @@ export default function Trends() {
           {listQ.data && !listQ.data.autoFetch && <> · {t("自動取得は停止中")}</>}
         </span>
       </div>
+
+      {listQ.data?.lastFetchError && (
+        <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
+          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5 text-destructive" />
+          <div className="space-y-1.5">
+            <p className="font-medium">{t("前回の取得に失敗しました")}</p>
+            <p className="text-xs text-muted-foreground">{t(ERROR_LABEL[listQ.data.lastFetchError] ?? ERROR_LABEL.unknown)}</p>
+            {NEEDS_RECONNECT.has(listQ.data.lastFetchError) && (
+              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setLocation("/settings")}>
+                {t("設定画面で再接続する")}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       <Tabs defaultValue="posts">
         <TabsList>
@@ -410,7 +430,7 @@ export default function Trends() {
                         <XAxis dataKey="hour" tick={{ fontSize: 11 }} />
                         <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                         <Tooltip formatter={(v: number) => [v, t("平均エンゲージメント")]} />
-                        <Bar dataKey="avg" fill="#335B82" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="avg" fill="#335B82" radius={[4, 4, 0, 0]} isAnimationActive={false} />
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>
@@ -440,13 +460,15 @@ export default function Trends() {
   );
 }
 
+/** 失敗種別ごとの案内。専門用語だけで終わらせず、次に何をすればよいかを書く */
 const ERROR_LABEL: Record<string, string> = {
-  auth: "認証エラー（再接続が必要）",
-  permission: "権限不足（threads_keyword_search）",
-  rate_limited: "レート制限",
-  network: "通信エラー",
-  unknown: "不明なエラー",
+  auth: "Threads の認証が切れています。設定画面の「アカウントを追加」から同じ表示名で連携リンクを発行し、このアカウントで再接続してください。",
+  permission: "検索の権限（threads_keyword_search）がありません。設定画面の「アカウントを追加」から同じ表示名で連携リンクを発行し、このアカウントで再接続すると付与されます。",
+  rate_limited: "Threads の検索回数の上限に達しました。次回の自動取得（15分後以降）で再試行します。キーワード数や取得回数を減らすと発生しにくくなります。",
+  network: "Threads に接続できませんでした。しばらくしてからもう一度お試しください。",
+  unknown: "取得に失敗しました。時間をおいて再度お試しください。続く場合は担当者にご連絡ください。",
 };
+const NEEDS_RECONNECT = new Set(["auth", "permission"]);
 
 /** 数値を含む提案文。翻訳キーにできないため言語で分岐する */
 function suggestionText(s: Suggestion, lang: "ja" | "en"): string {

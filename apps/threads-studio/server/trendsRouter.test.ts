@@ -56,7 +56,7 @@ function llmReply(content: string) {
 const SETTINGS = {
   keywords: ["留学"], excludeKeywords: ["詐欺"], refAccounts: [], language: "ja", region: "JP", industry: "教育",
   fetchTimes: [{ hour: 9, minute: 0 }, { hour: 18, minute: 0 }], autoFetch: true, retentionDays: 30, aiDailyLimit: 20,
-  lastFetchKey: "2026-09-04/0", lastFetchAt: new Date("2026-09-04T00:00:00Z"),
+  lastFetchKey: "2026-09-04/0", lastFetchAt: new Date("2026-09-04T00:00:00Z"), lastFetchError: null as string | null,
 };
 const ANALYSIS = {
   themes: ["準備の不安"], hooks: ["結論から"], structures: ["体験→学び"], tone: "率直", questions: ["あなたは？"],
@@ -173,8 +173,18 @@ describe("trends ルーター", () => {
 
     const s = await caller.getSettings();
     expect(s.keywords).toEqual(["留学"]);
+    expect(s.lastFetchError).toBeNull();
     expect(JSON.stringify(s)).not.toContain("lastFetchKey");
     expect(JSON.stringify(list)).not.toContain(TOKEN);
+  });
+
+  it("前回の取得失敗（権限不足など）を一覧と設定で返し、画面が再接続を案内できる", async () => {
+    const d = await import("./db");
+    vi.mocked(d.getTrendSettings).mockResolvedValue({ ...SETTINGS, lastFetchError: "permission" } as never);
+    const { trendsRouter } = await import("./routers/trends");
+    const caller = trendsRouter.createCaller(ctx(1));
+    expect((await caller.list({ period: "7d" })).lastFetchError).toBe("permission");
+    expect((await caller.getSettings()).lastFetchError).toBe("permission");
   });
 
   it("分析は AI 未設定なら安全なエラーを返す", async () => {
