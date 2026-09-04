@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { CalendarPlus, CheckCheck, FileUp, ImagePlus, Pencil, Plus, Repeat, RotateCcw, Send, Sparkles, Trash2, Undo2, Upload, X } from "lucide-react";
+import { CalendarPlus, CheckCheck, FileUp, ImagePlus, Pencil, Plus, Repeat, RotateCcw, Send, ShieldCheck, Sparkles, Trash2, Undo2, Upload, X } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { useI18n } from "@/i18n";
 
@@ -202,6 +202,11 @@ export default function Posts() {
     onError: e => toast.error(e.message),
   });
   const { data: aiStatus } = trpc.ai.status.useQuery(undefined, { staleTime: 60_000 });
+  const [qualityResult, setQualityResult] = useState<null | { status: string; summary: string; blocked: boolean; findings: Array<{ code: string; status: "ok" | "recommend" | "review" | "block"; message: string; reason: string; evidence: string; severity: number; suggestion: string; autoFixable: boolean; humanReview: boolean; deterministic: boolean }> }>(null);
+  const [qualityFix, setQualityFix] = useState<null | { revised: string; changes: Array<{ before: string; after: string; reason: string }> }>(null);
+  const [qualityOriginal, setQualityOriginal] = useState<string | null>(null);
+  const qualityMut = trpc.quality.check.useMutation({ onSuccess: d => { setQualityResult(d); setQualityFix(null); }, onError: e => toast.error(e.message) });
+  const qualityFixMut = trpc.quality.safeRewrite.useMutation({ onSuccess: d => setQualityFix(d), onError: e => toast.error(e.message) });
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<typeof postList[0] | null>(null);
@@ -270,6 +275,7 @@ export default function Posts() {
   const trendAnalysisQ = trpc.trends.latestAnalysis.useQuery({ period: aiTrendPeriod }, { enabled: aiOpen && aiTrendOn });
   /** 原稿に付けるトレンド参照。編集ダイアログを開く時に決まり、保存時に一緒に送る */
   const [draftTrend, setDraftTrend] = useState<{ analysisId: number; angle: string | null; referencedTrends: string[] } | null>(null);
+  const [draftCreationSource, setDraftCreationSource] = useState<"manual" | "ai">("manual");
 
   // トレンド画面から「この傾向から原稿を作る」で来た場合: ?ai=1&trend=ID&topic=...
   const search = useSearch();
@@ -294,9 +300,11 @@ export default function Posts() {
     content: string; slotIndex: number; categoryId: number | null;
     scheduledDate: string; imageUrl: string | null;
     trend?: { analysisId: number; angle: string | null; referencedTrends: string[] } | null;
+    creationSource?: "manual" | "ai";
   }) {
     setEditing(base.editing);
     setDraftTrend(base.trend ?? null);
+    setDraftCreationSource(base.creationSource ?? "manual");
     setContent(base.content);
     setSlotIndex(base.slotIndex);
     setCatId(base.categoryId);
@@ -310,6 +318,7 @@ export default function Posts() {
     setRewritePreset("");
     setRewriteDraft(null);
     setContentBeforeRewrite(null);
+    setQualityResult(null); setQualityFix(null); setQualityOriginal(null);
     setOpen(true);
   }
 
@@ -347,7 +356,7 @@ export default function Posts() {
     if (blocked || saving) return;
     const date = scheduledDate || null;
     if (editing) updateMut.mutate({ id: editing.id, content, slotIndex, categoryId: catId, scheduledDate: date, imageUrl });
-    else createMut.mutate({ content, slotIndex, categoryId: catId, scheduledDate: date, imageUrl, ...trendFields() });
+    else createMut.mutate({ content, slotIndex, categoryId: catId, scheduledDate: date, imageUrl, creationSource: draftCreationSource, ...trendFields() });
   }
   /** 原稿に付けるトレンド参照（学習サイクルで成果を比較するため）。無ければ何も付けない */
   function trendFields() {
@@ -372,7 +381,7 @@ export default function Posts() {
   }
   async function handleSaveAndPostNow() {
     try {
-      const created = await createMut.mutateAsync({ content, slotIndex, categoryId: catId, scheduledDate: scheduledDate || null, imageUrl, ...trendFields() });
+      const created = await createMut.mutateAsync({ content, slotIndex, categoryId: catId, scheduledDate: scheduledDate || null, imageUrl, creationSource: draftCreationSource, ...trendFields() });
       postNowMut.mutate({ postId: created.id });
     } catch {
       // createMut.onError already surfaced the toast
@@ -612,7 +621,7 @@ export default function Posts() {
                 id="post-content"
                 rows={8}
                 value={content}
-                onChange={e => setContent(e.target.value)}
+                onChange={e => { setContent(e.target.value); setQualityResult(null); setQualityFix(null); }}
                 className="resize-y min-h-[140px]"
                 aria-describedby="post-content-help"
               />
@@ -737,6 +746,14 @@ export default function Posts() {
                   </div>
                 )}
               </div>
+            </div>
+
+            <div className="rounded-lg border bg-muted/20 p-3 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-sm font-medium flex items-center gap-1.5"><ShieldCheck className="h-4 w-4" />{t("投稿前AI品質チェック")}</span><Button type="button" size="sm" variant="outline" disabled={!content.trim() || qualityMut.isPending || !aiStatus?.configured} onClick={() => qualityMut.mutate({ content, postId: editing?.id })}>{qualityMut.isPending ? t("チェック中...") : t("AI品質チェック")}</Button></div>
+              {!aiStatus?.configured && <p className="text-xs text-muted-foreground">{t("AI未設定でも、投稿時には空本文・文字数・禁止語・Secret・不正URLを自動検査します。")}</p>}
+              {qualityResult && <><div className="text-xs"><strong>{qualityResult.status === "block" ? t("投稿停止") : qualityResult.status === "review" ? t("要確認") : qualityResult.status === "recommend" ? t("改善推奨") : t("問題なし")}</strong> — {qualityResult.summary}</div><ul className="space-y-2">{qualityResult.findings.map((f, i) => <li key={`${f.code}-${i}`} className={`rounded border p-2 text-xs ${f.status === "block" ? "border-destructive text-destructive" : f.status === "review" ? "border-amber-400" : ""}`}><div className="font-medium">{f.message}</div><div>{f.reason}</div><div className="text-muted-foreground">{f.suggestion}{f.humanReview ? ` · ${t("人間の確認が必要")}` : ""}</div></li>)}</ul>{qualityResult.findings.length > 0 && <Button type="button" size="sm" onClick={() => qualityFixMut.mutate({ content, findings: qualityResult.findings })} disabled={qualityFixMut.isPending}>{t("安全に修正案を作る")}</Button>}</>}
+              {qualityFix && <div className="space-y-2 border-t pt-2"><p className="text-xs font-medium">{t("修正前後の差分")}</p><div className="grid sm:grid-cols-2 gap-2"><Textarea readOnly value={content} aria-label={t("修正前")} /><Textarea readOnly value={qualityFix.revised} aria-label={t("修正後")} /></div><ul className="text-xs text-muted-foreground">{qualityFix.changes.map((c, i) => <li key={i}>• {c.reason}</li>)}</ul><Button type="button" size="sm" onClick={() => { setQualityOriginal(content); setContent(qualityFix.revised); setQualityFix(null); setQualityResult(null); }}>{t("修正案を反映")}</Button></div>}
+              {qualityOriginal !== null && <Button type="button" size="sm" variant="ghost" onClick={() => { setContent(qualityOriginal); setQualityOriginal(null); }}>{t("修正前に戻す")}</Button>}
             </div>
 
             {/* 画像 */}
@@ -958,12 +975,12 @@ export default function Posts() {
                       )}
                       <div className="flex justify-end gap-2">
                         <Button size="sm" variant="outline" className="h-7 text-xs"
-                          onClick={() => { setAiOpen(false); openDialog({ editing: null, content: v.content, slotIndex: 0, categoryId: null, scheduledDate: "", imageUrl: null, trend: tr }); }}>
+                          onClick={() => { setAiOpen(false); openDialog({ editing: null, content: v.content, slotIndex: 0, categoryId: null, scheduledDate: "", imageUrl: null, trend: tr, creationSource: "ai" }); }}>
                           {t("編集して使う")}
                         </Button>
                         <Button size="sm" className="h-7 text-xs" disabled={createMut.isPending}
                           onClick={() => createMut.mutate({
-                            content: v.content, slotIndex: 0, categoryId: null,
+                            content: v.content, slotIndex: 0, categoryId: null, creationSource: "ai",
                             ...(tr ? { trendAnalysisId: tr.analysisId, trendMeta: { angle: tr.angle, referencedTrends: tr.referencedTrends } } : {}),
                           })}>
                           {t("そのまま追加")}

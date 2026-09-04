@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
 import { useI18n } from "@/i18n";
 import { formatDelta } from "@shared/followerStats";
+import { ConversionWorkspace } from "@/components/ConversionWorkspace";
 
 const PERIODS = [
   { value: "day" as const, label: "日間" },
@@ -143,6 +144,8 @@ export default function Analytics() {
           {t("最終更新")}: {lastRefreshed.toLocaleString(locale)}
         </p>
       )}
+
+      <ConversionWorkspace />
 
       {/* Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">

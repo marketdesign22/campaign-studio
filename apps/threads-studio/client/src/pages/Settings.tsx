@@ -19,6 +19,7 @@ import { TZ_OPTIONS, useI18n } from "@/i18n";
 import { MAX_SLOTS, PostingSlot, SlotTimezone } from "@shared/postingSlots";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PROFILE_FIELD_KEYS, type ProfileFieldKey } from "@shared/clientProfile";
+import { ContentOsSettingsCard } from "@/components/ContentOsSettingsCard";
 
 type AccountRow = {
   id: number;
@@ -840,6 +841,8 @@ export default function Settings() {
       </Card>
 
       {/* Brand */}
+      {hasAccounts && <ContentOsSettingsCard />}
+
       <Card className="border shadow-none">
         <CardHeader className="pb-3">
           <CardTitle className="font-display text-base font-semibold flex items-center gap-2">
