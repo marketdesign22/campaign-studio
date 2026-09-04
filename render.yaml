@@ -26,9 +26,9 @@ services:
         sync: false
       - key: CRON_SECRET # GitHub Actions 側の Secret と同じ値にする
         sync: false
-      - key: ANTHROPIC_API_KEY # AIアシスト用（任意）。Renderのsecretに設定する
+      - key: OPENAI_API_KEY # AIアシスト用（任意）。Renderのsecretに設定する
         sync: false
-      - key: ANTHROPIC_MODEL # 省略時は claude-opus-5
+      - key: OPENAI_MODEL # 省略時は gpt-5.6-terra
         sync: false
       - key: THREADS_APP_ID # クライアントのアカウント連携に使う
         sync: false
