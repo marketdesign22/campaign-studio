@@ -12,7 +12,7 @@ export type AiErrorKind =
   | "empty" | "invalid_output" | "too_long" | "unknown";
 
 const USER_MESSAGE: Record<AiErrorKind, string> = {
-  not_configured: "AI設定が必要です。ANTHROPIC_API_KEY を設定してください。",
+  not_configured: "AI設定が必要です。OPENAI_API_KEY を設定してください。",
   auth: "AI設定を確認してください。APIキーが無効か、権限がありません。",
   rate_limited: "AI利用上限に達しました。しばらく待ってからお試しください。",
   timeout: "AIサービスへの接続がタイムアウトしました。もう一度お試しください。",
@@ -35,7 +35,7 @@ export function classifyAiError(e: unknown): AiErrorKind {
   const status = (e as { status?: number } | null)?.status;
 
   // SDKは status を持つが、途中で文字列化された例外も来るのでテキストからも拾う
-  if (m.includes("anthropic_api_key") || m.includes("not configured")) return "not_configured";
+  if (m.includes("openai_api_key") || m.includes("not configured")) return "not_configured";
   if (
     status === 401 || status === 403 ||
     /\b40[13]\b/.test(m) ||
