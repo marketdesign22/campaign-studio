@@ -11,6 +11,8 @@ import { analyticsRouter } from "./routers/analytics";
 import { accountsRouter } from "./routers/accounts";
 import { aiRouter } from "./routers/ai";
 import { mediaRouter } from "./routers/media";
+import { trendsRouter } from "./routers/trends";
+import { repliesRouter } from "./routers/replies";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -24,6 +26,8 @@ export const appRouter = router({
   accounts: accountsRouter,
   ai: aiRouter,
   media: mediaRouter,
+  trends: trendsRouter,
+  replies: repliesRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

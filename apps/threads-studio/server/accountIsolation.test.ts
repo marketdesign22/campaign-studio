@@ -207,3 +207,110 @@ describe("カテゴリー", () => {
     expect(params).toContain(2);
   });
 });
+
+describe("トレンドリサーチ", () => {
+  it("収集投稿の一覧は accountId で絞り、旧データ（NULL）を含めない", async () => {
+    const { listTrendPosts } = await import("./db");
+    await listTrendPosts(2, { since: new Date("2026-09-01T00:00:00Z") });
+    scopedTo(2);
+    expect(includesLegacy()).toBe(false);
+  });
+
+  it("投稿の取得・状態変更・AI結果の書き込みは id と accountId の両方で絞る", async () => {
+    const { getOwnedTrendPost, setTrendPostStatus, setTrendPostAi } = await import("./db");
+    await getOwnedTrendPost(9, 2);
+    expect(lastQuery().sql).toMatch(/`id` = \?/);
+    scopedTo(2);
+    await setTrendPostStatus(9, 2, "saved");
+    expect(lastQuery().sql).toMatch(/^update `trend_posts`/);
+    scopedTo(2);
+    await setTrendPostAi(9, 2, "reason", ["idea"]);
+    scopedTo(2);
+  });
+
+  it("設定と分析結果もアカウント単位", async () => {
+    const { getTrendSettings, getLatestTrendAnalysis, getOwnedTrendAnalysis, countTrendAnalysesToday } = await import("./db");
+    await getTrendSettings(2);
+    scopedTo(2);
+    await getLatestTrendAnalysis(2, "7d");
+    scopedTo(2);
+    await getOwnedTrendAnalysis(5, 2);
+    scopedTo(2);
+    expect(lastQuery().sql).toMatch(/`id` = \?/);
+    await countTrendAnalysesToday(2, new Date());
+    scopedTo(2);
+  });
+
+  it("保存期間の整理は自アカウントの行だけを消し、「保存済み」は残す", async () => {
+    const { pruneTrendPosts } = await import("./db");
+    await pruneTrendPosts(2, 30);
+    const { sql, params } = lastQuery();
+    expect(sql).toMatch(/^delete from `trend_posts`/);
+    scopedTo(2);
+    expect(params).not.toContain("saved");
+    expect(params).toContain("active");
+  });
+
+  it("同じ投稿の再取得は行を増やさず、利用者の状態を上書きしない", async () => {
+    const { upsertTrendPost } = await import("./db");
+    await upsertTrendPost({
+      accountId: 2, platform: "threads", source: "keyword", keyword: "kw", externalId: "ext",
+      permalink: null, username: null, postedAt: null, mediaType: null, summary: "s", hasReplies: null,
+      likes: null, replies: null, reposts: null, views: null, saves: null, score: 10, scoreBreakdown: "[]", isRising: false,
+    });
+    const { sql } = lastQuery();
+    expect(sql).toMatch(/^insert into `trend_posts`/);
+    expect(sql).toMatch(/on duplicate key update/);
+    expect(sql.split("on duplicate key update")[1]).not.toMatch(/`status`/);
+    expect(sql.split("on duplicate key update")[1]).not.toMatch(/`aiReason`/);
+  });
+
+  it("学習サイクルの成果集計は post_logs のスコープで絞る", async () => {
+    const { listPostOutcomes } = await import("./db");
+    await listPostOutcomes(CREAW, new Date("2026-08-28T00:00:00Z"));
+    scopedTo(2);
+    expect(includesLegacy()).toBe(false);
+  });
+});
+
+describe("受信箱（Threadsの返信管理）", () => {
+  it("返信一覧は accountId で絞る", async () => {
+    const { listThreadReplies } = await import("./db");
+    await listThreadReplies(2, {});
+    scopedTo(2);
+  });
+
+  it("個別の返信の取得・状態変更は id と accountId の両方で絞る", async () => {
+    const { getOwnedThreadReply, setThreadReplyStatus, markThreadReplyReplied } = await import("./db");
+    await getOwnedThreadReply(9, 2);
+    expect(lastQuery().sql).toMatch(/`id` = \?/);
+    scopedTo(2);
+    await setThreadReplyStatus(9, 2, "read");
+    expect(lastQuery().sql).toMatch(/^update `thread_replies`/);
+    scopedTo(2);
+    await markThreadReplyReplied(9, 2, "ありがとうございます");
+    expect(lastQuery().sql).toMatch(/^update `thread_replies`/);
+    scopedTo(2);
+  });
+
+  it("未読件数は accountId で絞る", async () => {
+    const { countUnreadThreadReplies } = await import("./db");
+    await countUnreadThreadReplies(2);
+    scopedTo(2);
+  });
+
+  it("同じ返信の再取得は行を増やさず、利用者の既読/返信済み状態を上書きしない", async () => {
+    const { upsertThreadReply } = await import("./db");
+    await upsertThreadReply({
+      accountId: 2, externalId: "ext", rootMediaId: "root", rootPermalink: null,
+      username: "fan", text: "いいですね", permalink: null, postedAt: null, hideStatus: null,
+    });
+    const { sql } = lastQuery();
+    expect(sql).toMatch(/^insert into `thread_replies`/);
+    expect(sql).toMatch(/on duplicate key update/);
+    const updateClause = sql.split("on duplicate key update")[1];
+    expect(updateClause).not.toMatch(/`status`/);
+    expect(updateClause).not.toMatch(/`repliedContent`/);
+    expect(updateClause).not.toMatch(/`repliedAt`/);
+  });
+});

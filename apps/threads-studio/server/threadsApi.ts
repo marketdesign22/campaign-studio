@@ -45,22 +45,18 @@ export interface ThreadsPostResult {
 }
 
 /**
- * 投稿を作成して公開する。
- * `imageUrl` を渡すと画像付き投稿になる。Threads は画像バイナリを直接受け取らず
- * 「公開URLから取得」する仕様なので、必ず外部から到達できる絶対URLを渡すこと。
+ * コンテナ作成 → 公開の2段階フロー。通常投稿・返信の両方が使う共通処理。
+ * `params` は `media_type` と `text` に加え、画像なら `image_url`、返信なら
+ * `reply_to_id` を含める。
  */
-export async function publishTextPost(
+async function createAndPublish(
   accessToken: string,
   userId: string,
-  text: string,
-  imageUrl?: string | null
+  params: Record<string, string>,
+  { isImage = false }: { isImage?: boolean } = {}
 ): Promise<ThreadsPostResult> {
   // Step 1: Create media container
-  const createParams = new URLSearchParams(
-    imageUrl
-      ? { media_type: "IMAGE", image_url: imageUrl, text, access_token: accessToken }
-      : { media_type: "TEXT", text, access_token: accessToken }
-  );
+  const createParams = new URLSearchParams({ ...params, access_token: accessToken });
 
   const createRes = await fetch(`${THREADS_API_BASE}/${userId}/threads`, {
     method: "POST",
@@ -79,7 +75,7 @@ export async function publishTextPost(
   // Brief pause recommended by Meta docs before publishing.
   // 画像付きはメディアの取得・処理に時間がかかるため、状態がFINISHEDになるまで待つ。
   await new Promise((r) => setTimeout(r, 2000));
-  if (imageUrl) await waitForContainer(containerId, accessToken);
+  if (isImage) await waitForContainer(containerId, accessToken);
 
   // Step 2: Publish the container
   const publishParams = new URLSearchParams({
@@ -101,6 +97,38 @@ export async function publishTextPost(
   const publishData = (await publishRes.json()) as { id: string };
 
   return { containerId, postId: publishData.id };
+}
+
+/**
+ * 投稿を作成して公開する。
+ * `imageUrl` を渡すと画像付き投稿になる。Threads は画像バイナリを直接受け取らず
+ * 「公開URLから取得」する仕様なので、必ず外部から到達できる絶対URLを渡すこと。
+ */
+export async function publishTextPost(
+  accessToken: string,
+  userId: string,
+  text: string,
+  imageUrl?: string | null
+): Promise<ThreadsPostResult> {
+  return createAndPublish(
+    accessToken, userId,
+    imageUrl ? { media_type: "IMAGE", image_url: imageUrl, text } : { media_type: "TEXT", text },
+    { isImage: !!imageUrl }
+  );
+}
+
+/**
+ * 自社投稿への返信を送信する。通常投稿と同じ2段階フローに `reply_to_id` を足すだけ。
+ * 必要権限: threads_manage_replies。呼び出しは利用者が送信ボタンを押した時だけ行い、
+ * 自動では送信しない。
+ */
+export async function publishReply(
+  accessToken: string,
+  userId: string,
+  text: string,
+  replyToId: string
+): Promise<ThreadsPostResult> {
+  return createAndPublish(accessToken, userId, { media_type: "TEXT", text, reply_to_id: replyToId });
 }
 
 /** Verify token and return Threads user ID + username */
@@ -212,4 +240,148 @@ export async function fetchPostInsights(
     reposts: metric("reposts"),
     views: metric("views"),
   };
+}
+
+// ── キーワード検索 ───────────────────────────────────────────────────────────
+
+export type ThreadsSearchResult = {
+  id: string;
+  text: string | null;
+  mediaType: string | null;
+  permalink: string | null;
+  timestamp: Date | null;
+  username: string | null;
+  hasReplies: boolean | null;
+  isQuotePost: boolean | null;
+  isReply: boolean | null;
+};
+
+/** 検索結果の1件を正規化する。純粋関数なのでテスト対象 */
+export function normalizeSearchItem(raw: Record<string, unknown>): ThreadsSearchResult | null {
+  const id = typeof raw.id === "string" ? raw.id : null;
+  if (!id) return null;
+  const ts = typeof raw.timestamp === "string" ? new Date(raw.timestamp) : null;
+  return {
+    id,
+    text: typeof raw.text === "string" ? raw.text : null,
+    mediaType: typeof raw.media_type === "string" ? raw.media_type : null,
+    permalink: typeof raw.permalink === "string" ? raw.permalink : null,
+    timestamp: ts && !Number.isNaN(ts.getTime()) ? ts : null,
+    username: typeof raw.username === "string" ? raw.username : null,
+    hasReplies: typeof raw.has_replies === "boolean" ? raw.has_replies : null,
+    isQuotePost: typeof raw.is_quote_post === "boolean" ? raw.is_quote_post : null,
+    isReply: typeof raw.is_reply === "boolean" ? raw.is_reply : null,
+  };
+}
+
+/**
+ * 公開投稿のキーワード検索。
+ *
+ * 返るのは本文・投稿日時・返信の有無まで。**いいね数などの反応数は返らない**
+ * （Threads Insights は自分の投稿にしか使えない）。
+ * 必要権限: threads_keyword_search
+ * レート制限: ユーザーあたり 2,200 クエリ / 24時間（空結果は非カウント）
+ */
+export async function searchThreadsKeyword(
+  accessToken: string,
+  query: string,
+  searchType: "TOP" | "RECENT",
+  limit = 25
+): Promise<ThreadsSearchResult[]> {
+  const url = new URL(`${THREADS_API_BASE}/keyword_search`);
+  url.searchParams.set("q", query);
+  url.searchParams.set("search_type", searchType);
+  url.searchParams.set(
+    "fields",
+    "id,text,media_type,permalink,timestamp,username,has_replies,is_quote_post,is_reply"
+  );
+  url.searchParams.set("limit", String(limit));
+  url.searchParams.set("access_token", accessToken);
+  const res = await fetch(url.toString());
+  if (!res.ok) {
+    // 本文は分類に使うだけなので先頭だけ持つ（ログや画面にはこのメッセージを出さない）
+    const body = (await res.text()).slice(0, 300);
+    throw new Error(`Threads keyword search failed (${res.status}): ${body}`);
+  }
+  const data = (await res.json()) as { data?: Record<string, unknown>[] };
+  return (data.data ?? [])
+    .map(normalizeSearchItem)
+    .filter((x): x is ThreadsSearchResult => x !== null);
+}
+
+/**
+ * 保存済みトレンド投稿がまだ存在するかの確認（ベストエフォート）。
+ * 存在しない・権限が無い場合は false。ネットワーク障害などは判断保留で null。
+ */
+export async function checkThreadsPostExists(
+  accessToken: string,
+  mediaId: string
+): Promise<boolean | null> {
+  try {
+    const res = await fetch(
+      `${THREADS_API_BASE}/${mediaId}?fields=id&access_token=${encodeURIComponent(accessToken)}`
+    );
+    if (res.ok) return true;
+    const body = await res.text();
+    // 「存在しない／権限が無い」はどちらも削除扱いに寄せる（画面で判別できればよい）
+    if (res.status === 400 || res.status === 404) {
+      return /does not exist|not exist|invalid|unsupported/i.test(body) ? false : null;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// ── 受信箱（返信管理） ───────────────────────────────────────────────────────
+
+export type ThreadsReply = {
+  id: string;
+  text: string | null;
+  username: string | null;
+  permalink: string | null;
+  timestamp: Date | null;
+  /** 返信対象（自社投稿）のThreadsメディアID。取れない場合は null */
+  rootMediaId: string | null;
+  hideStatus: string | null;
+};
+
+/** 返信1件の正規化。純粋関数なのでテスト対象 */
+export function normalizeReply(raw: Record<string, unknown>): ThreadsReply | null {
+  const id = typeof raw.id === "string" ? raw.id : null;
+  if (!id) return null;
+  const ts = typeof raw.timestamp === "string" ? new Date(raw.timestamp) : null;
+  const root = raw.root_post as Record<string, unknown> | undefined;
+  return {
+    id,
+    text: typeof raw.text === "string" ? raw.text : null,
+    username: typeof raw.username === "string" ? raw.username : null,
+    permalink: typeof raw.permalink === "string" ? raw.permalink : null,
+    timestamp: ts && !Number.isNaN(ts.getTime()) ? ts : null,
+    rootMediaId: root && typeof root.id === "string" ? root.id : null,
+    hideStatus: typeof raw.hide_status === "string" ? raw.hide_status : null,
+  };
+}
+
+/**
+ * 自社投稿についた公開返信の一覧（DMは含まれない・公式APIが無いため取得しない）。
+ * 必要権限: threads_read_replies
+ */
+export async function fetchAccountReplies(
+  accessToken: string,
+  userId: string,
+  limit = 50
+): Promise<ThreadsReply[]> {
+  const url = new URL(`${THREADS_API_BASE}/${userId}/replies`);
+  url.searchParams.set("fields", "id,text,username,permalink,timestamp,root_post,hide_status,is_reply");
+  url.searchParams.set("limit", String(limit));
+  url.searchParams.set("access_token", accessToken);
+  const res = await fetch(url.toString());
+  if (!res.ok) {
+    // 本文は分類に使うだけなので先頭だけ持つ（ログや画面にはこのメッセージを出さない）
+    const body = (await res.text()).slice(0, 300);
+    throw new Error(`Threads replies fetch failed (${res.status}): ${body}`);
+  }
+  const data = (await res.json()) as { data?: Record<string, unknown>[] };
+  return (data.data ?? []).map(normalizeReply).filter((x): x is ThreadsReply => x !== null);
 }

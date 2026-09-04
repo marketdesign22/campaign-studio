@@ -343,6 +343,103 @@ async function main() {
     )
   `);
 
+  // ── トレンドリサーチ ──────────────────────────────────────────────────────
+  await addColumn("posts", "trendAnalysisId", "`trendAnalysisId` int NULL");
+  await addColumn("posts", "trendMeta", "`trendMeta` text NULL");
+
+  await createTable("trend_settings", `
+    CREATE TABLE \`trend_settings\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`accountId\` int NOT NULL UNIQUE,
+      \`keywords\` text NULL,
+      \`excludeKeywords\` text NULL,
+      \`refAccounts\` text NULL,
+      \`language\` varchar(8) NOT NULL DEFAULT 'ja',
+      \`region\` varchar(8) NOT NULL DEFAULT 'JP',
+      \`industry\` varchar(64) NULL,
+      \`fetchTimes\` text NULL,
+      \`autoFetch\` boolean NOT NULL DEFAULT true,
+      \`retentionDays\` int NOT NULL DEFAULT 30,
+      \`aiDailyLimit\` int NOT NULL DEFAULT 20,
+      \`lastFetchKey\` varchar(24) NULL,
+      \`lastFetchAt\` timestamp NULL,
+      \`lastFetchError\` varchar(32) NULL,
+      \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
+  // 既にテーブルがある環境向け（作成済みなら上の CREATE は走らないので個別に足す）
+  await addColumn("trend_settings", "lastFetchError", "`lastFetchError` varchar(32) NULL");
+
+  await createTable("trend_posts", `
+    CREATE TABLE \`trend_posts\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`accountId\` int NOT NULL,
+      \`platform\` enum('threads','instagram') NOT NULL,
+      \`source\` enum('keyword','manual') NOT NULL DEFAULT 'keyword',
+      \`keyword\` varchar(64) NULL,
+      \`externalId\` varchar(128) NOT NULL,
+      \`permalink\` varchar(512) NULL,
+      \`username\` varchar(64) NULL,
+      \`postedAt\` timestamp NULL,
+      \`mediaType\` varchar(24) NULL,
+      \`summary\` varchar(255) NOT NULL,
+      \`hasReplies\` boolean NULL,
+      \`likes\` int NULL,
+      \`replies\` int NULL,
+      \`reposts\` int NULL,
+      \`views\` int NULL,
+      \`saves\` int NULL,
+      \`score\` int NOT NULL DEFAULT 0,
+      \`scoreBreakdown\` text NULL,
+      \`isRising\` boolean NOT NULL DEFAULT false,
+      \`status\` enum('active','saved','excluded','deleted') NOT NULL DEFAULT 'active',
+      \`aiReason\` text NULL,
+      \`aiIdeas\` text NULL,
+      \`firstSeenAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`fetchedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY \`uniq_trend_post\` (\`accountId\`, \`platform\`, \`externalId\`)
+    )
+  `);
+
+  await createTable("trend_analyses", `
+    CREATE TABLE \`trend_analyses\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`accountId\` int NOT NULL,
+      \`period\` varchar(8) NOT NULL,
+      \`result\` text NOT NULL,
+      \`postCount\` int NOT NULL DEFAULT 0,
+      \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // ── 受信箱（Threadsの返信管理） ────────────────────────────────────────────
+  await addColumn("accounts", "lastReplyFetchAt", "`lastReplyFetchAt` timestamp NULL");
+  await addColumn("accounts", "lastReplyFetchError", "`lastReplyFetchError` varchar(32) NULL");
+
+  await createTable("thread_replies", `
+    CREATE TABLE \`thread_replies\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`accountId\` int NOT NULL,
+      \`externalId\` varchar(128) NOT NULL,
+      \`rootMediaId\` varchar(128) NULL,
+      \`rootPermalink\` varchar(512) NULL,
+      \`username\` varchar(64) NULL,
+      \`text\` varchar(600) NULL,
+      \`permalink\` varchar(512) NULL,
+      \`postedAt\` timestamp NULL,
+      \`hideStatus\` varchar(24) NULL,
+      \`status\` enum('unread','read','replied') NOT NULL DEFAULT 'unread',
+      \`repliedContent\` text NULL,
+      \`repliedAt\` timestamp NULL,
+      \`firstSeenAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`fetchedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY \`uniq_thread_reply\` (\`accountId\`, \`externalId\`)
+    )
+  `);
+
   // アカウント単位の絞り込みが常に索引に乗るようにする
   await addIndex("posts", "idx_posts_account", "`accountId`");
   await addIndex("posts", "idx_posts_account_date", "`accountId`, `scheduledDate`");
@@ -350,6 +447,12 @@ async function main() {
   await addIndex("post_analytics", "idx_post_analytics_log", "`postLogId`");
   await addIndex("categories", "idx_categories_account", "`accountId`");
   await addIndex("follower_snapshots", "idx_follower_account_date", "`accountId`, `capturedDate`");
+  await addIndex("trend_posts", "idx_trend_posts_account_fetched", "`accountId`, `fetchedAt`");
+  await addIndex("trend_posts", "idx_trend_posts_account_status", "`accountId`, `status`");
+  await addIndex("trend_analyses", "idx_trend_analyses_account", "`accountId`, `createdAt`");
+  await addIndex("posts", "idx_posts_trend", "`trendAnalysisId`");
+  await addIndex("thread_replies", "idx_thread_replies_account_status", "`accountId`, `status`");
+  await addIndex("thread_replies", "idx_thread_replies_account_posted", "`accountId`, `postedAt`");
 
   console.log("[upgrade] 完了");
   await conn.end();
