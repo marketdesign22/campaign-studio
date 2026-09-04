@@ -1,5 +1,5 @@
 /**
- * AI機能。実際のAnthropic APIは呼ばず、LLM層をモックして検証する。
+ * AI機能。実際のOpenAI APIは呼ばず、LLM層をモックして検証する。
  * 中心的な要件は「AIの結果で本文を勝手に上書きしない」「Secretが漏れない」。
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -13,7 +13,7 @@ import {
   AI_GUARDRAILS, classifyAiError, createRateLimiter, parseRewriteResult, REWRITE_PRESETS,
 } from "./aiSupport";
 
-const SECRET = "sk-ant-THIS-MUST-NEVER-LEAK";
+const SECRET = "sk-proj-THIS-MUST-NEVER-LEAK";
 
 function ctx(role: "admin" | "user" = "admin", accountId = 1) {
   return {
@@ -25,7 +25,7 @@ function ctx(role: "admin" | "user" = "admin", accountId = 1) {
 
 function llmReply(content: string) {
   return {
-    id: "msg_1", model: "claude-opus-5",
+    id: "msg_1", model: "gpt-5.6-terra",
     choices: [{ index: 0, message: { role: "assistant" as const, content }, finish_reason: "end_turn" }],
   };
 }
@@ -43,7 +43,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(db.listPostLogs).mockResolvedValue([] as never);
   vi.mocked(db.listAccounts).mockResolvedValue([ACCOUNT] as never);
-  delete process.env.ANTHROPIC_API_KEY;
+  delete process.env.OPENAI_API_KEY;
   vi.resetModules();
 });
 
@@ -58,7 +58,7 @@ describe("エラー分類", () => {
     expect(classifyAiError(new Error("fetch failed"))).toBe("network");
     expect(classifyAiError(new Error("empty drafts"))).toBe("empty");
     expect(classifyAiError(new Error("Unexpected token < in JSON"))).toBe("invalid_output");
-    expect(classifyAiError(new Error("ANTHROPIC_API_KEY is not configured"))).toBe("not_configured");
+    expect(classifyAiError(new Error("OPENAI_API_KEY is not configured"))).toBe("not_configured");
   });
 });
 
@@ -134,12 +134,12 @@ describe("APIキーの扱い", () => {
   it("未設定なら安全なエラーを返し、LLMを呼ばない", async () => {
     const { aiRouter } = await import("./routers/ai");
     await expect(aiRouter.createCaller(ctx()).generateDrafts({ topic: "テスト" }))
-      .rejects.toThrow(/ANTHROPIC_API_KEY/);
+      .rejects.toThrow(/OPENAI_API_KEY/);
     expect(llm.invokeLLM).not.toHaveBeenCalled();
   });
 
   it("status はキー本体を返さない", async () => {
-    process.env.ANTHROPIC_API_KEY = SECRET;
+    process.env.OPENAI_API_KEY = SECRET;
     vi.resetModules();
     vi.mocked((await import("./db")).listAccounts).mockResolvedValue([ACCOUNT] as never);
     vi.mocked((await import("./db")).listPostLogs).mockResolvedValue([] as never);
@@ -147,18 +147,18 @@ describe("APIキーの扱い", () => {
     const status = await aiRouter.createCaller(ctx()).status();
     expect(JSON.stringify(status)).not.toContain(SECRET);
     expect(status).toEqual({
-      configured: true, provider: "anthropic", model: "claude-opus-5", available: true,
+      configured: true, provider: "openai", model: "gpt-5.6-terra", available: true,
     });
   });
 
   it("失敗時のメッセージにキーや内部エラーを含めない", async () => {
-    process.env.ANTHROPIC_API_KEY = SECRET;
+    process.env.OPENAI_API_KEY = SECRET;
     vi.resetModules();
     vi.mocked((await import("./db")).listAccounts).mockResolvedValue([ACCOUNT] as never);
     vi.mocked((await import("./db")).listPostLogs).mockResolvedValue([] as never);
     const llm2 = await import("./_core/llm");
     vi.mocked(llm2.invokeLLM).mockRejectedValue(
-      new Error(`401 Unauthorized: invalid x-api-key ${SECRET}`)
+      new Error(`401 Unauthorized: invalid bearer token ${SECRET}`)
     );
     const { aiRouter } = await import("./routers/ai");
     const err = await aiRouter.createCaller(ctx())
@@ -171,7 +171,7 @@ describe("APIキーの扱い", () => {
 
 describe("生成とリライト", () => {
   beforeEach(async () => {
-    process.env.ANTHROPIC_API_KEY = SECRET;
+    process.env.OPENAI_API_KEY = SECRET;
     vi.resetModules();
     vi.mocked((await import("./db")).listAccounts).mockResolvedValue([ACCOUNT] as never);
     vi.mocked((await import("./db")).listPostLogs).mockResolvedValue([] as never);
