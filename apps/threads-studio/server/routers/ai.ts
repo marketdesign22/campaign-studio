@@ -1,9 +1,10 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { invokeLLM } from "../_core/llm";
-import { getAccountSettings, getClientProfile, getOwnedTrendAnalysis, getTrendSettings, listPostLogs } from "../db";
+import { getAccountSettings, getClientProfile, getOwnedTrendAnalysis, getTrendSettings, listConversionEvents, listPostLogs, listPostOutcomes } from "../db";
 import type { TrendAnalysisResult } from "../trends";
 import { parseStoredProfile } from "../clientProfile";
+import { selectReferencePosts } from "@shared/referenceSelection";
 import { ENV } from "../_core/env";
 import {
   AI_GUARDRAILS, aiError, createRateLimiter, MAX_POST_LENGTH,
@@ -51,12 +52,16 @@ function requireConfigured() {
  * 直近の成功投稿をスタイル参照として集める。
  * 参照するのは選択中アカウントの投稿だけ（他クライアントの文面を学習させない）。
  */
-async function getStyleExamples(scope: AccountScope, limit = 8): Promise<string[]> {
-  const logs = await listPostLogs(50, scope);
-  return logs
-    .filter((l) => l.status === "posted")
-    .slice(0, limit)
-    .map((l) => l.content);
+async function getStyleExamples(scope: AccountScope, topic = "", limit = 8): Promise<string[]> {
+  const since = new Date(Date.now() - 365 * 86_400_000);
+  const [outcomes, events] = await Promise.all([listPostOutcomes(scope, since), listConversionEvents(scope.accountId, since, new Date(Date.now() + 1))]);
+  const selected = selectReferencePosts(outcomes.filter((x): x is typeof x & { postId: number } => x.postId !== null).map((x) => ({
+    id: x.postId, content: x.content, postedAt: x.postedAt, views: x.views, likes: x.likes, replies: x.replies, reposts: x.reposts,
+    clicks: events.filter((e) => e.postId === x.postId && e.eventType === "link_click").reduce((n, e) => n + e.quantity, 0),
+    conversions: events.filter((e) => e.postId === x.postId && e.eventType !== "link_click").reduce((n, e) => n + e.quantity, 0),
+  })), topic).slice(0, limit);
+  if (selected.length) return selected.map((x) => `[${x.reason}] ${x.content}`);
+  const logs = await listPostLogs(50, scope); return logs.filter((l) => l.status === "posted").slice(0, limit).map((l) => `[style] ${l.content}`);
 }
 
 export const aiRouter = router({
@@ -113,7 +118,7 @@ export const aiRouter = router({
     .mutation(async ({ input, ctx }) => {
       requireConfigured();
       requireQuota(ctx.user.id);
-      const examples = await getStyleExamples(ctx.scope);
+      const examples = await getStyleExamples(ctx.scope, input.topic);
       const approvedProfile = parseStoredProfile((await getClientProfile(ctx.account.id))?.profile);
       const profileValue = (key: keyof NonNullable<typeof approvedProfile>) => {
         const value = approvedProfile?.[key].value;

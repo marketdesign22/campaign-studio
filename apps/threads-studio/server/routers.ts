@@ -15,6 +15,9 @@ import { trendsRouter } from "./routers/trends";
 import { repliesRouter } from "./routers/replies";
 import { engagementRouter } from "./routers/engagement";
 import { clientProfileRouter } from "./routers/clientProfile";
+import { conversionsRouter } from "./routers/conversions";
+import { strategiesRouter } from "./routers/strategies";
+import { qualityRouter } from "./routers/quality";
 
 export const appRouter = router({
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
@@ -32,6 +35,9 @@ export const appRouter = router({
   replies: repliesRouter,
   engagement: engagementRouter,
   clientProfile: clientProfileRouter,
+  conversions: conversionsRouter,
+  strategies: strategiesRouter,
+  quality: qualityRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

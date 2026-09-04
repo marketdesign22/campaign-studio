@@ -12,6 +12,10 @@ import { accountProcedure } from "../accountScope";
 import type { AccountScope } from "../accountScope";
 import type { Account } from "../../drizzle/schema";
 import { router } from "../_core/trpc";
+import { assertPublishableContent, parseForbiddenTopics } from "../quality";
+import { performAccountQualityCheck } from "../quality";
+import { ENV } from "../_core/env";
+import { aiError } from "../aiSupport";
 
 /** 承認フロー有効時は新規原稿を draft で作成する（アカウントごとの設定） */
 async function initialApprovalStatus(accountId: number): Promise<"draft" | "approved"> {
@@ -89,8 +93,19 @@ export const postsRouter = router({
         angle: z.string().max(200).nullable().optional(),
         referencedTrends: z.array(z.string().max(200)).max(4).optional(),
       }).nullable().optional(),
+      creationSource: z.enum(["manual", "ai", "strategy", "import"]).default("manual"),
     }))
     .mutation(async ({ input, ctx }) => {
+      const accountCfg = await getAccountSettings(ctx.account.id);
+      const approvalStatus = accountCfg.requireApproval ? "draft" as const : "approved" as const;
+      if (input.scheduledDate || approvalStatus === "approved") {
+        try { assertPublishableContent(input.content, parseForbiddenTopics(accountCfg.forbiddenTopics)); }
+        catch (error) { throw new TRPCError({ code: "PRECONDITION_FAILED", message: error instanceof Error ? error.message : "投稿前チェックで停止しました。" }); }
+      }
+      if (input.scheduledDate && ENV.openaiApiKey) {
+        try { await performAccountQualityCheck(ctx.account.id, ctx.scope, input.content, Number(ctx.user.id)); }
+        catch (error) { throw aiError(error); }
+      }
       let trendAnalysisId: number | null = null;
       if (input.trendAnalysisId) {
         const owned = await getOwnedTrendAnalysis(input.trendAnalysisId, ctx.account.id);
@@ -104,9 +119,10 @@ export const postsRouter = router({
         accountId: ctx.account.id,
         scheduledDate: input.scheduledDate ?? null, imageUrl: input.imageUrl ?? null,
         sortOrder: input.sortOrder,
-        status: "pending", approvalStatus: await initialApprovalStatus(ctx.account.id),
+        status: "pending", approvalStatus,
         trendAnalysisId,
         trendMeta: trendAnalysisId && input.trendMeta ? JSON.stringify(input.trendMeta) : null,
+        creationSource: input.creationSource,
       });
       return { ok: true, id };
     }),
@@ -125,7 +141,16 @@ export const postsRouter = router({
     }))
     .mutation(async ({ input, ctx }) => {
       const { id, ...data } = input;
-      await requireOwnedPost(id, ctx.scope);
+      const existing = await requireOwnedPost(id, ctx.scope);
+      if (input.scheduledDate || existing.scheduledDate) {
+        const cfg = await getAccountSettings(ctx.account.id);
+        try { assertPublishableContent(input.content ?? existing.content, parseForbiddenTopics(cfg.forbiddenTopics)); }
+        catch (error) { throw new TRPCError({ code: "PRECONDITION_FAILED", message: error instanceof Error ? error.message : "投稿前チェックで停止しました。" }); }
+        if (ENV.openaiApiKey) {
+          try { await performAccountQualityCheck(ctx.account.id, ctx.scope, input.content ?? existing.content, Number(ctx.user.id), existing.id); }
+          catch (error) { throw aiError(error); }
+        }
+      }
       await updatePost(id, data);
       return { ok: true };
     }),
@@ -134,7 +159,16 @@ export const postsRouter = router({
   setApproval: accountProcedure
     .input(z.object({ id: z.number().int(), approvalStatus: z.enum(["draft", "approved"]) }))
     .mutation(async ({ input, ctx }) => {
-      await requireOwnedPost(input.id, ctx.scope);
+      const post = await requireOwnedPost(input.id, ctx.scope);
+      if (input.approvalStatus === "approved") {
+        const cfg = await getAccountSettings(ctx.account.id);
+        try { assertPublishableContent(post.content, parseForbiddenTopics(cfg.forbiddenTopics)); }
+        catch (error) { throw new TRPCError({ code: "PRECONDITION_FAILED", message: error instanceof Error ? error.message : "投稿前チェックで停止しました。" }); }
+        if (ENV.openaiApiKey) {
+          try { await performAccountQualityCheck(ctx.account.id, ctx.scope, post.content, Number(ctx.user.id), post.id); }
+          catch (error) { throw aiError(error); }
+        }
+      }
       await updatePost(input.id, { approvalStatus: input.approvalStatus });
       return { ok: true };
     }),
@@ -223,6 +257,7 @@ export const postsRouter = router({
         slotIndex: i % input.postsPerDay,
         categoryId: input.categoryId ?? null,
         sortOrder: i,
+        creationSource: "import" as const,
       }));
       await bulkCreatePosts(items);
       // Auto-assign scheduledDate

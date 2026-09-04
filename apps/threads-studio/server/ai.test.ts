@@ -5,7 +5,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("./_core/llm", () => ({ invokeLLM: vi.fn() }));
-vi.mock("./db", () => ({ listPostLogs: vi.fn(), listAccounts: vi.fn(), getClientProfile: vi.fn() }));
+vi.mock("./db", () => ({ listPostLogs: vi.fn(), listAccounts: vi.fn(), getClientProfile: vi.fn(), listPostOutcomes: vi.fn(), listConversionEvents: vi.fn() }));
 
 import * as llm from "./_core/llm";
 import * as db from "./db";
@@ -44,6 +44,8 @@ beforeEach(() => {
   vi.mocked(db.listPostLogs).mockResolvedValue([] as never);
   vi.mocked(db.listAccounts).mockResolvedValue([ACCOUNT] as never);
   vi.mocked(db.getClientProfile).mockResolvedValue(undefined);
+  vi.mocked(db.listPostOutcomes).mockResolvedValue([] as never);
+  vi.mocked(db.listConversionEvents).mockResolvedValue([] as never);
   delete process.env.OPENAI_API_KEY;
   vi.resetModules();
 });

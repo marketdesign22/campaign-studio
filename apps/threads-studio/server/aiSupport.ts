@@ -130,9 +130,9 @@ export function parseRewriteResult(raw: string): RewriteResult {
  */
 export function createRateLimiter(limit: number, windowMs: number) {
   const hits = new Map<string, number[]>();
-  return function take(key: string, now = Date.now()): boolean {
+  return function take(key: string, now = Date.now(), limitOverride = limit): boolean {
     const recent = (hits.get(key) ?? []).filter((t) => now - t < windowMs);
-    if (recent.length >= limit) {
+    if (recent.length >= limitOverride) {
       hits.set(key, recent);
       return false;
     }

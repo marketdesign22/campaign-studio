@@ -34,6 +34,8 @@ export const ENV = {
 
   /** 外部cronから /api/scheduled/tick を叩く場合の共有シークレット（内蔵スケジューラのみなら不要） */
   cronSecret: process.env.CRON_SECRET ?? "",
+  /** 成果Webhook HMAC署名鍵。レスポンスやログへ出さない */
+  conversionWebhookSecret: process.env.CONVERSION_WEBHOOK_SECRET ?? "",
 
   isProduction: process.env.NODE_ENV === "production",
 };

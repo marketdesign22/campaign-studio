@@ -7,6 +7,7 @@ import { publishTextPost } from "../threadsApi";
 import { accountProcedure } from "../accountScope";
 import { router } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
+import { assertPublishableContent, parseForbiddenTopics } from "../quality";
 
 export const manualPostRouter = router({
   /**
@@ -33,6 +34,10 @@ export const manualPostRouter = router({
           code: "PRECONDITION_FAILED",
           message: "この原稿は未承認です。承認後に投稿してください。",
         });
+      }
+      const forbidden = parseForbiddenTopics(cfg.forbiddenTopics);
+      try { assertPublishableContent(post.content, forbidden); } catch (error) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: error instanceof Error ? error.message : "投稿前チェックで停止しました。" });
       }
 
       try {

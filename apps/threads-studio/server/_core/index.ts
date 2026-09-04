@@ -11,6 +11,7 @@ import { startInternalScheduler } from "../cron";
 import { createContext } from "./context";
 import { serveStatic } from "./static";
 import { eveningPostHandler, morningPostHandler, tickHandler } from "../scheduledHandlers";
+import { conversionWebhookHandler } from "../conversionWebhook";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -34,6 +35,8 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 async function startServer() {
   const app = express();
   const server = createServer(app);
+  // 署名は元バイト列を対象にするため、全体のJSONパーサーより前に限定サイズで受ける。
+  app.post("/api/conversions/webhook/:accountId", express.raw({ type: "application/json", limit: "128kb" }), conversionWebhookHandler);
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));

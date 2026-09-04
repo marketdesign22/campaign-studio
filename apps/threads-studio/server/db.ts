@@ -5,9 +5,11 @@ import { buildDbConfig } from "./dbConfig";
 import type { AnyMySqlColumn } from "drizzle-orm/mysql-core";
 import {
   InsertAccount, InsertAccountSettings, InsertPost, InsertUser,
-  accounts, accountSettings, categories, clientProfileDrafts, clientProfiles, clientTrendKeywords,
-  engagementComments, followerSnapshots, media, postAnalytics, postLogs, posts, replyTemplates, settings,
-  threadReplies, trendAnalyses, trendPosts, trendSettings, users,
+  accounts, accountSettings, campaigns, categories, clientProfileDrafts, clientProfiles, clientTrendKeywords,
+  contentStrategies, contentStrategyItems, conversionEventRevisions, conversionEvents, conversionGoals,
+  engagementComments, followerSnapshots, media, postAnalytics, postLogs, postQualityChecks, postQualityFindings,
+  posts, replyTemplates, settings, threadReplies, trendAnalyses, trendPosts, trendSettings, users,
+  weeklyReviews,
 } from "../drizzle/schema";
 import type { AccountScope } from "./accountScope";
 import { ENV } from "./_core/env";
@@ -684,6 +686,15 @@ export const DEFAULT_ACCOUNT_SETTINGS = {
   postsPerDay: 2,
   brandName: null as string | null,
   brandAccent: null as string | null,
+  weeklyPostCount: 7,
+  purposeRatios: null as string | null,
+  defaultCta: null as string | null,
+  forbiddenTopics: null as string | null,
+  qualityStrictness: "standard" as "standard" | "strict",
+  strategyAiDailyLimit: 10,
+  autoWeeklyStrategy: false,
+  weeklyReviewEnabled: true,
+  conversionTrackingEnabled: true,
 };
 
 export type AccountSettingsValues = typeof DEFAULT_ACCOUNT_SETTINGS;
@@ -707,6 +718,15 @@ export async function getAccountSettings(accountId: number): Promise<AccountSett
     postsPerDay: row.postsPerDay,
     brandName: row.brandName,
     brandAccent: row.brandAccent,
+    weeklyPostCount: row.weeklyPostCount,
+    purposeRatios: row.purposeRatios,
+    defaultCta: row.defaultCta,
+    forbiddenTopics: row.forbiddenTopics,
+    qualityStrictness: row.qualityStrictness,
+    strategyAiDailyLimit: row.strategyAiDailyLimit,
+    autoWeeklyStrategy: row.autoWeeklyStrategy,
+    weeklyReviewEnabled: row.weeklyReviewEnabled,
+    conversionTrackingEnabled: row.conversionTrackingEnabled,
   };
 }
 
@@ -1088,6 +1108,111 @@ export async function approveClientProfileDraft(
   });
 }
 
+// ── コンバージョン・戦略・品質チェック ─────────────────────────────
+export async function listConversionGoals(accountId: number) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(conversionGoals).where(eq(conversionGoals.accountId, accountId)).orderBy(desc(conversionGoals.primary), desc(conversionGoals.priority));
+}
+export async function createConversionGoal(accountId: number, value: Omit<typeof conversionGoals.$inferInsert, "accountId" | "id">) {
+  const db = await getDb(); if (!db) throw new Error("DB unavailable");
+  const [r] = await db.insert(conversionGoals).values({ ...value, accountId }); return r.insertId;
+}
+export async function getOwnedConversionGoal(id: number, accountId: number) {
+  const db = await getDb(); if (!db) return undefined;
+  return (await db.select().from(conversionGoals).where(and(eq(conversionGoals.id, id), eq(conversionGoals.accountId, accountId))).limit(1))[0];
+}
+export async function updateOwnedConversionGoal(id: number, accountId: number, value: Partial<typeof conversionGoals.$inferInsert>) {
+  const db = await getDb(); if (!db) return;
+  await db.update(conversionGoals).set(value).where(and(eq(conversionGoals.id, id), eq(conversionGoals.accountId, accountId)));
+}
+export async function createConversionEvent(accountId: number, value: Omit<typeof conversionEvents.$inferInsert, "accountId" | "id">) {
+  const db = await getDb(); if (!db) throw new Error("DB unavailable");
+  if (value.externalEventId) {
+    const existing = await db.select({ id: conversionEvents.id }).from(conversionEvents).where(and(eq(conversionEvents.accountId, accountId), eq(conversionEvents.externalEventId, value.externalEventId))).limit(1);
+    if (existing[0]) return { id: existing[0].id, duplicate: true };
+  }
+  try {
+    const [r] = await db.insert(conversionEvents).values({ ...value, accountId }); return { id: r.insertId, duplicate: false };
+  } catch (error) {
+    if (value.externalEventId && (error as { code?: string }).code === "ER_DUP_ENTRY") {
+      const existing = await db.select({ id: conversionEvents.id }).from(conversionEvents).where(and(eq(conversionEvents.accountId, accountId), eq(conversionEvents.externalEventId, value.externalEventId))).limit(1);
+      if (existing[0]) return { id: existing[0].id, duplicate: true };
+    }
+    throw error;
+  }
+}
+export async function listConversionEvents(accountId: number, from: Date, to: Date) {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(conversionEvents).where(and(eq(conversionEvents.accountId, accountId), gte(conversionEvents.eventTime, from), lt(conversionEvents.eventTime, to))).orderBy(desc(conversionEvents.eventTime));
+}
+export async function getOwnedConversionEvent(id: number, accountId: number) {
+  const db = await getDb(); if (!db) return undefined;
+  return (await db.select().from(conversionEvents).where(and(eq(conversionEvents.id, id), eq(conversionEvents.accountId, accountId))).limit(1))[0];
+}
+export async function reviseConversionEvent(id: number, accountId: number, value: Partial<typeof conversionEvents.$inferInsert>, changedBy: number, reason: string) {
+  const db = await getDb(); if (!db) throw new Error("DB unavailable");
+  await db.transaction(async (tx) => {
+    const previous = (await tx.select().from(conversionEvents).where(and(eq(conversionEvents.id, id), eq(conversionEvents.accountId, accountId))).limit(1))[0];
+    if (!previous) throw new Error("event not found");
+    await tx.insert(conversionEventRevisions).values({ accountId, conversionEventId: id, snapshot: JSON.stringify(previous), changedBy, reason });
+    await tx.update(conversionEvents).set(value).where(and(eq(conversionEvents.id, id), eq(conversionEvents.accountId, accountId)));
+  });
+}
+export async function createContentStrategy(accountId: number, createdBy: number | null, startDate: string, strategy: { goal: string; audience: string; coreMessage: string; warnings: string[]; items: Array<Record<string, unknown>> }) {
+  const db = await getDb(); if (!db) throw new Error("DB unavailable");
+  return db.transaction(async (tx) => {
+    const [r] = await tx.insert(contentStrategies).values({ accountId, createdBy, startDate, goal: strategy.goal, audience: strategy.audience, coreMessage: strategy.coreMessage, warnings: JSON.stringify(strategy.warnings) });
+    const strategyId = r.insertId;
+    await tx.insert(contentStrategyItems).values(strategy.items.map((item) => ({ ...item, accountId, strategyId, confidence: Math.round(Number(item.confidence) * 100) })) as typeof contentStrategyItems.$inferInsert[]);
+    return strategyId;
+  });
+}
+export async function listContentStrategies(accountId: number) {
+  const db = await getDb(); if (!db) return [];
+  const strategies = await db.select().from(contentStrategies).where(eq(contentStrategies.accountId, accountId)).orderBy(desc(contentStrategies.startDate)).limit(12);
+  if (!strategies.length) return [];
+  const items = await db.select().from(contentStrategyItems).where(and(eq(contentStrategyItems.accountId, accountId), inArray(contentStrategyItems.strategyId, strategies.map((s) => s.id))));
+  return strategies.map((strategy) => ({ ...strategy, items: items.filter((item) => item.strategyId === strategy.id) }));
+}
+export async function getOwnedStrategyItem(id: number, accountId: number) {
+  const db = await getDb(); if (!db) return undefined;
+  return (await db.select().from(contentStrategyItems).where(and(eq(contentStrategyItems.id, id), eq(contentStrategyItems.accountId, accountId))).limit(1))[0];
+}
+export async function updateOwnedStrategyItem(id: number, accountId: number, value: Partial<typeof contentStrategyItems.$inferInsert>) {
+  const db = await getDb(); if (!db) return;
+  await db.update(contentStrategyItems).set(value).where(and(eq(contentStrategyItems.id, id), eq(contentStrategyItems.accountId, accountId)));
+}
+export async function createWeeklyReview(accountId: number, strategyId: number, result: unknown, sampleSize: number) {
+  const db = await getDb(); if (!db) throw new Error("DB unavailable");
+  try {
+    const [r] = await db.insert(weeklyReviews).values({ accountId, strategyId, result: JSON.stringify(result), sampleSize }); return r.insertId;
+  } catch (error) {
+    if ((error as { code?: string }).code === "ER_DUP_ENTRY") {
+      const existing = await getWeeklyReviewForStrategy(strategyId, accountId);
+      if (existing) return existing.id;
+    }
+    throw error;
+  }
+}
+export async function getWeeklyReviewForStrategy(strategyId: number, accountId: number) {
+  const db = await getDb(); if (!db) return undefined;
+  return (await db.select().from(weeklyReviews).where(and(eq(weeklyReviews.strategyId, strategyId), eq(weeklyReviews.accountId, accountId))).orderBy(desc(weeklyReviews.createdAt)).limit(1))[0];
+}
+export async function createQualityCheck(accountId: number, value: { postId?: number | null; contentHash: string; status: string; summary: string; aiUsed: boolean; createdBy: number; findings: Array<Record<string, unknown>> }) {
+  const db = await getDb(); if (!db) throw new Error("DB unavailable");
+  return db.transaction(async (tx) => {
+    const [r] = await tx.insert(postQualityChecks).values({ accountId, postId: value.postId, contentHash: value.contentHash, status: value.status, summary: value.summary, aiUsed: value.aiUsed, createdBy: value.createdBy });
+    if (value.findings.length) await tx.insert(postQualityFindings).values(value.findings.map((f) => ({ ...f, accountId, qualityCheckId: r.insertId })) as typeof postQualityFindings.$inferInsert[]);
+    if (value.postId) {
+      const qualityCheckStatus: "ok" | "recommend" | "review" | "blocked" = value.status === "block"
+        ? "blocked"
+        : value.status as "ok" | "recommend" | "review";
+      await tx.update(posts).set({ qualityCheckStatus }).where(and(eq(posts.id, value.postId), eq(posts.accountId, accountId)));
+    }
+    return r.insertId;
+  });
+}
+
 /** 今日のAI分析回数（1日の上限判定用） */
 export async function countTrendAnalysesToday(accountId: number, since: Date): Promise<number> {
   const db = await getDb();
@@ -1114,7 +1239,7 @@ export async function listPostOutcomes(scope: AccountScope, since: Date) {
   const byLog = await analyticsByLogId(logs.map((l) => l.id));
   const postIds = logs.map((l) => l.postId).filter((id): id is number => id !== null);
   const postRows = postIds.length
-    ? await db.select({ id: posts.id, trendAnalysisId: posts.trendAnalysisId, trendMeta: posts.trendMeta })
+    ? await db.select({ id: posts.id, trendAnalysisId: posts.trendAnalysisId, trendMeta: posts.trendMeta, creationSource: posts.creationSource })
         .from(posts).where(inArray(posts.id, postIds))
     : [];
   const postById = new Map(postRows.map((p) => [p.id, p]));
@@ -1126,6 +1251,7 @@ export async function listPostOutcomes(scope: AccountScope, since: Date) {
       logId: l.id, postId: l.postId, content: l.content, postedAt: l.postedAt,
       usedTrend: !!p?.trendAnalysisId,
       trendMeta: p?.trendMeta ?? null,
+      creationSource: p?.creationSource ?? "manual",
       likes, replies, reposts, views,
       /** 分析値が1件も無い投稿は「未取得」として率を出さない */
       hasAnalytics: !!a,

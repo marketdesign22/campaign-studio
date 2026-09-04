@@ -24,6 +24,7 @@ vi.mock("./db", () => ({
   setTrendPostStatus: vi.fn(),
   upsertTrendPost: vi.fn(),
   listPostOutcomes: vi.fn(),
+  listConversionEvents: vi.fn(),
   createPost: vi.fn(),
 }));
 vi.mock("./trends", () => ({
@@ -83,6 +84,7 @@ beforeEach(async () => {
   vi.mocked(d.upsertTrendSettings).mockResolvedValue(undefined);
   vi.mocked(d.listTrendPosts).mockResolvedValue([] as never);
   vi.mocked(d.listPostOutcomes).mockResolvedValue([] as never);
+  vi.mocked(d.listConversionEvents).mockResolvedValue([] as never);
   vi.mocked(d.getLatestTrendAnalysis).mockResolvedValue(undefined);
   delete process.env.OPENAI_API_KEY;
 });

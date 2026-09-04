@@ -1,11 +1,13 @@
 import {
   boolean,
+  index,
   int,
   mediumtext,
   mysqlEnum,
   mysqlTable,
   text,
   timestamp,
+  uniqueIndex,
   varchar,
 } from "drizzle-orm/mysql-core";
 import { bigint } from "drizzle-orm/mysql-core";
@@ -131,6 +133,16 @@ export const accountSettings = mysqlTable("account_settings", {
   brandName: varchar("brandName", { length: 64 }),
   /** ホワイトレーベル: アクセントカラー (hex) */
   brandAccent: varchar("brandAccent", { length: 16 }),
+  /** コンテンツ運用OS設定（JSONは共有Zodスキーマで検証） */
+  weeklyPostCount: int("weeklyPostCount").default(7).notNull(),
+  purposeRatios: text("purposeRatios"),
+  defaultCta: varchar("defaultCta", { length: 300 }),
+  forbiddenTopics: text("forbiddenTopics"),
+  qualityStrictness: mysqlEnum("qualityStrictness", ["standard", "strict"]).default("standard").notNull(),
+  strategyAiDailyLimit: int("strategyAiDailyLimit").default(10).notNull(),
+  autoWeeklyStrategy: boolean("autoWeeklyStrategy").default(false).notNull(),
+  weeklyReviewEnabled: boolean("weeklyReviewEnabled").default(true).notNull(),
+  conversionTrackingEnabled: boolean("conversionTrackingEnabled").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -195,6 +207,13 @@ export const posts = mysqlTable("posts", {
   trendAnalysisId: int("trendAnalysisId"),
   /** 参照した傾向のメモ JSON（テーマ・冒頭の型など。他人の本文は入れない） */
   trendMeta: text("trendMeta"),
+  campaignId: int("campaignId"),
+  strategyItemId: int("strategyItemId"),
+  conversionGoalId: int("conversionGoalId"),
+  trackingMeta: text("trackingMeta"),
+  /** 原稿の作成経路。分析用で、既存行はmanual扱い */
+  creationSource: mysqlEnum("creationSource", ["manual", "ai", "strategy", "import", "recycle"]).default("manual").notNull(),
+  qualityCheckStatus: mysqlEnum("qualityCheckStatus", ["unchecked", "ok", "recommend", "review", "blocked"]).default("unchecked").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -462,3 +481,55 @@ export const clientTrendKeywords = mysqlTable("client_trend_keywords", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
+
+// ── 集客成果・週間戦略・品質チェック ──────────────────────────────
+export const campaigns = mysqlTable("campaigns", {
+  id: int("id").autoincrement().primaryKey(), accountId: int("accountId").notNull(),
+  name: varchar("name", { length: 100 }).notNull(), code: varchar("code", { length: 80 }).notNull(),
+  active: boolean("active").default(true).notNull(), createdAt: timestamp("createdAt").defaultNow().notNull(), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [uniqueIndex("uniq_campaign_code").on(table.accountId, table.code)]);
+
+export const conversionGoals = mysqlTable("conversion_goals", {
+  id: int("id").autoincrement().primaryKey(), accountId: int("accountId").notNull(),
+  name: varchar("name", { length: 80 }).notNull(), type: varchar("type", { length: 32 }).notNull(), destinationUrl: varchar("destinationUrl", { length: 2048 }),
+  enabled: boolean("enabled").default(true).notNull(), priority: int("priority").default(3).notNull(), valueCents: bigint("valueCents", { mode: "number" }), currency: varchar("currency", { length: 3 }).default("JPY").notNull(),
+  region: varchar("region", { length: 80 }), campaign: varchar("campaign", { length: 100 }), attributionDays: int("attributionDays").default(30).notNull(), primary: boolean("primary").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("idx_conversion_goal_account").on(table.accountId, table.enabled, table.priority)]);
+
+export const conversionEvents = mysqlTable("conversion_events", {
+  id: int("id").autoincrement().primaryKey(), accountId: int("accountId").notNull(), postId: int("postId"), postLogId: int("postLogId"), campaignId: int("campaignId"), conversionGoalId: int("conversionGoalId"),
+  eventType: varchar("eventType", { length: 32 }).notNull(), eventTime: timestamp("eventTime").notNull(), quantity: int("quantity").default(1).notNull(), valueCents: bigint("valueCents", { mode: "number" }), currency: varchar("currency", { length: 3 }).default("JPY").notNull(),
+  source: varchar("source", { length: 100 }), medium: varchar("medium", { length: 100 }), campaign: varchar("campaign", { length: 100 }), content: varchar("content", { length: 100 }), externalEventId: varchar("externalEventId", { length: 160 }), metadata: text("metadata"), note: varchar("note", { length: 500 }), registeredBy: int("registeredBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  uniqueIndex("uniq_conversion_external").on(table.accountId, table.externalEventId),
+  index("idx_conversion_event_account_time").on(table.accountId, table.eventTime),
+  index("idx_conversion_event_post").on(table.accountId, table.postId),
+]);
+
+export const conversionEventRevisions = mysqlTable("conversion_event_revisions", {
+  id: int("id").autoincrement().primaryKey(), accountId: int("accountId").notNull(), conversionEventId: int("conversionEventId").notNull(), snapshot: text("snapshot").notNull(), changedBy: int("changedBy"), reason: varchar("reason", { length: 300 }), createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [index("idx_conversion_revision_event").on(table.accountId, table.conversionEventId)]);
+
+export const contentStrategies = mysqlTable("content_strategies", {
+  id: int("id").autoincrement().primaryKey(), accountId: int("accountId").notNull(), startDate: varchar("startDate", { length: 10 }).notNull(), status: mysqlEnum("status", ["draft", "approved", "archived"]).default("draft").notNull(),
+  goal: varchar("goal", { length: 300 }).notNull(), audience: varchar("audience", { length: 300 }).notNull(), coreMessage: varchar("coreMessage", { length: 500 }).notNull(), warnings: text("warnings").notNull(), createdBy: int("createdBy"), createdAt: timestamp("createdAt").defaultNow().notNull(), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("idx_strategy_account_start").on(table.accountId, table.startDate)]);
+
+export const contentStrategyItems = mysqlTable("content_strategy_items", {
+  id: int("id").autoincrement().primaryKey(), accountId: int("accountId").notNull(), strategyId: int("strategyId").notNull(), day: int("day").notNull(), date: varchar("date", { length: 10 }).notNull(), status: mysqlEnum("status", ["active", "excluded", "scheduled"]).default("active").notNull(),
+  purpose: varchar("purpose", { length: 32 }).notNull(), theme: varchar("theme", { length: 160 }).notNull(), hook: varchar("hook", { length: 200 }).notNull(), cta: varchar("cta", { length: 200 }).notNull(), format: varchar("format", { length: 24 }).notNull(), recommendedTime: varchar("recommendedTime", { length: 5 }).notNull(), trend: varchar("trend", { length: 160 }), rationale: varchar("rationale", { length: 500 }).notNull(), expectedOutcome: varchar("expectedOutcome", { length: 300 }).notNull(), confidence: int("confidence").notNull(), hypothesis: boolean("hypothesis").default(true).notNull(), factCheckWarning: varchar("factCheckWarning", { length: 300 }), createdAt: timestamp("createdAt").defaultNow().notNull(), updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [index("idx_strategy_item_account").on(table.accountId, table.strategyId, table.date)]);
+
+export const weeklyReviews = mysqlTable("weekly_reviews", {
+  id: int("id").autoincrement().primaryKey(), accountId: int("accountId").notNull(), strategyId: int("strategyId").notNull(), result: text("result").notNull(), sampleSize: int("sampleSize").default(0).notNull(), createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [uniqueIndex("uniq_weekly_review_strategy").on(table.accountId, table.strategyId)]);
+
+export const postQualityChecks = mysqlTable("post_quality_checks", {
+  id: int("id").autoincrement().primaryKey(), accountId: int("accountId").notNull(), postId: int("postId"), contentHash: varchar("contentHash", { length: 64 }).notNull(), status: varchar("status", { length: 16 }).notNull(), summary: varchar("summary", { length: 800 }).notNull(), aiUsed: boolean("aiUsed").default(false).notNull(), createdBy: int("createdBy"), createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [index("idx_quality_account_post").on(table.accountId, table.postId, table.createdAt)]);
+
+export const postQualityFindings = mysqlTable("post_quality_findings", {
+  id: int("id").autoincrement().primaryKey(), accountId: int("accountId").notNull(), qualityCheckId: int("qualityCheckId").notNull(), code: varchar("code", { length: 60 }).notNull(), status: varchar("status", { length: 16 }).notNull(), message: varchar("message", { length: 500 }).notNull(), reason: varchar("reason", { length: 500 }).notNull(), evidence: varchar("evidence", { length: 500 }).notNull(), severity: int("severity").notNull(), suggestion: varchar("suggestion", { length: 500 }).notNull(), autoFixable: boolean("autoFixable").default(false).notNull(), humanReview: boolean("humanReview").default(false).notNull(), deterministic: boolean("deterministic").default(false).notNull(), createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => [index("idx_quality_finding_check").on(table.accountId, table.qualityCheckId)]);

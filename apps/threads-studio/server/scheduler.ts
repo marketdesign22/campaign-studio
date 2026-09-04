@@ -40,6 +40,8 @@ import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 import { markDeletedSavedPosts, runTrendFetchIfDue } from "./trends";
 import { fetchRepliesForAccounts } from "./replies";
+import { assertPublishableContent, parseForbiddenTopics } from "./quality";
+import { runStrategyMaintenance } from "./strategyService";
 
 // ── Timezone helpers (pure, unit-tested) ─────────────────────────────────────
 
@@ -204,6 +206,10 @@ export async function runSlotForAccount(
     content = cfg.recycleRewrite ? await rewordForRecycle(candidate.content) : candidate.content;
   }
 
+  const publishCfg = await getAccountSettings(account.id);
+  try { assertPublishableContent(content, parseForbiddenTopics(publishCfg.forbiddenTopics)); }
+  catch (error) { return { error: error instanceof Error ? error.message : "投稿前チェックで停止しました。" }; }
+
   try {
     const imageUrl = resolveImageUrl(post.imageUrl);
     const result = await publishTextPost(
@@ -331,6 +337,9 @@ async function runDailyMaintenance(now: Date) {
   await refreshTokensIfNeeded(now);
   await fetchAnalyticsForRecentPosts();
   await fetchFollowerCounts(now);
+  await runStrategyMaintenance(now).catch((e) =>
+    console.warn(`[scheduler] strategy maintenance failed: ${e instanceof Error ? e.name : "error"}`)
+  );
   // 保存済みトレンド投稿が削除されていないかの確認（ベストエフォート、1日1回）。
   // トレンド関連の失敗は投稿・トークン更新・分析取得に影響させない
   try {

@@ -71,6 +71,13 @@ async function main() {
     await conn.query(`CREATE INDEX \`${index}\` ON \`${table}\` (${columns})`);
   }
 
+  async function addUniqueIndex(table: string, index: string, columns: string) {
+    if (!(await hasTable(table))) return;
+    if (await hasIndex(table, index)) return;
+    console.log(`[upgrade] ${table} に一意索引 ${index} を追加`);
+    await conn.query(`CREATE UNIQUE INDEX \`${index}\` ON \`${table}\` (${columns})`);
+  }
+
   // ── 基本テーブル（空のDBへの初回デプロイ用。drizzle/schema.ts と揃えること） ──
   async function createTable(table: string, ddl: string) {
     if (await hasTable(table)) return;
@@ -511,6 +518,32 @@ async function main() {
     )
   `);
 
+  await createTable("campaigns", `CREATE TABLE \`campaigns\` (\`id\` int AUTO_INCREMENT PRIMARY KEY, \`accountId\` int NOT NULL, \`name\` varchar(100) NOT NULL, \`code\` varchar(80) NOT NULL, \`active\` boolean NOT NULL DEFAULT true, \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, UNIQUE KEY \`uniq_campaign_code\` (\`accountId\`,\`code\`))`);
+  await createTable("conversion_goals", `CREATE TABLE \`conversion_goals\` (\`id\` int AUTO_INCREMENT PRIMARY KEY, \`accountId\` int NOT NULL, \`name\` varchar(80) NOT NULL, \`type\` varchar(32) NOT NULL, \`destinationUrl\` varchar(2048) NULL, \`enabled\` boolean NOT NULL DEFAULT true, \`priority\` int NOT NULL DEFAULT 3, \`valueCents\` bigint NULL, \`currency\` varchar(3) NOT NULL DEFAULT 'JPY', \`region\` varchar(80) NULL, \`campaign\` varchar(100) NULL, \`attributionDays\` int NOT NULL DEFAULT 30, \`primary\` boolean NOT NULL DEFAULT false, \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)`);
+  await createTable("conversion_events", `CREATE TABLE \`conversion_events\` (\`id\` int AUTO_INCREMENT PRIMARY KEY, \`accountId\` int NOT NULL, \`postId\` int NULL, \`postLogId\` int NULL, \`campaignId\` int NULL, \`conversionGoalId\` int NULL, \`eventType\` varchar(32) NOT NULL, \`eventTime\` timestamp NOT NULL, \`quantity\` int NOT NULL DEFAULT 1, \`valueCents\` bigint NULL, \`currency\` varchar(3) NOT NULL DEFAULT 'JPY', \`source\` varchar(100) NULL, \`medium\` varchar(100) NULL, \`campaign\` varchar(100) NULL, \`content\` varchar(100) NULL, \`externalEventId\` varchar(160) NULL, \`metadata\` text NULL, \`note\` varchar(500) NULL, \`registeredBy\` int NULL, \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP, UNIQUE KEY \`uniq_conversion_external\` (\`accountId\`,\`externalEventId\`))`);
+  await createTable("conversion_event_revisions", `CREATE TABLE \`conversion_event_revisions\` (\`id\` int AUTO_INCREMENT PRIMARY KEY, \`accountId\` int NOT NULL, \`conversionEventId\` int NOT NULL, \`snapshot\` text NOT NULL, \`changedBy\` int NULL, \`reason\` varchar(300) NULL, \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
+  await createTable("content_strategies", `CREATE TABLE \`content_strategies\` (\`id\` int AUTO_INCREMENT PRIMARY KEY, \`accountId\` int NOT NULL, \`startDate\` varchar(10) NOT NULL, \`status\` enum('draft','approved','archived') NOT NULL DEFAULT 'draft', \`goal\` varchar(300) NOT NULL, \`audience\` varchar(300) NOT NULL, \`coreMessage\` varchar(500) NOT NULL, \`warnings\` text NOT NULL, \`createdBy\` int NULL, \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)`);
+  await createTable("content_strategy_items", `CREATE TABLE \`content_strategy_items\` (\`id\` int AUTO_INCREMENT PRIMARY KEY, \`accountId\` int NOT NULL, \`strategyId\` int NOT NULL, \`day\` int NOT NULL, \`date\` varchar(10) NOT NULL, \`status\` enum('active','excluded','scheduled') NOT NULL DEFAULT 'active', \`purpose\` varchar(32) NOT NULL, \`theme\` varchar(160) NOT NULL, \`hook\` varchar(200) NOT NULL, \`cta\` varchar(200) NOT NULL, \`format\` varchar(24) NOT NULL, \`recommendedTime\` varchar(5) NOT NULL, \`trend\` varchar(160) NULL, \`rationale\` varchar(500) NOT NULL, \`expectedOutcome\` varchar(300) NOT NULL, \`confidence\` int NOT NULL, \`hypothesis\` boolean NOT NULL DEFAULT true, \`factCheckWarning\` varchar(300) NULL, \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)`);
+  await createTable("weekly_reviews", `CREATE TABLE \`weekly_reviews\` (\`id\` int AUTO_INCREMENT PRIMARY KEY, \`accountId\` int NOT NULL, \`strategyId\` int NOT NULL, \`result\` text NOT NULL, \`sampleSize\` int NOT NULL DEFAULT 0, \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
+  await createTable("post_quality_checks", `CREATE TABLE \`post_quality_checks\` (\`id\` int AUTO_INCREMENT PRIMARY KEY, \`accountId\` int NOT NULL, \`postId\` int NULL, \`contentHash\` varchar(64) NOT NULL, \`status\` varchar(16) NOT NULL, \`summary\` varchar(800) NOT NULL, \`aiUsed\` boolean NOT NULL DEFAULT false, \`createdBy\` int NULL, \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
+  await createTable("post_quality_findings", `CREATE TABLE \`post_quality_findings\` (\`id\` int AUTO_INCREMENT PRIMARY KEY, \`accountId\` int NOT NULL, \`qualityCheckId\` int NOT NULL, \`code\` varchar(60) NOT NULL, \`status\` varchar(16) NOT NULL, \`message\` varchar(500) NOT NULL, \`reason\` varchar(500) NOT NULL, \`evidence\` varchar(500) NOT NULL, \`severity\` int NOT NULL, \`suggestion\` varchar(500) NOT NULL, \`autoFixable\` boolean NOT NULL DEFAULT false, \`humanReview\` boolean NOT NULL DEFAULT false, \`deterministic\` boolean NOT NULL DEFAULT false, \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
+
+  await addColumn("posts", "campaignId", "\`campaignId\` int NULL");
+  await addColumn("posts", "strategyItemId", "\`strategyItemId\` int NULL");
+  await addColumn("posts", "conversionGoalId", "\`conversionGoalId\` int NULL");
+  await addColumn("posts", "trackingMeta", "\`trackingMeta\` text NULL");
+  await addColumn("posts", "creationSource", "\`creationSource\` enum('manual','ai','strategy','import','recycle') NOT NULL DEFAULT 'manual'");
+  await addColumn("posts", "qualityCheckStatus", "\`qualityCheckStatus\` enum('unchecked','ok','recommend','review','blocked') NOT NULL DEFAULT 'unchecked'");
+  await addColumn("account_settings", "weeklyPostCount", "\`weeklyPostCount\` int NOT NULL DEFAULT 7");
+  await addColumn("account_settings", "purposeRatios", "\`purposeRatios\` text NULL");
+  await addColumn("account_settings", "defaultCta", "\`defaultCta\` varchar(300) NULL");
+  await addColumn("account_settings", "forbiddenTopics", "\`forbiddenTopics\` text NULL");
+  await addColumn("account_settings", "qualityStrictness", "\`qualityStrictness\` enum('standard','strict') NOT NULL DEFAULT 'standard'");
+  await addColumn("account_settings", "strategyAiDailyLimit", "\`strategyAiDailyLimit\` int NOT NULL DEFAULT 10");
+  await addColumn("account_settings", "autoWeeklyStrategy", "\`autoWeeklyStrategy\` boolean NOT NULL DEFAULT false");
+  await addColumn("account_settings", "weeklyReviewEnabled", "\`weeklyReviewEnabled\` boolean NOT NULL DEFAULT true");
+  await addColumn("account_settings", "conversionTrackingEnabled", "\`conversionTrackingEnabled\` boolean NOT NULL DEFAULT true");
+
   // アカウント単位の絞り込みが常に索引に乗るようにする
   await addIndex("posts", "idx_posts_account", "`accountId`");
   await addIndex("posts", "idx_posts_account_date", "`accountId`, `scheduledDate`");
@@ -529,6 +562,15 @@ async function main() {
   await addIndex("engagement_comments", "idx_engagement_comments_target", "`accountId`, `targetExternalId`");
   await addIndex("client_profile_drafts", "idx_profile_draft_account", "`accountId`, `createdAt`");
   await addIndex("client_trend_keywords", "idx_client_keyword_account", "`accountId`, `enabled`, `priority`");
+  await addIndex("conversion_goals", "idx_conversion_goal_account", "`accountId`, `enabled`, `priority`");
+  await addIndex("conversion_events", "idx_conversion_event_account_time", "`accountId`, `eventTime`");
+  await addIndex("conversion_events", "idx_conversion_event_post", "`accountId`, `postId`");
+  await addIndex("conversion_event_revisions", "idx_conversion_revision_event", "`accountId`, `conversionEventId`");
+  await addIndex("content_strategies", "idx_strategy_account_start", "`accountId`, `startDate`");
+  await addIndex("content_strategy_items", "idx_strategy_item_account", "`accountId`, `strategyId`, `date`");
+  await addUniqueIndex("weekly_reviews", "uniq_weekly_review_strategy", "`accountId`, `strategyId`");
+  await addIndex("post_quality_checks", "idx_quality_account_post", "`accountId`, `postId`, `createdAt`");
+  await addIndex("post_quality_findings", "idx_quality_finding_check", "`accountId`, `qualityCheckId`");
 
   console.log("[upgrade] 完了");
   await conn.end();

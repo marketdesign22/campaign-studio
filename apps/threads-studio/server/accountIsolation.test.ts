@@ -348,6 +348,19 @@ describe("自動返信テンプレート", () => {
   });
 });
 
+describe("コンテンツ運用OSのアカウント分離", () => {
+  it("成果・戦略・品質の取得はすべてaccountIdで絞る", async () => {
+    const { getOwnedConversionGoal, getOwnedConversionEvent, listConversionEvents, listContentStrategies, getOwnedStrategyItem, getWeeklyReviewForStrategy } = await import("./db");
+    await getOwnedConversionGoal(10, 2); scopedTo(2); expect(lastQuery().sql).toMatch(/`id` = \?/);
+    await getOwnedConversionEvent(11, 2); scopedTo(2); expect(lastQuery().sql).toMatch(/`id` = \?/);
+    await listConversionEvents(2, new Date("2026-09-01T00:00:00Z"), new Date("2026-10-01T00:00:00Z")); scopedTo(2);
+    nextRows = [];
+    await listContentStrategies(2); scopedTo(2);
+    await getOwnedStrategyItem(12, 2); scopedTo(2); expect(lastQuery().sql).toMatch(/`id` = \?/);
+    await getWeeklyReviewForStrategy(13, 2); scopedTo(2); expect(lastQuery().sql).toMatch(/`strategyId` = \?/);
+  });
+});
+
 describe("クライアントプロフィール", () => {
   it("承認済みプロフィールと最新候補はaccountIdで絞る", async () => {
     const { getClientProfile, getLatestClientProfileDraft } = await import("./db");
