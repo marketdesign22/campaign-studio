@@ -3,6 +3,7 @@ import {
   createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useSyncExternalStore,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { PostingSlot } from "@shared/postingSlots";
 import { trpc } from "@/lib/trpc";
 import {
   getSelectedAccountId, setSelectedAccountId, subscribeSelectedAccount,
@@ -12,6 +13,8 @@ export type SwitchableAccount = {
   id: number;
   name: string;
   threadsUserId: string;
+  /** 投稿枠。画面のスロット表示（「12:00 JST」など）に使う */
+  slots: PostingSlot[];
   active: boolean;
 };
 
@@ -45,6 +48,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
           id: a.id,
           name: a.name,
           threadsUserId: a.threadsUserId,
+          slots: a.slots,
           active: a.active,
         })),
     [data]

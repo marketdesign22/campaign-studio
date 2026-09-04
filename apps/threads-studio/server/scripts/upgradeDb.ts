@@ -278,6 +278,10 @@ async function main() {
   // カテゴリーの所属アカウント。NULL = 従来からある全アカウント共通のカテゴリー
   await addColumn("categories", "accountId", "`accountId` int NULL");
 
+  // 投稿枠の定義（枠ごとにタイムゾーンを持つ）。
+  // NULL のままなら従来の朝夕設定がそのまま使われるので、既存アカウントは無変更で動く。
+  await addColumn("accounts", "slots", "`slots` text NULL");
+
   // アカウントごとの運用設定
   await createTable("account_settings", `
     CREATE TABLE \`account_settings\` (
@@ -327,12 +331,25 @@ async function main() {
     }
   }
 
+  // フォロワー数の日次スナップショット。増減は差分から求めるため履歴を持つ
+  await createTable("follower_snapshots", `
+    CREATE TABLE \`follower_snapshots\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`accountId\` int NOT NULL,
+      \`capturedDate\` varchar(10) NOT NULL,
+      \`followerCount\` int NOT NULL,
+      \`fetchedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY \`uniq_follower_account_date\` (\`accountId\`, \`capturedDate\`)
+    )
+  `);
+
   // アカウント単位の絞り込みが常に索引に乗るようにする
   await addIndex("posts", "idx_posts_account", "`accountId`");
   await addIndex("posts", "idx_posts_account_date", "`accountId`, `scheduledDate`");
   await addIndex("post_logs", "idx_post_logs_account", "`accountId`, `postedAt`");
   await addIndex("post_analytics", "idx_post_analytics_log", "`postLogId`");
   await addIndex("categories", "idx_categories_account", "`accountId`");
+  await addIndex("follower_snapshots", "idx_follower_account_date", "`accountId`, `capturedDate`");
 
   console.log("[upgrade] 完了");
   await conn.end();

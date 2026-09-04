@@ -19,11 +19,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { trpc } from "@/lib/trpc";
 import { PageHeader } from "@/components/PageHeader";
 import { useI18n } from "@/i18n";
+import { useAccount } from "@/contexts/AccountContext";
+import { slotLabel } from "@/lib/slotLabel";
 import { ChevronLeft, ChevronRight, Clock, GripVertical } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
-const SLOT_LABELS = ["朝", "夕", "3回目", "4回目", "5回目", "6回目"];
 const SLOT_PILL: Record<number, string> = {
   0: "bg-amber-100 text-amber-800 border-amber-200",
   1: "bg-indigo-100 text-indigo-800 border-indigo-200",
@@ -57,6 +58,7 @@ function DraggablePost({
   isDragging?: boolean;
 }) {
   const { t } = useI18n();
+  const slots = useAccount().current?.slots ?? [];
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: `post-${post.id}`,
     data: { post },
@@ -78,7 +80,7 @@ function DraggablePost({
       </span>
       {/* Slot badge */}
       <span className={`shrink-0 text-[9px] font-semibold px-1 rounded border ${SLOT_PILL[post.slotIndex] ?? ""}`}>
-        {SLOT_LABELS[post.slotIndex] ? t(SLOT_LABELS[post.slotIndex]) : post.slotIndex}
+        {slotLabel(slots, post.slotIndex, t("枠"))}
       </span>
       {/* Content preview — click to edit */}
       <button
@@ -142,12 +144,13 @@ function DroppableCell({
 // ── Overlay chip (shown while dragging) ─────────────────────────────────────
 function OverlayChip({ post }: { post: PostItem }) {
   const { t } = useI18n();
+  const slots = useAccount().current?.slots ?? [];
   return (
     <div className={`text-xs px-2 py-1 rounded border shadow-xl flex items-center gap-1.5 max-w-[160px]
       ${STATUS_BG[post.status] ?? ""} ring-2 ring-[#335B82]/30`}>
       <GripVertical className="h-3 w-3 text-muted-foreground shrink-0" />
       <span className={`text-[9px] font-semibold px-1 rounded border ${SLOT_PILL[post.slotIndex] ?? ""}`}>
-        {SLOT_LABELS[post.slotIndex] ? t(SLOT_LABELS[post.slotIndex]) : post.slotIndex}
+        {slotLabel(slots, post.slotIndex, t("枠"))}
       </span>
       <span className="truncate">{post.content.slice(0, 20)}…</span>
     </div>
@@ -157,6 +160,7 @@ function OverlayChip({ post }: { post: PostItem }) {
 // ── Main Calendar page ───────────────────────────────────────────────────────
 export default function Calendar() {
   const { t, lang } = useI18n();
+  const slots = useAccount().current?.slots ?? [];
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -224,9 +228,9 @@ export default function Calendar() {
         <Badge variant="outline" className="text-xs px-3 py-1">
           <Clock className="h-3 w-3 mr-1.5" />{t("この月")}: {totalPosts}{t("件")}
         </Badge>
-        {[0, 1, 2].map(s => (
+        {slots.map((_, s) => (
           <Badge key={s} variant="outline" className={`text-xs px-2 py-1 ${SLOT_PILL[s] ?? ""}`}>
-            {t(SLOT_LABELS[s])}: {Object.values(byDate ?? {}).reduce((c, arr) => c + arr.filter(p => p.slotIndex === s).length, 0)}{t("件")}
+            {slotLabel(slots, s, t("枠"))}: {Object.values(byDate ?? {}).reduce((c, arr) => c + arr.filter(p => p.slotIndex === s).length, 0)}{t("件")}
           </Badge>
         ))}
       </div>
@@ -318,8 +322,8 @@ export default function Calendar() {
                   <Select value={String(editSlot)} onValueChange={v => setEditSlot(Number(v))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {SLOT_LABELS.map((l, i) => (
-                        <SelectItem key={i} value={String(i)}>{t(l)} (#{i + 1})</SelectItem>
+                      {slots.map((_, i) => (
+                        <SelectItem key={i} value={String(i)}>{slotLabel(slots, i, t("枠"))}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

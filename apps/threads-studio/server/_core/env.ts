@@ -23,9 +23,9 @@ export const ENV = {
   threadsAppId: process.env.THREADS_APP_ID ?? "",
   threadsAppSecret: process.env.THREADS_APP_SECRET ?? "",
 
-  // AIアシスト (Anthropic API)
-  anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? "",
-  anthropicModel: process.env.ANTHROPIC_MODEL ?? "claude-opus-5",
+  // AIアシスト (OpenAI API)
+  openaiApiKey: process.env.OPENAI_API_KEY ?? "",
+  openaiModel: process.env.OPENAI_MODEL ?? "gpt-5.6-terra",
 
   // 通知メール (Resend)。未設定なら通知はサーバーログのみ
   resendApiKey: process.env.RESEND_API_KEY ?? "",

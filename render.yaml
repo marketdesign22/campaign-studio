@@ -26,5 +26,15 @@ services:
         sync: false
       - key: CRON_SECRET # GitHub Actions 側の Secret と同じ値にする
         sync: false
-      - key: ANTHROPIC_API_KEY # AIアシスト用（任意）
+      - key: OPENAI_API_KEY # AIアシスト用（任意）。Renderのsecretに設定する
+        sync: false
+      - key: OPENAI_MODEL # 省略時は gpt-5.6-terra
+        sync: false
+      - key: THREADS_APP_ID # クライアントのアカウント連携に使う
+        sync: false
+      - key: THREADS_APP_SECRET
+        sync: false
+      - key: APP_URL # 例: https://threads-studio-1ol0.onrender.com（OAuthのcallbackに必要）
+        sync: false
+      - key: ALLOWED_EMAILS # ログインを許可するGoogleアカウント（カンマ区切り）
         sync: false
