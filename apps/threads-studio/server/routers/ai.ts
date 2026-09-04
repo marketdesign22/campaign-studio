@@ -37,10 +37,10 @@ function requireQuota(userId: number | string, take = takeAiCall) {
 }
 
 function requireConfigured() {
-  if (!ENV.anthropicApiKey) {
+  if (!ENV.openaiApiKey) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
-      message: "AI設定が必要です。ANTHROPIC_API_KEY を設定してください。",
+      message: "AI設定が必要です。OPENAI_API_KEY を設定してください。",
     });
   }
 }
@@ -62,10 +62,10 @@ export const aiRouter = router({
    * AIの利用可否。APIキーそのものは決して返さず、設定済みかどうかとモデル名だけ返す。
    */
   status: protectedProcedure.query(() => ({
-    configured: !!ENV.anthropicApiKey,
-    provider: "anthropic" as const,
-    model: ENV.anthropicApiKey ? ENV.anthropicModel : null,
-    available: !!ENV.anthropicApiKey,
+    configured: !!ENV.openaiApiKey,
+    provider: "openai" as const,
+    model: ENV.openaiApiKey ? ENV.openaiModel : null,
+    available: !!ENV.openaiApiKey,
   })),
 
   /**
