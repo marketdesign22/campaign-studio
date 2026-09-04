@@ -1,11 +1,9 @@
-import Anthropic from "@anthropic-ai/sdk";
 import { ENV } from "./env";
 
 /**
- * AIアシスト用のLLM呼び出し（スタンドアロン版）。
- * Anthropic API を直接呼ぶ。呼び出し側（server/routers/ai.ts）が使う
- * OpenAI互換の最小サブセット — system/userメッセージ・maxTokens・
- * responseFormat(json) — のみをサポートし、返り値も同じ形に揃える。
+ * AIアシスト用のLLM呼び出し。
+ * OpenAI Chat Completions APIをサーバーから直接呼び、既存の呼び出し側が
+ * 依存する最小レスポンス形式へ正規化する。
  */
 
 export type Role = "system" | "user" | "assistant";
@@ -50,70 +48,85 @@ export type InvokeResult = {
   };
 };
 
-let _client: Anthropic | null = null;
+type OpenAIError = Error & { status?: number };
 
-function getClient(): Anthropic {
-  if (!ENV.anthropicApiKey) {
-    throw new Error(
-      "ANTHROPIC_API_KEY is not configured — AI assist features are unavailable."
-    );
-  }
-  if (!_client) {
-    _client = new Anthropic({ apiKey: ENV.anthropicApiKey });
-  }
-  return _client;
+function httpError(status: number): OpenAIError {
+  const error = new Error(`OpenAI API request failed (${status})`) as OpenAIError;
+  error.status = status;
+  return error;
 }
 
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
-  const client = getClient();
-
-  const system = params.messages
-    .filter(m => m.role === "system")
-    .map(m => m.content)
-    .join("\n\n");
-  const messages = params.messages
-    .filter((m): m is Message & { role: "user" | "assistant" } => m.role !== "system")
-    .map(m => ({ role: m.role, content: m.content }));
+  if (!ENV.openaiApiKey) {
+    throw new Error("OPENAI_API_KEY is not configured — AI assist features are unavailable.");
+  }
 
   const format = params.responseFormat ?? params.response_format;
-  const maxTokens = params.maxTokens ?? params.max_tokens ?? 2048;
-
-  const response = await client.messages.create({
-    model: params.model ?? ENV.anthropicModel,
-    max_tokens: maxTokens,
-    ...(system ? { system } : {}),
-    messages,
-    ...(format && format.type === "json_schema"
-      ? {
-          output_config: {
-            format: {
-              type: "json_schema" as const,
-              schema: format.json_schema.schema,
-            },
+  const responseFormat = !format || format.type === "text"
+    ? undefined
+    : format.type === "json_object"
+      ? { type: "json_object" as const }
+      : {
+          type: "json_schema" as const,
+          json_schema: {
+            name: format.json_schema.name,
+            schema: format.json_schema.schema,
+            strict: format.json_schema.strict ?? true,
           },
-        }
-      : {}),
-  });
+        };
 
-  const text = response.content
-    .filter((block): block is Anthropic.TextBlock => block.type === "text")
-    .map(block => block.text)
-    .join("");
+  let response: Response;
+  try {
+    response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${ENV.openaiApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: params.model ?? ENV.openaiModel,
+        messages: params.messages,
+        max_completion_tokens: params.maxTokens ?? params.max_tokens ?? 2048,
+        ...(responseFormat ? { response_format: responseFormat } : {}),
+      }),
+      signal: AbortSignal.timeout(45_000),
+    });
+  } catch (error) {
+    if (error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError")) {
+      throw new Error("OpenAI API request timeout");
+    }
+    throw error;
+  }
+
+  if (!response.ok) throw httpError(response.status);
+
+  const data = await response.json() as {
+    id?: string;
+    model?: string;
+    choices?: Array<{
+      index?: number;
+      message?: { content?: string | null };
+      finish_reason?: string | null;
+    }>;
+    usage?: {
+      prompt_tokens?: number;
+      completion_tokens?: number;
+      total_tokens?: number;
+    };
+  };
 
   return {
-    id: response.id,
-    model: response.model,
-    choices: [
-      {
-        index: 0,
-        message: { role: "assistant", content: text },
-        finish_reason: response.stop_reason,
-      },
-    ],
-    usage: {
-      prompt_tokens: response.usage.input_tokens,
-      completion_tokens: response.usage.output_tokens,
-      total_tokens: response.usage.input_tokens + response.usage.output_tokens,
-    },
+    id: data.id ?? "",
+    model: data.model ?? (params.model ?? ENV.openaiModel),
+    choices: (data.choices ?? []).map((choice, index) => ({
+      index: choice.index ?? index,
+      message: { role: "assistant", content: choice.message?.content ?? "" },
+      finish_reason: choice.finish_reason ?? null,
+    })),
+    usage: data.usage ? {
+      prompt_tokens: data.usage.prompt_tokens ?? 0,
+      completion_tokens: data.usage.completion_tokens ?? 0,
+      total_tokens: data.usage.total_tokens ?? 0,
+    } : undefined,
   };
 }
