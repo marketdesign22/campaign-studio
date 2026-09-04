@@ -2,6 +2,11 @@ import { useRef, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAccount } from "@/contexts/AccountContext";
 import { slotLabel } from "@/lib/slotLabel";
+import {
+  canSave, countChars, isDirty as draftIsDirty, isBlocking, lengthState,
+  MAX_POST_LENGTH, validateDraft,
+} from "@shared/postDraft";
+import { REWRITE_PRESET_LABELS } from "@/lib/rewritePresets";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -189,10 +194,12 @@ export default function Posts() {
   const importMut = trpc.posts.bulkImport.useMutation({ onSuccess: d => { toast.success(`${d.count}${t("件インポートしました")}`); invalidate(); setImportOpen(false); setImportText(""); }, onError: e => toast.error(e.message) });
   const approvalMut = trpc.posts.setApproval.useMutation({ onSuccess: () => invalidate(), onError: e => toast.error(e.message) });
   const aiGenerate = trpc.ai.generateDrafts.useMutation({ onError: e => toast.error(e.message) });
+  // リライト結果は本文へ即時反映しない。案として保持し、利用者が適用を選ぶ
   const aiRewrite = trpc.ai.rewrite.useMutation({
-    onSuccess: d => { setContent(d.content); toast.success(t("リライトしました")); },
+    onSuccess: d => setRewriteDraft(d),
     onError: e => toast.error(e.message),
   });
+  const { data: aiStatus } = trpc.ai.status.useQuery(undefined, { staleTime: 60_000 });
 
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<typeof postList[0] | null>(null);
@@ -204,6 +211,17 @@ export default function Posts() {
   const [uploading, setUploading] = useState(false);
   const imageFileRef = useRef<HTMLInputElement>(null);
   const [rewriteInstruction, setRewriteInstruction] = useState("");
+  const [rewritePreset, setRewritePreset] = useState<string>("");
+  /** AIの提案。適用するまで本文は変えない */
+  const [rewriteDraft, setRewriteDraft] = useState<
+    { content: string; changeSummary: string[]; warnings: string[] } | null
+  >(null);
+  /** 「リライト前に戻す」用に、適用直前の本文を1つ保持する */
+  const [contentBeforeRewrite, setContentBeforeRewrite] = useState<string | null>(null);
+  /** 開いた時点の値。未保存の変更があるかの判定に使う */
+  const [initialDraft, setInitialDraft] = useState({
+    content: "", scheduledDate: "", slotIndex: 0, imageUrl: null as string | null,
+  });
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState("");
   const [selected, setSelected] = useState<Set<number>>(new Set());
@@ -239,12 +257,79 @@ export default function Posts() {
   const [aiLang, setAiLang] = useState<"ja" | "en">(lang);
   const [aiDrafts, setAiDrafts] = useState<string[]>([]);
 
-  function openCreate() { setEditing(null); setContent(""); setSlotIndex(0); setCatId(null); setScheduledDate(""); setImageUrl(null); setRewriteInstruction(""); setOpen(true); }
-  function openEdit(p: typeof postList[0]) { setEditing(p); setContent(p.content); setSlotIndex(p.slotIndex); setCatId(p.categoryId); setScheduledDate(p.scheduledDate ?? ""); setImageUrl(p.imageUrl ?? null); setRewriteInstruction(""); setOpen(true); }
+  /** ダイアログを開くときの共通処理。未保存判定の基準も同時に記録する */
+  function openDialog(base: {
+    editing: typeof postList[0] | null;
+    content: string; slotIndex: number; categoryId: number | null;
+    scheduledDate: string; imageUrl: string | null;
+  }) {
+    setEditing(base.editing);
+    setContent(base.content);
+    setSlotIndex(base.slotIndex);
+    setCatId(base.categoryId);
+    setScheduledDate(base.scheduledDate);
+    setImageUrl(base.imageUrl);
+    setInitialDraft({
+      content: base.content, scheduledDate: base.scheduledDate,
+      slotIndex: base.slotIndex, imageUrl: base.imageUrl,
+    });
+    setRewriteInstruction("");
+    setRewritePreset("");
+    setRewriteDraft(null);
+    setContentBeforeRewrite(null);
+    setOpen(true);
+  }
+
+  function openCreate() {
+    openDialog({ editing: null, content: "", slotIndex: 0, categoryId: null, scheduledDate: "", imageUrl: null });
+  }
+  function openEdit(p: typeof postList[0]) {
+    openDialog({
+      editing: p, content: p.content, slotIndex: p.slotIndex, categoryId: p.categoryId,
+      scheduledDate: p.scheduledDate ?? "", imageUrl: p.imageUrl ?? null,
+    });
+  }
+
+  const currentDraft = { content, scheduledDate, slotIndex, imageUrl };
+  const dirty = draftIsDirty(currentDraft, initialDraft);
+  const today = runway?.today ?? new Date().toISOString().slice(0, 10);
+  const issues = validateDraft(
+    { content, scheduledDate, slotIndex, editingId: editing?.id ?? null },
+    postList,
+    today
+  );
+  const blocked = isBlocking(issues);
+  const saving = createMut.isPending || updateMut.isPending || postNowMut.isPending;
+  const charCount = countChars(content);
+  const charState = lengthState(content);
+
+  /** 未保存の変更があれば確認してから閉じる */
+  function requestClose(next: boolean) {
+    if (next) { setOpen(true); return; }
+    if (dirty && !confirm(t("保存されていない変更があります。破棄してよろしいですか？"))) return;
+    setOpen(false);
+  }
+
   function handleSave() {
+    if (blocked || saving) return;
     const date = scheduledDate || null;
     if (editing) updateMut.mutate({ id: editing.id, content, slotIndex, categoryId: catId, scheduledDate: date, imageUrl });
     else createMut.mutate({ content, slotIndex, categoryId: catId, scheduledDate: date, imageUrl });
+  }
+
+  /** AIの案を本文へ反映する。直前の本文は「戻す」ために保持しておく */
+  function applyRewrite() {
+    if (!rewriteDraft) return;
+    setContentBeforeRewrite(content);
+    setContent(rewriteDraft.content);
+    setRewriteDraft(null);
+    toast.success(t("リライト案を適用しました"));
+  }
+  function undoRewrite() {
+    if (contentBeforeRewrite === null) return;
+    setContent(contentBeforeRewrite);
+    setContentBeforeRewrite(null);
+    toast.success(t("リライト前に戻しました"));
   }
   async function handleSaveAndPostNow() {
     try {
@@ -404,28 +489,29 @@ export default function Posts() {
                             <CheckCheck className="h-3.5 w-3.5 mr-1" />{t("承認")}
                           </Button>
                         ) : (
-                          <Button size="icon" variant="ghost" className="h-8 w-8" title={t("下書きに戻す")}
+                          <Button size="icon" variant="ghost" className="h-8 w-8" title={t("下書きに戻す")} aria-label={t("下書きに戻す")}
                             onClick={() => approvalMut.mutate({ id: p.id, approvalStatus: "draft" })}>
                             <Undo2 className="h-3.5 w-3.5" />
                           </Button>
                         )
                       )}
                       {p.status === "pending" && !isDraft && (
-                        <Button size="icon" variant="ghost" className="h-8 w-8 text-primary" title={t("今すぐ投稿")}
+                        <Button size="icon" variant="ghost" className="h-8 w-8 text-primary" title={t("今すぐ投稿")} aria-label={t("今すぐ投稿")}
                           disabled={postNowMut.isPending}
                           onClick={() => { if (confirm(t("今すぐThreadsに投稿しますか？"))) postNowMut.mutate({ postId: p.id }); }}>
                           <Send className="h-3.5 w-3.5" />
                         </Button>
                       )}
-                      {p.status !== "pending" && <Button size="icon" variant="ghost" className="h-8 w-8" title={t("未投稿に戻す")} onClick={() => updateMut.mutate({ id: p.id, status: "pending" })}><RotateCcw className="h-3.5 w-3.5" /></Button>}
+                      {p.status !== "pending" && <Button size="icon" variant="ghost" className="h-8 w-8" title={t("未投稿に戻す")} aria-label={t("未投稿に戻す")} onClick={() => updateMut.mutate({ id: p.id, status: "pending" })}><RotateCcw className="h-3.5 w-3.5" /></Button>}
                       <Button size="icon" variant="ghost"
                         className={`h-8 w-8 ${p.evergreen ? "text-sky-600" : ""}`}
                         title={p.evergreen ? t("再投稿コンテンツから外す") : t("再投稿コンテンツにする")}
+                        aria-label={p.evergreen ? t("再投稿コンテンツから外す") : t("再投稿コンテンツにする")}
                         onClick={() => evergreenMut.mutate({ id: p.id, evergreen: !p.evergreen })}>
                         <Repeat className="h-3.5 w-3.5" />
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => { if (confirm(t("削除しますか？"))) deleteMut.mutate({ id: p.id }); }}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8" aria-label={t("原稿を編集")} onClick={() => openEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" aria-label={t("削除")} onClick={() => { if (confirm(t("削除しますか？"))) deleteMut.mutate({ id: p.id }); }}><Trash2 className="h-3.5 w-3.5" /></Button>
                     </div>
                   </div>
                 );
@@ -436,42 +522,187 @@ export default function Posts() {
       </Card>
 
       {/* Edit/Create Dialog */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>{editing ? t("原稿を編集") : t("新規原稿を追加")}</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-2">
+      <Dialog open={open} onOpenChange={requestClose}>
+        {/*
+          高さを画面内に収め、本文エリアだけをスクロールさせる。
+          見出しと操作は上下に固定して、長い本文でも常に保存へ手が届くようにする。
+        */}
+        <DialogContent className="sm:max-w-[760px] max-h-[92dvh] h-[92dvh] sm:h-auto flex flex-col gap-0 p-0">
+          <DialogHeader className="px-5 py-4 border-b shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              {editing ? t("原稿を編集") : t("新規原稿を追加")}
+              {dirty && (
+                <span className="text-xs font-normal text-[var(--brand-accent-deep)] bg-[var(--brand-accent)]/12 rounded-full px-2 py-0.5">
+                  {t("未保存")}
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4 min-h-0">
+            {/* 本文 */}
             <div className="space-y-1.5">
-              <Label>{t("投稿内容")} <span className={`text-xs ${content.length > 480 ? "text-destructive" : "text-muted-foreground"}`}>({content.length}/500)</span></Label>
-              <Textarea rows={6} value={content} onChange={e => setContent(e.target.value)} maxLength={500} className="resize-none" />
-              {/* AI rewrite */}
-              <div className="flex gap-2 pt-1">
-                <input
-                  className="flex-1 text-xs border rounded-md px-2.5 py-1.5 bg-card focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder={t("AIへの指示（例: もっと短く / 絵文字を入れて）")}
-                  value={rewriteInstruction}
-                  onChange={e => setRewriteInstruction(e.target.value)}
-                  maxLength={300}
-                />
-                <Button size="sm" variant="outline" className="h-8 text-xs shrink-0"
-                  disabled={!content.trim() || !rewriteInstruction.trim() || aiRewrite.isPending}
-                  onClick={() => aiRewrite.mutate({ content, instruction: rewriteInstruction })}>
-                  <Sparkles className={`h-3 w-3 mr-1 text-[var(--brand-accent-deep)] ${aiRewrite.isPending ? "animate-pulse" : ""}`} />
-                  {aiRewrite.isPending ? t("生成中...") : t("AIリライト")}
-                </Button>
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor="post-content">{t("投稿内容")}</Label>
+                <span
+                  className={`text-xs tabular-nums ${
+                    charState === "error" ? "text-destructive font-semibold"
+                    : charState === "warn" ? "text-amber-600 font-medium"
+                    : "text-muted-foreground"
+                  }`}
+                  aria-live="polite"
+                >
+                  {charCount} / {MAX_POST_LENGTH}
+                </span>
+              </div>
+              <Textarea
+                id="post-content"
+                rows={8}
+                value={content}
+                onChange={e => setContent(e.target.value)}
+                className="resize-y min-h-[140px]"
+                aria-describedby="post-content-help"
+              />
+              <p id="post-content-help" className="text-xs text-muted-foreground">
+                {issues.some(i => i.kind === "blank")
+                  ? <span className="text-destructive">{t("本文を入力してください。")}</span>
+                  : charState === "error"
+                    ? <span className="text-destructive">{t("500文字を超えています。")}</span>
+                    : t("日本語・英語・絵文字を含めて500文字までです。")}
+              </p>
+
+              {/* AIリライト */}
+              <div className="rounded-lg border bg-muted/30 p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-[var(--brand-accent-deep)]" />
+                    {t("AIリライト")}
+                  </span>
+                  {contentBeforeRewrite !== null && (
+                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={undoRewrite}>
+                      {t("リライト前に戻す")}
+                    </Button>
+                  )}
+                </div>
+
+                {!aiStatus?.configured ? (
+                  <p className="text-xs text-muted-foreground">
+                    {t("AI設定が必要です")}
+                    <span className="ml-1">{t("（ANTHROPIC_API_KEY を設定してください）")}</span>
+                  </p>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-1.5">
+                      {REWRITE_PRESET_LABELS.map(preset => (
+                        <button
+                          key={preset.value}
+                          type="button"
+                          onClick={() => setRewritePreset(rewritePreset === preset.value ? "" : preset.value)}
+                          aria-pressed={rewritePreset === preset.value}
+                          className={`text-xs rounded-full border px-2.5 py-1 transition-colors ${
+                            rewritePreset === preset.value
+                              ? "bg-[var(--brand-accent)] text-white border-transparent"
+                              : "bg-card hover:bg-accent"
+                          }`}
+                        >
+                          {t(preset.label)}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        className="flex-1 text-xs border rounded-md px-2.5 py-1.5 bg-card focus:outline-none focus:ring-2 focus:ring-ring"
+                        placeholder={t("AIへの指示（任意）")}
+                        aria-label={t("AIへの指示（任意）")}
+                        value={rewriteInstruction}
+                        onChange={e => setRewriteInstruction(e.target.value)}
+                        maxLength={300}
+                      />
+                      <Button
+                        size="sm" variant="outline" className="h-8 text-xs shrink-0"
+                        disabled={
+                          !content.trim() ||
+                          (!rewritePreset && !rewriteInstruction.trim()) ||
+                          aiRewrite.isPending
+                        }
+                        onClick={() => aiRewrite.mutate({
+                          content,
+                          ...(rewritePreset ? { preset: rewritePreset as never } : {}),
+                          ...(rewriteInstruction.trim() ? { instruction: rewriteInstruction.trim() } : {}),
+                        })}
+                      >
+                        {aiRewrite.isPending ? t("生成中...") : t("リライト案を作る")}
+                      </Button>
+                    </div>
+                  </>
+                )}
+
+                {/* 提案のプレビュー。適用するまで本文は変わらない */}
+                {rewriteDraft && (
+                  <div className="rounded-md border bg-card p-3 space-y-2.5" role="region" aria-label={t("リライト案")}>
+                    <div>
+                      <p className="text-[11px] font-semibold text-muted-foreground mb-1">{t("元の文章")}</p>
+                      <p className="text-xs whitespace-pre-wrap text-muted-foreground line-clamp-4">{content}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-semibold text-muted-foreground mb-1">{t("リライト案")}</p>
+                      <p className="text-sm whitespace-pre-wrap">{rewriteDraft.content}</p>
+                    </div>
+                    {rewriteDraft.changeSummary.length > 0 && (
+                      <div>
+                        <p className="text-[11px] font-semibold text-muted-foreground mb-1">{t("変更点")}</p>
+                        <ul className="text-xs list-disc pl-4 space-y-0.5 text-muted-foreground">
+                          {rewriteDraft.changeSummary.map((c, i) => <li key={i}>{c}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {rewriteDraft.warnings.length > 0 && (
+                      <div>
+                        <p className="text-[11px] font-semibold text-amber-700 mb-1">{t("警告")}</p>
+                        <ul className="text-xs list-disc pl-4 space-y-0.5 text-amber-700">
+                          {rewriteDraft.warnings.map((w, i) => <li key={i}>{w}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-2 pt-0.5">
+                      <Button size="sm" className="h-7 text-xs" onClick={applyRewrite}>{t("この案を適用")}</Button>
+                      <Button
+                        size="sm" variant="outline" className="h-7 text-xs"
+                        disabled={aiRewrite.isPending}
+                        onClick={() => aiRewrite.mutate({
+                          content,
+                          ...(rewritePreset ? { preset: rewritePreset as never } : {}),
+                          ...(rewriteInstruction.trim() ? { instruction: rewriteInstruction.trim() } : {}),
+                        })}
+                      >
+                        {t("再生成")}
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setRewriteDraft(null)}>
+                        {t("破棄")}
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* 画像 */}
             <div className="space-y-1.5">
-              <Label>{t("画像（任意）")}</Label>
-              <input ref={imageFileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePickImage} />
+              <Label htmlFor="post-image">{t("画像（任意）")}</Label>
+              <input
+                ref={imageFileRef} id="post-image" type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="sr-only" onChange={handlePickImage}
+              />
               {imageUrl ? (
                 <div className="flex items-start gap-3">
-                  <img src={imageUrl} alt="" className="h-24 w-24 rounded-md object-cover border" />
+                  <img src={imageUrl} alt={t("添付画像のプレビュー")} className="h-24 w-24 rounded-md object-cover border" />
                   <div className="flex flex-col gap-1.5">
                     <Button type="button" size="sm" variant="outline" onClick={() => imageFileRef.current?.click()} disabled={uploading}>
-                      {t("画像を変更")}
+                      {uploading ? t("アップロード中...") : t("画像を差し替える")}
                     </Button>
                     <Button type="button" size="sm" variant="ghost" className="text-destructive" onClick={() => setImageUrl(null)}>
-                      <X className="h-3.5 w-3.5 mr-1" />{t("画像を外す")}
+                      <X className="h-3.5 w-3.5 mr-1" />{t("画像を削除")}
                     </Button>
                   </div>
                 </div>
@@ -480,26 +711,32 @@ export default function Posts() {
                   <ImagePlus className="h-4 w-4 mr-1.5" />{uploading ? t("アップロード中...") : t("画像を追加")}
                 </Button>
               )}
+              <p className="text-xs text-muted-foreground">{t("JPEG / PNG / WebP・推奨 1080×1080 以上・4MBまで")}</p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+
+            {/* 予約 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label>{t("投稿日")}</Label>
-                <Input type="date" value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} />
+                <Label htmlFor="post-date">{t("投稿日")}</Label>
+                <Input id="post-date" type="date" value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} />
                 <p className="text-xs text-muted-foreground">
                   {scheduledDate ? t("この日の指定スロットに投稿されます。") : t("空欄なら「空き枠に自動割り当て」で最短の空きに入ります。")}
                 </p>
               </div>
               <div className="space-y-1.5">
-                <Label>{t("投稿スロット")}</Label>
+                <Label htmlFor="post-slot">{t("投稿スロット")}</Label>
                 <Select value={String(slotIndex)} onValueChange={v => setSlotIndex(Number(v))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger id="post-slot"><SelectValue /></SelectTrigger>
                   <SelectContent>{accountSlots.map((_, i) => <SelectItem key={i} value={String(i)}>{slotLabel(accountSlots, i, t("枠"))}</SelectItem>)}</SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  {accountSlots[slotIndex] ? slotLabel(accountSlots, slotIndex, t("枠")) : t("枠が未設定です")}
+                </p>
               </div>
               <div className="space-y-1.5">
-                <Label>{t("カテゴリー")}</Label>
+                <Label htmlFor="post-category">{t("カテゴリー")}</Label>
                 <Select value={catId ? String(catId) : "none"} onValueChange={v => setCatId(v === "none" ? null : Number(v))}>
-                  <SelectTrigger><SelectValue placeholder={t("なし")} /></SelectTrigger>
+                  <SelectTrigger id="post-category"><SelectValue placeholder={t("なし")} /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">{t("なし")}</SelectItem>
                     {cats.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
@@ -507,21 +744,36 @@ export default function Posts() {
                 </Select>
               </div>
             </div>
+
+            {/* 予約に関する警告（保存は妨げない） */}
+            {issues.some(i => i.kind === "invalid_date" || i.kind === "past_date" || i.kind === "slot_taken") && (
+              <ul className="text-xs space-y-1" role="status">
+                {issues.map((i, k) =>
+                  i.kind === "invalid_date" ? <li key={k} className="text-destructive">⚠ {t("投稿日の形式が正しくありません。")}</li>
+                  : i.kind === "past_date" ? <li key={k} className="text-amber-700">⚠ {t("過去の日付です。次回のスケジューラ実行時に投稿されます。")}</li>
+                  : i.kind === "slot_taken" ? <li key={k} className="text-amber-700">⚠ {t("同じ日・同じ枠に別の未投稿原稿があります。")}</li>
+                  : null
+                )}
+              </ul>
+            )}
+
             <p className="text-xs text-muted-foreground">
               {t("投稿先")}: <span className="font-medium text-foreground">{currentAccount?.name ?? "-"}</span>
               <span className="ml-1.5">{t("（左上の切り替えで変更できます）")}</span>
             </p>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>{t("キャンセル")}</Button>
+
+          <DialogFooter className="px-5 py-3.5 border-t shrink-0 gap-2">
+            <Button variant="outline" onClick={() => requestClose(false)} disabled={saving}>{t("キャンセル")}</Button>
             {!editing && (
-              <Button variant="outline" onClick={handleSaveAndPostNow}
-                disabled={!content.trim() || createMut.isPending || postNowMut.isPending}>
+              <Button variant="outline" onClick={handleSaveAndPostNow} disabled={!canSave(content) || saving}>
                 <Send className="h-3.5 w-3.5 mr-1.5" />
                 {postNowMut.isPending ? t("投稿中...") : t("追加して今すぐ投稿")}
               </Button>
             )}
-            <Button onClick={handleSave} disabled={!content.trim() || createMut.isPending || updateMut.isPending}>{editing ? t("更新") : t("追加")}</Button>
+            <Button onClick={handleSave} disabled={blocked || saving}>
+              {saving ? t("保存中…") : editing ? t("更新") : t("追加")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -570,7 +822,7 @@ export default function Posts() {
                     <p className="text-sm leading-relaxed whitespace-pre-wrap">{d}</p>
                     <div className="flex justify-end gap-2">
                       <Button size="sm" variant="outline" className="h-7 text-xs"
-                        onClick={() => { setAiOpen(false); setEditing(null); setContent(d); setSlotIndex(0); setCatId(null); setRewriteInstruction(""); setOpen(true); }}>
+                        onClick={() => { setAiOpen(false); openDialog({ editing: null, content: d, slotIndex: 0, categoryId: null, scheduledDate: "", imageUrl: null }); }}>
                         {t("編集して使う")}
                       </Button>
                       <Button size="sm" className="h-7 text-xs" disabled={createMut.isPending}

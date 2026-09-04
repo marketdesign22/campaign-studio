@@ -5,7 +5,8 @@ import { buildDbConfig } from "./dbConfig";
 import type { AnyMySqlColumn } from "drizzle-orm/mysql-core";
 import {
   InsertAccount, InsertAccountSettings, InsertPost, InsertUser,
-  accountSettings, accounts, categories, media, postAnalytics, postLogs, posts, settings, users,
+  accountSettings, accounts, categories, followerSnapshots, media, postAnalytics, postLogs, posts,
+  settings, users,
 } from "../drizzle/schema";
 import type { AccountScope } from "./accountScope";
 import { ENV } from "./_core/env";
@@ -494,15 +495,14 @@ async function analyticsByLogId(logIds: number[]) {
 }
 
 export async function getAnalyticsSummary(period: "day" | "week" | "month", scope: AccountScope) {
-  const empty = { totalPosts: 0, totalLikes: 0, totalReplies: 0, totalReposts: 0, totalViews: 0, byCategory: [] };
+  const empty = {
+    totalPosts: 0, totalLikes: 0, totalReplies: 0, totalReposts: 0, totalViews: 0,
+    engagementRate: 0, byCategory: [] as never[],
+  };
   const db = await getDb();
   if (!db) return empty;
 
-  const now = new Date();
-  const from = new Date(now);
-  if (period === "day") from.setDate(from.getDate() - 1);
-  else if (period === "week") from.setDate(from.getDate() - 7);
-  else from.setMonth(from.getMonth() - 1);
+  const from = periodStart(period);
 
   const logs = await db
     .select()
@@ -523,50 +523,80 @@ export async function getAnalyticsSummary(period: "day" | "week" | "month", scop
     totalViews += a.views;
   }
 
-  return { totalPosts: logs.length, totalLikes, totalReplies, totalReposts, totalViews, byCategory: [] };
+  return {
+    totalPosts: logs.length,
+    totalLikes, totalReplies, totalReposts, totalViews,
+    engagementRate: engagementRate({ totalLikes, totalReplies, totalReposts, totalViews }),
+    byCategory: [],
+  };
 }
 
+/**
+ * エンゲージメント率(%) = (いいね + 返信 + リポスト) / インプレッション × 100。
+ * インプレッションが0のときは0を返す（0除算で NaN/Infinity を出さない）。
+ */
+export function engagementRate(v: {
+  totalLikes: number; totalReplies: number; totalReposts: number; totalViews: number;
+}): number {
+  if (!v.totalViews) return 0;
+  return ((v.totalLikes + v.totalReplies + v.totalReposts) / v.totalViews) * 100;
+}
+
+export type RankBy = "views" | "engagement" | "rate";
+
 /** エンゲージメント上位の投稿。since を渡すとその日時以降に限定する */
-async function topPostsSince(scope: AccountScope, limit: number, since?: Date) {
+async function topPostsSince(
+  scope: AccountScope, limit: number, since?: Date, rankBy: RankBy = "engagement"
+) {
   const db = await getDb();
   if (!db) return [];
   const conds = [eq(postLogs.status, "posted"), ownedBy(postLogs.accountId, scope)];
   if (since) conds.push(gte(postLogs.postedAt, since));
   const logs = await db.select().from(postLogs).where(and(...conds));
   const byLog = await analyticsByLogId(logs.map((l) => l.id));
-  return logs
-    .map((l) => {
-      const a = byLog.get(l.id);
-      return {
-        id: l.id,
-        content: l.content,
-        postedAt: l.postedAt,
-        likes: a?.likes ?? 0,
-        replies: a?.replies ?? 0,
-        reposts: a?.reposts ?? 0,
-        views: a?.views ?? 0,
-        categoryId: l.categoryId,
-      };
-    })
-    .sort((x, y) => y.likes - x.likes)
-    .slice(0, limit);
+  const rows = logs.map((l) => {
+    const a = byLog.get(l.id);
+    const likes = a?.likes ?? 0, replies = a?.replies ?? 0, reposts = a?.reposts ?? 0;
+    const views = a?.views ?? 0;
+    return {
+      id: l.id,
+      content: l.content,
+      postedAt: l.postedAt,
+      likes, replies, reposts, views,
+      engagement: likes + replies + reposts,
+      engagementRate: engagementRate({
+        totalLikes: likes, totalReplies: replies, totalReposts: reposts, totalViews: views,
+      }),
+      categoryId: l.categoryId,
+    };
+  });
+  const key =
+    rankBy === "views" ? (r: (typeof rows)[number]) => r.views
+    : rankBy === "rate" ? (r: (typeof rows)[number]) => r.engagementRate
+    : (r: (typeof rows)[number]) => r.engagement;
+  return rows.sort((x, y) => key(y) - key(x)).slice(0, limit);
 }
 
-export async function getTopPosts(limit: number, scope: AccountScope) {
-  return topPostsSince(scope, limit);
+export async function getTopPosts(limit: number, scope: AccountScope, rankBy: RankBy = "engagement") {
+  return topPostsSince(scope, limit, undefined, rankBy);
+}
+
+/** 期間の開始日時。画面に「いつからいつまで」を出せるよう外にも公開する */
+export function periodStart(period: "day" | "week" | "month", now = new Date()): Date {
+  const since = new Date(now);
+  if (period === "day") since.setHours(0, 0, 0, 0);
+  else if (period === "week") since.setDate(now.getDate() - 7);
+  else since.setDate(now.getDate() - 30);
+  return since;
 }
 
 export async function getTopPostsByPeriod(
   period: "day" | "week" | "month",
   limit: number,
-  scope: AccountScope
+  scope: AccountScope,
+  rankBy: RankBy = "engagement"
 ) {
-  const now = new Date();
-  let since: Date;
-  if (period === "day") { since = new Date(now); since.setHours(0, 0, 0, 0); }
-  else if (period === "week") { since = new Date(now); since.setDate(now.getDate() - 7); }
-  else { since = new Date(now); since.setMonth(now.getMonth() - 1); }
-  return topPostsSince(scope, limit, since);
+  return topPostsSince(scope, limit, periodStart(period), rankBy);
 }
 
 /** 月次レポート用の集計。日別の投稿数とエンゲージメント、トップ投稿、エラーを返す */
@@ -702,4 +732,52 @@ export async function deleteAccountSettings(accountId: number) {
   const db = await getDb();
   if (!db) return;
   await db.delete(accountSettings).where(eq(accountSettings.accountId, accountId));
+}
+
+// ── Follower snapshots ────────────────────────────────────────────────────────
+
+/**
+ * その日のフォロワー数を記録する。
+ * 同じ日に複数回呼ばれたら、その日の値を最新で上書きする（行は増やさない）。
+ * 負数は呼び出し側で弾いている前提だが、ここでも保険をかける。
+ */
+export async function recordFollowerSnapshot(
+  accountId: number, capturedDate: string, followerCount: number
+) {
+  if (followerCount < 0) return;
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .insert(followerSnapshots)
+    .values({ accountId, capturedDate, followerCount })
+    .onDuplicateKeyUpdate({ set: { followerCount, fetchedAt: new Date() } });
+}
+
+/** 指定アカウントのスナップショットを日付昇順で返す（他アカウントは混ざらない） */
+export async function listFollowerSnapshots(accountId: number, fromDate?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const conds = [eq(followerSnapshots.accountId, accountId)];
+  if (fromDate) conds.push(gte(followerSnapshots.capturedDate, fromDate));
+  return db
+    .select()
+    .from(followerSnapshots)
+    .where(and(...conds))
+    .orderBy(followerSnapshots.capturedDate);
+}
+
+/** 期間開始日より前で最も近いスナップショット（増減の基準点） */
+export async function getSnapshotBefore(accountId: number, date: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db
+    .select()
+    .from(followerSnapshots)
+    .where(and(
+      eq(followerSnapshots.accountId, accountId),
+      lt(followerSnapshots.capturedDate, date),
+    ))
+    .orderBy(desc(followerSnapshots.capturedDate))
+    .limit(1);
+  return rows[0];
 }

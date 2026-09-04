@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   AtSign, CheckCircle, Copy, KeyRound, Link2, LucideIcon, Palette, Plus, RefreshCw,
-  ShieldCheck, Trash2, Users,
+  ShieldCheck, Sparkles, Trash2, Users,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { TZ_OPTIONS, useI18n } from "@/i18n";
@@ -245,6 +245,13 @@ export default function Settings() {
     onError: (e) => toast.error(e.message),
   });
 
+  // AIの利用状態。APIキーそのものは返ってこない（設定済みかどうかとモデル名のみ）
+  const { data: aiStatus } = trpc.ai.status.useQuery();
+  const aiTest = trpc.ai.testConnection.useMutation({
+    onSuccess: (d) => toast.success(`${t("AI利用可能")} — ${d.model}`),
+    onError: (e) => toast.error(e.message),
+  });
+
   // Add account dialog
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState("");
@@ -274,6 +281,49 @@ export default function Settings() {
             : t("アカウント・運用ルール・ブランドの管理")
         }
       />
+
+      {/* AI */}
+      <Card className="border shadow-none">
+        <CardHeader className="pb-3">
+          <CardTitle className="font-display text-base font-semibold flex items-center gap-2">
+            <Sparkles className="h-4 w-4" />{t("AIアシスト")}
+          </CardTitle>
+          <CardDescription className="mt-1">
+            {t("原稿の生成とリライトに使います。APIキーはサーバー側にのみ保存され、画面には表示されません。")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div
+            className={`flex items-center gap-2.5 text-xs rounded-lg px-3 py-2 ${
+              aiStatus?.available ? "bg-emerald-600/8 text-emerald-700" : "bg-muted text-muted-foreground"
+            }`}
+            role="status"
+          >
+            {aiStatus?.available
+              ? <CheckCircle className="h-3.5 w-3.5 shrink-0" />
+              : <ShieldCheck className="h-3.5 w-3.5 shrink-0" />}
+            <span className="flex-1">
+              {aiStatus === undefined ? t("AIに接続中…")
+                : aiStatus.available
+                  ? `${t("AI利用可能")}（${aiStatus.provider} / ${aiStatus.model}）`
+                  : t("AI設定が必要です")}
+            </span>
+          </div>
+          {!aiStatus?.configured && (
+            <p className="text-xs text-muted-foreground">
+              {t("Renderの環境変数に ANTHROPIC_API_KEY を設定してください。ANTHROPIC_MODEL でモデルを変更できます。")}
+            </p>
+          )}
+          <Button
+            size="sm" variant="outline"
+            disabled={!aiStatus?.configured || aiTest.isPending}
+            onClick={() => aiTest.mutate()}
+          >
+            <Sparkles className={`h-3.5 w-3.5 mr-1.5 ${aiTest.isPending ? "animate-pulse" : ""}`} />
+            {aiTest.isPending ? t("AIに接続中…") : t("AI接続テスト")}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Accounts */}
       <Card className="border shadow-none">

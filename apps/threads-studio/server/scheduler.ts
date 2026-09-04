@@ -23,15 +23,18 @@ import {
   listActiveAccounts,
   listLogsForAnalytics,
   markPostRecycled,
+  recordFollowerSnapshot,
   updateAccount,
   updatePost,
   upsertAnalytics,
   upsertSettings,
 } from "./db";
 import { AccountScope, primaryAccountId, scopeOf } from "./accountScope";
-import { formatSlot, resolveSlots } from "@shared/postingSlots";
+import { formatSlot, primaryTimezone, resolveSlots } from "@shared/postingSlots";
 import { Account } from "../drizzle/schema";
-import { fetchPostInsights, publishTextPost, refreshLongLivedToken } from "./threadsApi";
+import {
+  fetchFollowerCount, fetchPostInsights, publishTextPost, refreshLongLivedToken,
+} from "./threadsApi";
 import { ENV } from "./_core/env";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
@@ -289,6 +292,35 @@ export async function fetchAnalyticsForRecentPosts() {
   }
 }
 
+/**
+ * 各アカウントの現在のフォロワー数を、そのアカウントのローカル日付で記録する。
+ *
+ * - 1アカウントの失敗が他アカウントの取得を止めないよう、個別に握りつぶす
+ * - 取得できなかった日は「記録しない」。過去の履歴は消さないし、0で埋めもしない
+ * - Instagram未連携などで followers_count 自体が返らない場合は null が来るのでスキップ
+ */
+export async function fetchFollowerCounts(now: Date = new Date()) {
+  const accounts = (await listAccounts()).filter((a) => a.active);
+  const results: { accountId: number; followers?: number; error?: string }[] = [];
+  for (const account of accounts) {
+    try {
+      const count = await fetchFollowerCount(account.threadsAccessToken, account.threadsUserId);
+      if (count === null) {
+        results.push({ accountId: account.id, error: "followers_count unavailable" });
+        continue;
+      }
+      const date = getLocalParts(now, primaryTimezone(account)).dateStr;
+      await recordFollowerSnapshot(account.id, date, count);
+      results.push({ accountId: account.id, followers: count });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.warn(`[scheduler] follower count failed for account ${account.id}:`, msg);
+      results.push({ accountId: account.id, error: msg });
+    }
+  }
+  return results;
+}
+
 async function runDailyMaintenance(now: Date) {
   const today = now.toISOString().slice(0, 10);
   const cfg = await getSettings();
@@ -296,6 +328,7 @@ async function runDailyMaintenance(now: Date) {
   await upsertSettings({ lastMaintenanceDate: today });
   await refreshTokensIfNeeded(now);
   await fetchAnalyticsForRecentPosts();
+  await fetchFollowerCounts(now);
 }
 
 // ── Entry point ──────────────────────────────────────────────────────────────

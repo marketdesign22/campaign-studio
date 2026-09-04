@@ -39,7 +39,8 @@ process.env.DATABASE_URL = "mysql://user:pass@127.0.0.1:1/threads_studio_test";
 
 import {
   deletePostsByIds, getAnalyticsSummary, getEvergreenCandidate, getMonthlyReport,
-  getNextPendingPost, getOwnedPost, hasSlotLogInRange, listCategories, listPostLogs, listPosts,
+  getNextPendingPost, getOwnedPost, getSnapshotBefore, hasSlotLogInRange, listCategories,
+  listFollowerSnapshots, listPostLogs, listPosts, recordFollowerSnapshot,
 } from "./db";
 import type { AccountScope } from "./accountScope";
 
@@ -163,6 +164,37 @@ describe("破壊的操作", () => {
 
   it("削除対象が空なら一切SQLを発行しない", async () => {
     await deletePostsByIds([], CREAW);
+    expect(queries).toHaveLength(0);
+  });
+});
+
+describe("フォロワー履歴", () => {
+  it("読み出しは指定アカウントのみ（他アカウントの履歴が混ざらない）", async () => {
+    await listFollowerSnapshots(30001);
+    const { sql, params } = lastQuery();
+    expect(sql).toMatch(/from `follower_snapshots`/);
+    expect(sql).toMatch(/`accountId` = \?/);
+    expect(params).toContain(30001);
+  });
+
+  it("期間の基準点もアカウントで絞る", async () => {
+    await getSnapshotBefore(30001, "2026-09-01");
+    const { sql, params } = lastQuery();
+    expect(sql).toMatch(/`accountId` = \?/);
+    expect(params).toContain(30001);
+    expect(params).toContain("2026-09-01");
+  });
+
+  it("同じ日に複数回取得しても行を増やさず更新する", async () => {
+    await recordFollowerSnapshot(1, "2026-09-02", 1250);
+    const { sql, params } = lastQuery();
+    expect(sql).toMatch(/^insert into `follower_snapshots`/);
+    expect(sql).toMatch(/on duplicate key update/);
+    expect(params).toContain(1250);
+  });
+
+  it("負数は保存しない", async () => {
+    await recordFollowerSnapshot(1, "2026-09-02", -5);
     expect(queries).toHaveLength(0);
   });
 });

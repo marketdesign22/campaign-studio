@@ -149,6 +149,50 @@ export interface PostInsights {
 }
 
 /** Fetch engagement metrics for a published Threads post (Insights API) */
+/**
+ * Threads Insights のレスポンスから1メトリクスの値を取り出す。
+ *
+ * メトリクスによって値の入り方が2通りある:
+ * - `values[0].value` … 期間指定つきの時系列（views など日次のもの）
+ * - `total_value.value` … 生涯合計（followers_count など）
+ * どちらで返ってきても拾えるようにする。純粋関数なのでテスト対象。
+ */
+export function readInsightMetric(
+  payload: {
+    data?: { name: string; values?: { value?: number }[]; total_value?: { value?: number } }[];
+  },
+  name: string
+): number | null {
+  const item = payload.data?.find((d) => d.name === name);
+  if (!item) return null;
+  const value = item.values?.[0]?.value ?? item.total_value?.value;
+  return typeof value === "number" ? value : null;
+}
+
+/**
+ * アカウントの現在のフォロワー数。
+ *
+ * `followers_count` は総数のみを返す（増減はこちらで日次スナップショットの
+ * 差分から求める）。Threadsアカウントが Instagram と連携していない場合は
+ * このメトリクス自体が返らないため、その場合は null を返して呼び出し側で
+ * 「利用できない」と扱えるようにする。
+ * 必要権限: threads_manage_insights
+ */
+export async function fetchFollowerCount(
+  accessToken: string,
+  userId: string
+): Promise<number | null> {
+  const res = await fetch(
+    `${THREADS_API_BASE}/${userId}/threads_insights?metric=followers_count&access_token=${encodeURIComponent(accessToken)}`
+  );
+  if (!res.ok) {
+    throw new Error(`Threads follower count fetch failed (${res.status}): ${await res.text()}`);
+  }
+  const count = readInsightMetric(await res.json(), "followers_count");
+  // 負数は保存しない（APIが想定外の値を返した場合の保険）
+  return count === null || count < 0 ? null : count;
+}
+
 export async function fetchPostInsights(
   accessToken: string,
   mediaId: string
@@ -160,17 +204,8 @@ export async function fetchPostInsights(
     const err = await res.text();
     throw new Error(`Threads insights fetch failed (${res.status}): ${err}`);
   }
-  const data = (await res.json()) as {
-    data?: {
-      name: string;
-      values?: { value?: number }[];
-      total_value?: { value?: number };
-    }[];
-  };
-  const metric = (name: string): number => {
-    const item = data.data?.find((d) => d.name === name);
-    return item?.values?.[0]?.value ?? item?.total_value?.value ?? 0;
-  };
+  const data = await res.json();
+  const metric = (name: string): number => readInsightMetric(data, name) ?? 0;
   return {
     likes: metric("likes"),
     replies: metric("replies"),

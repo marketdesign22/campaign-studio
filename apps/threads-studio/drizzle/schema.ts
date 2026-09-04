@@ -224,3 +224,21 @@ export const postAnalytics = mysqlTable("post_analytics", {
 });
 
 export type PostAnalytics = typeof postAnalytics.$inferSelect;
+
+/**
+ * フォロワー数の日次スナップショット。
+ *
+ * Threads Insights の followers_count は「現在の総数」しか返さないため、
+ * 増減は日次で撮ったスナップショットの差分から求める。
+ * (accountId, capturedDate) で一意。同じ日に複数回取得したらその日の値を更新する。
+ */
+export const followerSnapshots = mysqlTable("follower_snapshots", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull(),
+  /** アカウントのタイムゾーンでの取得日 YYYY-MM-DD */
+  capturedDate: varchar("capturedDate", { length: 10 }).notNull(),
+  followerCount: int("followerCount").notNull(),
+  fetchedAt: timestamp("fetchedAt").defaultNow().notNull(),
+});
+
+export type FollowerSnapshot = typeof followerSnapshots.$inferSelect;
