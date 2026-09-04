@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { invokeLLM } from "../_core/llm";
-import { listPostLogs } from "../db";
+import { getAccountSettings, getOwnedTrendAnalysis, getTrendSettings, listPostLogs } from "../db";
+import type { TrendAnalysisResult } from "../trends";
 import { ENV } from "../_core/env";
 import {
   AI_GUARDRAILS, aiError, createRateLimiter, MAX_POST_LENGTH,
@@ -89,18 +90,68 @@ export const aiRouter = router({
     }
   }),
 
-  /** ブランドボイスに合わせた下書きを複数案生成する */
+  /**
+   * ブランドボイスに合わせた下書きを複数案生成する。
+   * `trend` を渡すと、AIの傾向分析を「構成・切り口」として反映する。
+   * 結果は案として返すだけで、原稿への反映は画面側で利用者が選ぶ。
+   */
   generateDrafts: accountProcedure
     .input(z.object({
       topic: z.string().min(1).max(300),
       tone: z.enum(["standard", "casual", "formal", "energetic"]).default("standard"),
       count: z.number().int().min(1).max(5).default(3),
       language: z.enum(["ja", "en"]).default("ja"),
+      trend: z.object({
+        analysisId: z.number().int(),
+        platform: z.enum(["threads", "instagram"]).default("threads"),
+        region: z.enum(["JP", "US", "OTHER"]).default("JP"),
+        purpose: z.enum(["awareness", "follow", "inquiry", "recruit", "sales"]).default("awareness"),
+        strength: z.enum(["weak", "medium", "strong"]).default("medium"),
+      }).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       requireConfigured();
       requireQuota(ctx.user.id);
       const examples = await getStyleExamples(ctx.scope);
+
+      // トレンド反映: 分析は選択中アカウントのものだけ参照できる
+      let trendBlock = "";
+      let trendAnalysis: TrendAnalysisResult | null = null;
+      if (input.trend) {
+        const row = await getOwnedTrendAnalysis(input.trend.analysisId, ctx.account.id);
+        if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "トレンド分析が見つかりません。" });
+        trendAnalysis = JSON.parse(row.result) as TrendAnalysisResult;
+        const brand = await getAccountSettings(ctx.account.id);
+        const tcfg = await getTrendSettings(ctx.account.id);
+        const purposeLabel = {
+          awareness: "認知拡大", follow: "フォロー獲得", inquiry: "問い合わせ獲得",
+          recruit: "採用", sales: "販売",
+        }[input.trend.purpose];
+        const strengthLabel = {
+          weak: "傾向は参考程度に留め、自社らしさを優先する",
+          medium: "傾向の構成・切り口を取り入れつつ、自社の体験や事例で肉付けする",
+          strong: "傾向の型を積極的に使う。ただし文章の複製は禁止",
+        }[input.trend.strength];
+        trendBlock = [
+          "",
+          "## 反映するトレンド分析（構成・切り口として使う。文章の複製は禁止）",
+          `- 伸びているテーマ: ${trendAnalysis.themes.join(" / ") || "不明"}`,
+          `- 冒頭の型: ${trendAnalysis.hooks.join(" / ") || "不明"}`,
+          `- 文章構成: ${trendAnalysis.structures.join(" / ") || "不明"}`,
+          `- 語調: ${trendAnalysis.tone || "不明"}`,
+          `- 問いかけ: ${trendAnalysis.questions.join(" / ") || "不明"}`,
+          `- 使える切り口: ${trendAnalysis.angles.join(" / ") || "不明"}`,
+          `- 注意点: ${trendAnalysis.risks.join(" / ") || "特になし"}`,
+          `- 対象: ${input.trend.platform} / 地域: ${input.trend.region} / 目的: ${purposeLabel}`,
+          `- 反映度: ${strengthLabel}`,
+          brand.brandName ? `- ブランド名: ${brand.brandName}` : "",
+          tcfg.industry ? `- 業種: ${tcfg.industry}` : "",
+          tcfg.excludeKeywords.length ? `- 禁止表現・使わない語: ${tcfg.excludeKeywords.join("、")}` : "",
+          "- 3案はそれぞれ異なる角度（例: 体験談 / 数字や事実 / 問いかけ）で書き分ける",
+          "- 各案に、参考にした傾向を短く添える（他人の本文は入れない）",
+          '出力はJSONのみ: {"drafts": [{"content": "...", "angle": "...", "referencedTrends": ["..."]}, ...]}',
+        ].filter(Boolean).join("\n");
+      }
       const isEn = input.language === "en";
       const toneLabel = isEn
         ? {
@@ -122,11 +173,12 @@ export const aiRouter = router({
           : "あなたは組織の公式Threadsアカウントを運用するプロのSNSコピーライターです。",
         AI_GUARDRAILS,
         `- ハッシュタグは多くても2個、絵文字は0〜2個`,
-        `- 出力はJSONのみ: {"drafts": ["...", ...]}`,
+        trendBlock ? "" : `- 出力はJSONのみ: {"drafts": ["...", ...]}`,
         examples.length > 0
           ? `\n参考として、このアカウントの過去投稿の文体・語彙に合わせてください:\n${examples.map((e, i) => `${i + 1}. ${e}`).join("\n")}`
           : "",
-      ].join("\n");
+        trendBlock,
+      ].filter(Boolean).join("\n");
 
       const user = isEn
         ? `Topic: ${input.topic}\nTone: ${toneLabel}\nGenerate ${input.count} post drafts as JSON.`
@@ -139,13 +191,31 @@ export const aiRouter = router({
           maxTokens: 2000,
         });
         const parsed = parseJsonLoose(extractText(result)) as { drafts?: unknown };
-        const drafts = Array.isArray(parsed.drafts)
+        const clip = (d: string) => Array.from(d).slice(0, MAX_POST_LENGTH).join("");
+        // 文字列配列（従来）と、角度つきオブジェクト配列（トレンド反映）の両方を受ける
+        const variants = Array.isArray(parsed.drafts)
           ? parsed.drafts
-              .filter((d): d is string => typeof d === "string" && d.trim().length > 0)
-              .map((d) => Array.from(d).slice(0, MAX_POST_LENGTH).join(""))
+              .map((d) => {
+                if (typeof d === "string") return { content: clip(d), angle: null as string | null, referencedTrends: [] as string[] };
+                const o = d as Record<string, unknown>;
+                return typeof o?.content === "string"
+                  ? {
+                      content: clip(o.content),
+                      angle: typeof o.angle === "string" ? o.angle : null,
+                      referencedTrends: Array.isArray(o.referencedTrends)
+                        ? o.referencedTrends.filter((x): x is string => typeof x === "string").slice(0, 4)
+                        : [],
+                    }
+                  : null;
+              })
+              .filter((v): v is NonNullable<typeof v> => v !== null && v.content.trim().length > 0)
           : [];
-        if (drafts.length === 0) throw new Error("empty drafts");
-        return { drafts };
+        if (variants.length === 0) throw new Error("empty drafts");
+        return {
+          drafts: variants.map((v) => v.content),
+          variants,
+          trendAnalysisId: input.trend?.analysisId ?? null,
+        };
       } catch (e) {
         throw aiError(e);
       }

@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAccount } from "@/contexts/AccountContext";
 import { slotLabel } from "@/lib/slotLabel";
@@ -15,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { CalendarPlus, CheckCheck, FileUp, ImagePlus, Pencil, Plus, Repeat, RotateCcw, Send, Sparkles, Trash2, Undo2, Upload, X } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
@@ -255,15 +257,44 @@ export default function Posts() {
   const [aiTopic, setAiTopic] = useState("");
   const [aiTone, setAiTone] = useState<typeof TONES[number]["value"]>("standard");
   const [aiLang, setAiLang] = useState<"ja" | "en">(lang);
-  const [aiDrafts, setAiDrafts] = useState<string[]>([]);
+  /** AIの案。角度と参考にした傾向を持つ（トレンド未反映なら空） */
+  const [aiVariants, setAiVariants] = useState<{ content: string; angle: string | null; referencedTrends: string[] }[]>([]);
+  const [aiResultAnalysisId, setAiResultAnalysisId] = useState<number | null>(null);
+  // トレンド反映（切替式）。分析は選択中アカウントのものだけ選べる
+  const [aiTrendOn, setAiTrendOn] = useState(false);
+  const [aiTrendPeriod, setAiTrendPeriod] = useState<"24h" | "7d" | "30d">("7d");
+  const [aiPlatform, setAiPlatform] = useState<"threads" | "instagram">("threads");
+  const [aiRegion, setAiRegion] = useState<"JP" | "US" | "OTHER">("JP");
+  const [aiPurpose, setAiPurpose] = useState<"awareness" | "follow" | "inquiry" | "recruit" | "sales">("awareness");
+  const [aiStrength, setAiStrength] = useState<"weak" | "medium" | "strong">("medium");
+  const trendAnalysisQ = trpc.trends.latestAnalysis.useQuery({ period: aiTrendPeriod }, { enabled: aiOpen && aiTrendOn });
+  /** 原稿に付けるトレンド参照。編集ダイアログを開く時に決まり、保存時に一緒に送る */
+  const [draftTrend, setDraftTrend] = useState<{ analysisId: number; angle: string | null; referencedTrends: string[] } | null>(null);
+
+  // トレンド画面から「この傾向から原稿を作る」で来た場合: ?ai=1&trend=ID&topic=...
+  const search = useSearch();
+  const [, setLocation] = useLocation();
+  useEffect(() => {
+    const q = new URLSearchParams(search);
+    if (q.get("ai") !== "1") return;
+    const trendId = Number(q.get("trend"));
+    setAiTopic(q.get("topic") ?? "");
+    setAiTrendOn(Number.isInteger(trendId) && trendId > 0);
+    setAiVariants([]);
+    setAiOpen(true);
+    setLocation("/posts", { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search]);
 
   /** ダイアログを開くときの共通処理。未保存判定の基準も同時に記録する */
   function openDialog(base: {
     editing: typeof postList[0] | null;
     content: string; slotIndex: number; categoryId: number | null;
     scheduledDate: string; imageUrl: string | null;
+    trend?: { analysisId: number; angle: string | null; referencedTrends: string[] } | null;
   }) {
     setEditing(base.editing);
+    setDraftTrend(base.trend ?? null);
     setContent(base.content);
     setSlotIndex(base.slotIndex);
     setCatId(base.categoryId);
@@ -314,7 +345,13 @@ export default function Posts() {
     if (blocked || saving) return;
     const date = scheduledDate || null;
     if (editing) updateMut.mutate({ id: editing.id, content, slotIndex, categoryId: catId, scheduledDate: date, imageUrl });
-    else createMut.mutate({ content, slotIndex, categoryId: catId, scheduledDate: date, imageUrl });
+    else createMut.mutate({ content, slotIndex, categoryId: catId, scheduledDate: date, imageUrl, ...trendFields() });
+  }
+  /** 原稿に付けるトレンド参照（学習サイクルで成果を比較するため）。無ければ何も付けない */
+  function trendFields() {
+    return draftTrend
+      ? { trendAnalysisId: draftTrend.analysisId, trendMeta: { angle: draftTrend.angle, referencedTrends: draftTrend.referencedTrends } }
+      : {};
   }
 
   /** AIの案を本文へ反映する。直前の本文は「戻す」ために保持しておく */
@@ -333,7 +370,7 @@ export default function Posts() {
   }
   async function handleSaveAndPostNow() {
     try {
-      const created = await createMut.mutateAsync({ content, slotIndex, categoryId: catId, scheduledDate: scheduledDate || null, imageUrl });
+      const created = await createMut.mutateAsync({ content, slotIndex, categoryId: catId, scheduledDate: scheduledDate || null, imageUrl, ...trendFields() });
       postNowMut.mutate({ postId: created.id });
     } catch {
       // createMut.onError already surfaced the toast
@@ -350,10 +387,24 @@ export default function Posts() {
   }
   function handleAiGenerate() {
     if (!aiTopic.trim()) return;
-    setAiDrafts([]);
-    aiGenerate.mutate({ topic: aiTopic.trim(), tone: aiTone, count: 3, language: aiLang }, {
-      onSuccess: d => setAiDrafts(d.drafts),
+    if (aiTrendOn && !trendAnalysisQ.data) {
+      toast.error(t("この期間のトレンド分析がありません。トレンド画面で「AIで分析」を実行してください。"));
+      return;
+    }
+    setAiVariants([]);
+    setAiResultAnalysisId(null);
+    aiGenerate.mutate({
+      topic: aiTopic.trim(), tone: aiTone, count: 3, language: aiLang,
+      trend: aiTrendOn && trendAnalysisQ.data
+        ? { analysisId: trendAnalysisQ.data.analysisId, platform: aiPlatform, region: aiRegion, purpose: aiPurpose, strength: aiStrength }
+        : undefined,
+    }, {
+      onSuccess: d => { setAiVariants(d.variants); setAiResultAnalysisId(d.trendAnalysisId); },
     });
+  }
+  /** AI案から原稿へ。トレンド反映で生成した案には分析IDと参考傾向を付ける */
+  function trendOf(v: { angle: string | null; referencedTrends: string[] }) {
+    return aiResultAnalysisId ? { analysisId: aiResultAnalysisId, angle: v.angle, referencedTrends: v.referencedTrends } : null;
   }
   const catMap = Object.fromEntries(cats.map(c => [c.id, c]));
   const accountMap = Object.fromEntries(accounts.map(a => [a.id, a]));
@@ -779,7 +830,7 @@ export default function Posts() {
       </Dialog>
 
       {/* AI Assist Dialog */}
-      <Dialog open={aiOpen} onOpenChange={v => { setAiOpen(v); if (!v) { setAiDrafts([]); } }}>
+      <Dialog open={aiOpen} onOpenChange={v => { setAiOpen(v); if (!v) { setAiVariants([]); setAiResultAnalysisId(null); } }}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -792,6 +843,83 @@ export default function Posts() {
               <Textarea rows={2} placeholder={t("例: 8月23日開催のオープンキャンパスの告知。個別相談あり。")}
                 value={aiTopic} onChange={e => setAiTopic(e.target.value)} maxLength={300} className="resize-none" />
               <p className="text-xs text-muted-foreground">{t("過去投稿の文体を学習し、ブランドボイスに合わせた案を3つ生成します。")}</p>
+            </div>
+            <div className="rounded-lg border bg-muted/40 p-3 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">{t("トレンドを反映")}</p>
+                  <p className="text-xs text-muted-foreground">{t("AIの傾向分析を構成・切り口として使い、異なる角度の3案を作ります。他人の文章は使いません。")}</p>
+                </div>
+                <Switch checked={aiTrendOn} onCheckedChange={setAiTrendOn} />
+              </div>
+              {aiTrendOn && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t("分析期間")}</Label>
+                    <Select value={aiTrendPeriod} onValueChange={v => setAiTrendPeriod(v as typeof aiTrendPeriod)}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="24h">{t("24時間")}</SelectItem>
+                        <SelectItem value="7d">{t("7日")}</SelectItem>
+                        <SelectItem value="30d">{t("30日")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t("プラットフォーム")}</Label>
+                    <Select value={aiPlatform} onValueChange={v => setAiPlatform(v as typeof aiPlatform)}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="threads">Threads</SelectItem>
+                        <SelectItem value="instagram">Instagram</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t("地域")}</Label>
+                    <Select value={aiRegion} onValueChange={v => setAiRegion(v as typeof aiRegion)}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="JP">{t("日本")}</SelectItem>
+                        <SelectItem value="US">{t("米国")}</SelectItem>
+                        <SelectItem value="OTHER">{t("その他")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t("目的")}</Label>
+                    <Select value={aiPurpose} onValueChange={v => setAiPurpose(v as typeof aiPurpose)}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="awareness">{t("認知拡大")}</SelectItem>
+                        <SelectItem value="follow">{t("フォロー獲得")}</SelectItem>
+                        <SelectItem value="inquiry">{t("問い合わせ獲得")}</SelectItem>
+                        <SelectItem value="recruit">{t("採用")}</SelectItem>
+                        <SelectItem value="sales">{t("販売")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">{t("反映の強さ")}</Label>
+                    <Select value={aiStrength} onValueChange={v => setAiStrength(v as typeof aiStrength)}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="weak">{t("弱め")}</SelectItem>
+                        <SelectItem value="medium">{t("標準")}</SelectItem>
+                        <SelectItem value="strong">{t("強め")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1 col-span-2 sm:col-span-1">
+                    <Label className="text-xs">{t("使う分析")}</Label>
+                    <p className="text-xs h-8 flex items-center">
+                      {trendAnalysisQ.isLoading ? t("読み込み中...")
+                        : trendAnalysisQ.data ? `${new Date(trendAnalysisQ.data.createdAt).toLocaleDateString()} · ${trendAnalysisQ.data.postCount}${t("件")}`
+                        : <span className="text-destructive">{t("分析なし")}</span>}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex items-end gap-3">
               <div className="space-y-1.5 w-32">
@@ -815,23 +943,33 @@ export default function Posts() {
                 {aiGenerate.isPending ? t("生成中...") : t("生成する")}
               </Button>
             </div>
-            {aiDrafts.length > 0 && (
+            {aiVariants.length > 0 && (
               <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                {aiDrafts.map((d, i) => (
-                  <div key={i} className="rounded-lg border bg-card p-3 space-y-2">
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">{d}</p>
-                    <div className="flex justify-end gap-2">
-                      <Button size="sm" variant="outline" className="h-7 text-xs"
-                        onClick={() => { setAiOpen(false); openDialog({ editing: null, content: d, slotIndex: 0, categoryId: null, scheduledDate: "", imageUrl: null }); }}>
-                        {t("編集して使う")}
-                      </Button>
-                      <Button size="sm" className="h-7 text-xs" disabled={createMut.isPending}
-                        onClick={() => createMut.mutate({ content: d, slotIndex: 0, categoryId: null })}>
-                        {t("そのまま追加")}
-                      </Button>
+                {aiVariants.map((v, i) => {
+                  const tr = trendOf(v);
+                  return (
+                    <div key={i} className="rounded-lg border bg-card p-3 space-y-2">
+                      {v.angle && <p className="text-[11px] font-medium text-[var(--brand-accent-deep)]">{t("角度")}: {v.angle}</p>}
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">{v.content}</p>
+                      {v.referencedTrends.length > 0 && (
+                        <p className="text-[11px] text-muted-foreground">{t("参考にした傾向")}: {v.referencedTrends.join(" / ")}</p>
+                      )}
+                      <div className="flex justify-end gap-2">
+                        <Button size="sm" variant="outline" className="h-7 text-xs"
+                          onClick={() => { setAiOpen(false); openDialog({ editing: null, content: v.content, slotIndex: 0, categoryId: null, scheduledDate: "", imageUrl: null, trend: tr }); }}>
+                          {t("編集して使う")}
+                        </Button>
+                        <Button size="sm" className="h-7 text-xs" disabled={createMut.isPending}
+                          onClick={() => createMut.mutate({
+                            content: v.content, slotIndex: 0, categoryId: null,
+                            ...(tr ? { trendAnalysisId: tr.analysisId, trendMeta: { angle: tr.angle, referencedTrends: tr.referencedTrends } } : {}),
+                          })}>
+                          {t("そのまま追加")}
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

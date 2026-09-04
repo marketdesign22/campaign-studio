@@ -19,6 +19,9 @@ export const THREADS_SCOPES = [
   "threads_basic",
   "threads_content_publish",
   "threads_manage_insights",
+  // トレンドリサーチ（公開投稿のキーワード検索）。
+  // 追加した権限は既存の連携済みアカウントには付かないので、再連携が必要。
+  "threads_keyword_search",
 ].join(",");
 
 const STATE_PURPOSE = "threads-connect";

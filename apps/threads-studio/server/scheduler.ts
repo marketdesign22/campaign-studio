@@ -38,6 +38,7 @@ import {
 import { ENV } from "./_core/env";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
+import { markDeletedSavedPosts, runTrendFetchIfDue } from "./trends";
 
 // ── Timezone helpers (pure, unit-tested) ─────────────────────────────────────
 
@@ -329,6 +330,12 @@ async function runDailyMaintenance(now: Date) {
   await refreshTokensIfNeeded(now);
   await fetchAnalyticsForRecentPosts();
   await fetchFollowerCounts(now);
+  // 保存済みトレンド投稿が削除されていないかの確認（ベストエフォート、1日1回）
+  for (const account of await listActiveAccounts()) {
+    await markDeletedSavedPosts(account, now).catch((e) =>
+      console.warn(`[scheduler] trend deleted-check failed for account ${account.id}:`, e instanceof Error ? e.message.slice(0, 120) : e)
+    );
+  }
 }
 
 // ── Entry point ──────────────────────────────────────────────────────────────
@@ -347,5 +354,11 @@ export async function runTick(now: Date = new Date()) {
     }
   }
   await runDailyMaintenance(now);
+  // トレンド収集は投稿処理の後に回す。失敗しても投稿は影響を受けない
+  try {
+    await runTrendFetchIfDue(all.filter((a) => a.active), (a) => scopeOf(a, primaryId), now);
+  } catch (e) {
+    console.warn("[scheduler] trend fetch failed:", e instanceof Error ? e.message.slice(0, 120) : e);
+  }
   return { fired: results };
 }

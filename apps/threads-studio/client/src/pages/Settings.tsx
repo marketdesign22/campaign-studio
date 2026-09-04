@@ -10,9 +10,10 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
-  AtSign, CheckCircle, Copy, KeyRound, Link2, LucideIcon, Palette, Plus, RefreshCw,
+  AtSign, CheckCircle, Compass, Copy, KeyRound, Link2, LucideIcon, Palette, Plus, RefreshCw,
   ShieldCheck, Sparkles, Trash2, Users,
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { PageHeader } from "@/components/PageHeader";
 import { TZ_OPTIONS, useI18n } from "@/i18n";
 import { MAX_SLOTS, PostingSlot, SlotTimezone } from "@shared/postingSlots";
@@ -207,6 +208,164 @@ function AccountCard({ account }: { account: AccountRow }) {
         </div>
       </div>
     </div>
+  );
+}
+
+
+/** 改行・カンマ区切りの入力を配列にする */
+function splitList(text: string): string[] {
+  return Array.from(new Set(text.split(/[\n,、]/).map((s) => s.trim()).filter(Boolean)));
+}
+
+/**
+ * トレンドリサーチの設定。アカウントごとに独立して保存される。
+ * 既定は1日2回（9:00 / 18:00）。Threads の keyword_search は1ユーザーあたり
+ * 1日 2,200 回の上限があり、20キーワード × 2種類 × 2回 = 80回/日 で十分余裕がある。
+ */
+function TrendSettingsCard() {
+  const { t } = useI18n();
+  const utils = trpc.useUtils();
+  const { data } = trpc.trends.getSettings.useQuery();
+  const [keywords, setKeywords] = useState("");
+  const [excludeKeywords, setExcludeKeywords] = useState("");
+  const [refAccounts, setRefAccounts] = useState("");
+  const [language, setLanguage] = useState<"ja" | "en">("ja");
+  const [region, setRegion] = useState<"JP" | "US" | "OTHER">("JP");
+  const [industry, setIndustry] = useState("");
+  const [fetchTimes, setFetchTimes] = useState<{ hour: number; minute: number }[]>([{ hour: 9, minute: 0 }, { hour: 18, minute: 0 }]);
+  const [autoFetch, setAutoFetch] = useState(true);
+  const [retentionDays, setRetentionDays] = useState(30);
+  const [aiDailyLimit, setAiDailyLimit] = useState(20);
+
+  useEffect(() => {
+    if (!data) return;
+    setKeywords(data.keywords.join("\n"));
+    setExcludeKeywords(data.excludeKeywords.join("\n"));
+    setRefAccounts(data.refAccounts.map((a) => `@${a}`).join("\n"));
+    setLanguage(data.language === "en" ? "en" : "ja");
+    setRegion(data.region === "US" ? "US" : data.region === "OTHER" ? "OTHER" : "JP");
+    setIndustry(data.industry ?? "");
+    setFetchTimes(data.fetchTimes);
+    setAutoFetch(data.autoFetch);
+    setRetentionDays(data.retentionDays);
+    setAiDailyLimit(data.aiDailyLimit);
+  }, [data]);
+
+  const saveMut = trpc.trends.saveSettings.useMutation({
+    onSuccess: () => { toast.success(t("トレンド設定を保存しました")); utils.trends.getSettings.invalidate(); utils.trends.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const kwCount = splitList(keywords).length;
+  return (
+    <Card className="border shadow-none">
+      <CardHeader className="pb-3">
+        <CardTitle className="font-display text-base font-semibold flex items-center gap-2">
+          <Compass className="h-4 w-4" />{t("トレンドリサーチ")}
+        </CardTitle>
+        <CardDescription>{t("検索条件・収集データ・学習結果はこのアカウントにだけ保存されます。")}</CardDescription>
+      </CardHeader>
+      <Separator />
+      <CardContent className="pt-5 space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="trendKeywords">{t("検索キーワード")} <span className="text-xs text-muted-foreground">({kwCount}/20)</span></Label>
+            <Textarea id="trendKeywords" rows={5} value={keywords} onChange={(e) => setKeywords(e.target.value)}
+              placeholder={t("1行に1つ（例: 留学 / オープンキャンパス）")} className="resize-none text-sm" />
+            {kwCount > 20 && <p className="text-xs text-destructive">{t("キーワードは20個までです（超過分は取得に使われません）")}</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="trendExclude">{t("除外キーワード・禁止表現")}</Label>
+            <Textarea id="trendExclude" rows={5} value={excludeKeywords} onChange={(e) => setExcludeKeywords(e.target.value)}
+              placeholder={t("含む投稿を収集から外し、AI生成でも使わない語")} className="resize-none text-sm" />
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="trendRef">{t("参考アカウント")}</Label>
+          <Textarea id="trendRef" rows={2} value={refAccounts} onChange={(e) => setRefAccounts(e.target.value)}
+            placeholder="@account1, @account2" className="resize-none text-sm" />
+          <p className="text-xs text-muted-foreground">{t("メモとして保持します。相手の投稿を自動収集はしません（公開投稿はURLで個別登録できます）。")}</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="space-y-1.5">
+            <Label>{t("言語")}</Label>
+            <Select value={language} onValueChange={(v) => setLanguage(v as typeof language)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="ja">{t("日本語")}</SelectItem><SelectItem value="en">{t("英語")}</SelectItem></SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>{t("地域")}</Label>
+            <Select value={region} onValueChange={(v) => setRegion(v as typeof region)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="JP">{t("日本")}</SelectItem><SelectItem value="US">{t("米国")}</SelectItem><SelectItem value="OTHER">{t("その他")}</SelectItem></SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="trendIndustry">{t("業種")}</Label>
+            <Input id="trendIndustry" value={industry} maxLength={60} onChange={(e) => setIndustry(e.target.value)} placeholder={t("例: 教育・留学")} />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-4 p-3 rounded-lg bg-muted/50 border">
+          <div>
+            <p className="text-sm font-medium">{t("自動取得")}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {t("既定は1日2回。Threads の検索APIは1アカウントあたり1日2,200回が上限で、20キーワード×2種類×2回＝80回/日に収まります。回数を増やすほど上限とサーバー負荷に近づきます。")}
+            </p>
+          </div>
+          <Switch checked={autoFetch} onCheckedChange={setAutoFetch} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>{t("取得時刻")} <span className="text-xs text-muted-foreground">({data?.timezone ?? "—"})</span></Label>
+          <div className="flex flex-wrap gap-2">
+            {fetchTimes.map((ft, i) => (
+              <div key={i} className="flex items-center gap-1 rounded-lg border bg-card p-1.5">
+                <Input type="number" min={0} max={23} value={ft.hour} aria-label={t("時")} className="w-14 h-8 text-center font-mono"
+                  onChange={(e) => setFetchTimes(fetchTimes.map((x, k) => k === i ? { ...x, hour: Math.min(23, Math.max(0, parseInt(e.target.value) || 0)) } : x))} />
+                <span className="font-bold text-muted-foreground">:</span>
+                <Input type="number" min={0} max={59} value={String(ft.minute).padStart(2, "0")} aria-label={t("分")} className="w-14 h-8 text-center font-mono"
+                  onChange={(e) => setFetchTimes(fetchTimes.map((x, k) => k === i ? { ...x, minute: Math.min(59, Math.max(0, parseInt(e.target.value) || 0)) } : x))} />
+                {fetchTimes.length > 1 && (
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setFetchTimes(fetchTimes.filter((_, k) => k !== i))} aria-label={t("削除")}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </div>
+            ))}
+            {fetchTimes.length < 4 && (
+              <Button size="sm" variant="outline" className="h-11" onClick={() => setFetchTimes([...fetchTimes, { hour: 12, minute: 0 }])}>
+                <Plus className="h-3.5 w-3.5 mr-1" />{t("追加")}
+              </Button>
+            )}
+          </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="trendRetention">{t("保存期間（日）")}</Label>
+            <Input id="trendRetention" type="number" min={7} max={180} value={retentionDays} onChange={(e) => setRetentionDays(Number(e.target.value))} className="max-w-[140px]" />
+            <p className="text-xs text-muted-foreground">{t("期間を過ぎた収集投稿は自動で消えます。「保存」した投稿は残ります。")}</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="trendAiLimit">{t("AI分析の1日上限（回）")}</Label>
+            <Input id="trendAiLimit" type="number" min={0} max={100} value={aiDailyLimit} onChange={(e) => setAiDailyLimit(Number(e.target.value))} className="max-w-[140px]" />
+            <p className="text-xs text-muted-foreground">{t("分析1回ごとにAI利用料が発生します。0にすると分析を止めます。")}</p>
+          </div>
+        </div>
+        <Button className="w-full" disabled={saveMut.isPending}
+          onClick={() => saveMut.mutate({
+            keywords: splitList(keywords).slice(0, 50),
+            excludeKeywords: splitList(excludeKeywords),
+            refAccounts: splitList(refAccounts).map((a) => a.replace(/^@/, "")),
+            language, region, industry: industry.trim() || null,
+            fetchTimes, autoFetch,
+            retentionDays: Math.min(180, Math.max(7, retentionDays)),
+            aiDailyLimit: Math.min(100, Math.max(0, aiDailyLimit)),
+          })}>
+          {saveMut.isPending ? t("保存中...") : t("トレンド設定を保存")}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -461,6 +620,9 @@ export default function Settings() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Trend research (per account) */}
+      {hasAccounts && <TrendSettingsCard />}
 
       {/* Add account dialog */}
       <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) setConnectUrl(null); }}>

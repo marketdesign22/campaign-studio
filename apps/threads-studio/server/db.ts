@@ -6,7 +6,7 @@ import type { AnyMySqlColumn } from "drizzle-orm/mysql-core";
 import {
   InsertAccount, InsertAccountSettings, InsertPost, InsertUser,
   accountSettings, accounts, categories, followerSnapshots, media, postAnalytics, postLogs, posts,
-  settings, users,
+  settings, trendAnalyses, trendPosts, trendSettings, users,
 } from "../drizzle/schema";
 import type { AccountScope } from "./accountScope";
 import { ENV } from "./_core/env";
@@ -780,4 +780,285 @@ export async function getSnapshotBefore(accountId: number, date: string) {
     .orderBy(desc(followerSnapshots.capturedDate))
     .limit(1);
   return rows[0];
+}
+
+// ── Trend research ────────────────────────────────────────────────────────────
+
+export const DEFAULT_TREND_SETTINGS = {
+  keywords: [] as string[],
+  excludeKeywords: [] as string[],
+  refAccounts: [] as string[],
+  language: "ja",
+  region: "JP",
+  industry: null as string | null,
+  fetchTimes: [{ hour: 9, minute: 0 }, { hour: 18, minute: 0 }],
+  autoFetch: true,
+  retentionDays: 30,
+  aiDailyLimit: 20,
+  lastFetchKey: null as string | null,
+  lastFetchAt: null as Date | null,
+};
+
+export type TrendSettingsValues = typeof DEFAULT_TREND_SETTINGS;
+
+function parseStringList(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  try {
+    const v = JSON.parse(raw);
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === "string" && !!x.trim()).slice(0, 50) : [];
+  } catch {
+    return [];
+  }
+}
+
+function parseFetchTimes(raw: string | null | undefined): { hour: number; minute: number }[] {
+  if (!raw) return DEFAULT_TREND_SETTINGS.fetchTimes;
+  try {
+    const v = JSON.parse(raw);
+    if (!Array.isArray(v)) return DEFAULT_TREND_SETTINGS.fetchTimes;
+    const out = v
+      .filter((t) => t && Number.isInteger(t.hour) && Number.isInteger(t.minute))
+      .map((t) => ({ hour: Math.min(23, Math.max(0, t.hour)), minute: Math.min(59, Math.max(0, t.minute)) }))
+      .slice(0, 4);
+    return out.length ? out : DEFAULT_TREND_SETTINGS.fetchTimes;
+  } catch {
+    return DEFAULT_TREND_SETTINGS.fetchTimes;
+  }
+}
+
+export async function getTrendSettings(accountId: number): Promise<TrendSettingsValues> {
+  const db = await getDb();
+  if (!db) return { ...DEFAULT_TREND_SETTINGS };
+  const rows = await db.select().from(trendSettings).where(eq(trendSettings.accountId, accountId)).limit(1);
+  const r = rows[0];
+  if (!r) return { ...DEFAULT_TREND_SETTINGS };
+  return {
+    keywords: parseStringList(r.keywords),
+    excludeKeywords: parseStringList(r.excludeKeywords),
+    refAccounts: parseStringList(r.refAccounts),
+    language: r.language,
+    region: r.region,
+    industry: r.industry,
+    fetchTimes: parseFetchTimes(r.fetchTimes),
+    autoFetch: r.autoFetch,
+    retentionDays: r.retentionDays,
+    aiDailyLimit: r.aiDailyLimit,
+    lastFetchKey: r.lastFetchKey,
+    lastFetchAt: r.lastFetchAt,
+  };
+}
+
+export async function upsertTrendSettings(
+  accountId: number,
+  data: Partial<{
+    keywords: string[]; excludeKeywords: string[]; refAccounts: string[];
+    language: string; region: string; industry: string | null;
+    fetchTimes: { hour: number; minute: number }[]; autoFetch: boolean;
+    retentionDays: number; aiDailyLimit: number;
+    lastFetchKey: string | null; lastFetchAt: Date | null;
+  }>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const set: Record<string, unknown> = {};
+  if (data.keywords) set.keywords = JSON.stringify(data.keywords);
+  if (data.excludeKeywords) set.excludeKeywords = JSON.stringify(data.excludeKeywords);
+  if (data.refAccounts) set.refAccounts = JSON.stringify(data.refAccounts);
+  if (data.language !== undefined) set.language = data.language;
+  if (data.region !== undefined) set.region = data.region;
+  if (data.industry !== undefined) set.industry = data.industry;
+  if (data.fetchTimes) set.fetchTimes = JSON.stringify(data.fetchTimes);
+  if (data.autoFetch !== undefined) set.autoFetch = data.autoFetch;
+  if (data.retentionDays !== undefined) set.retentionDays = data.retentionDays;
+  if (data.aiDailyLimit !== undefined) set.aiDailyLimit = data.aiDailyLimit;
+  if (data.lastFetchKey !== undefined) set.lastFetchKey = data.lastFetchKey;
+  if (data.lastFetchAt !== undefined) set.lastFetchAt = data.lastFetchAt;
+
+  const rows = await db.select({ id: trendSettings.id }).from(trendSettings)
+    .where(eq(trendSettings.accountId, accountId)).limit(1);
+  if (rows[0]) {
+    if (Object.keys(set).length) await db.update(trendSettings).set(set).where(eq(trendSettings.accountId, accountId));
+  } else {
+    await db.insert(trendSettings).values({ ...set, accountId });
+  }
+}
+
+export type UpsertTrendPost = {
+  accountId: number;
+  platform: "threads" | "instagram";
+  source: "keyword" | "manual";
+  keyword: string | null;
+  externalId: string;
+  permalink: string | null;
+  username: string | null;
+  postedAt: Date | null;
+  mediaType: string | null;
+  summary: string;
+  hasReplies: boolean | null;
+  likes: number | null; replies: number | null; reposts: number | null;
+  views: number | null; saves: number | null;
+  score: number;
+  scoreBreakdown: string;
+  isRising: boolean;
+};
+
+/**
+ * 収集投稿の保存。同じ (accountId, platform, externalId) は行を増やさず更新する。
+ * 利用者が付けた status（保存/除外）と AI の分析結果は上書きしない。
+ */
+export async function upsertTrendPost(row: UpsertTrendPost) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(trendPosts).values(row).onDuplicateKeyUpdate({
+    set: {
+      keyword: row.keyword, permalink: row.permalink, username: row.username,
+      postedAt: row.postedAt, mediaType: row.mediaType, summary: row.summary,
+      hasReplies: row.hasReplies,
+      likes: row.likes, replies: row.replies, reposts: row.reposts, views: row.views, saves: row.saves,
+      score: row.score, scoreBreakdown: row.scoreBreakdown, isRising: row.isRising,
+      fetchedAt: new Date(),
+    },
+  });
+}
+
+/** 指定アカウントの収集投稿。期間は fetchedAt ではなく postedAt を基準にする */
+export async function listTrendPosts(
+  accountId: number,
+  opts: { since: Date; status?: ("active" | "saved" | "excluded" | "deleted")[]; platform?: "threads" | "instagram"; limit?: number }
+) {
+  const db = await getDb();
+  if (!db) return [];
+  const conds = [
+    eq(trendPosts.accountId, accountId),
+    or(gte(trendPosts.postedAt, opts.since), and(isNull(trendPosts.postedAt), gte(trendPosts.fetchedAt, opts.since))),
+  ];
+  if (opts.status?.length) conds.push(inArray(trendPosts.status, opts.status));
+  if (opts.platform) conds.push(eq(trendPosts.platform, opts.platform));
+  return db.select().from(trendPosts).where(and(...conds))
+    .orderBy(desc(trendPosts.score), desc(trendPosts.postedAt))
+    .limit(opts.limit ?? 100);
+}
+
+export async function getOwnedTrendPost(id: number, accountId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(trendPosts)
+    .where(and(eq(trendPosts.id, id), eq(trendPosts.accountId, accountId))).limit(1);
+  return rows[0];
+}
+
+export async function setTrendPostStatus(
+  id: number, accountId: number, status: "active" | "saved" | "excluded" | "deleted"
+) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(trendPosts).set({ status })
+    .where(and(eq(trendPosts.id, id), eq(trendPosts.accountId, accountId)));
+}
+
+export async function setTrendPostAi(id: number, accountId: number, aiReason: string, aiIdeas: string[]) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(trendPosts).set({ aiReason, aiIdeas: JSON.stringify(aiIdeas) })
+    .where(and(eq(trendPosts.id, id), eq(trendPosts.accountId, accountId)));
+}
+
+/** 同じキーワードで期間内に収集した件数（出現増加の算出に使う） */
+export async function countTrendPostsForKeyword(
+  accountId: number, keyword: string, from: Date, to: Date
+): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const rows = await db.select({ c: sql<number>`count(*)` }).from(trendPosts)
+    .where(and(
+      eq(trendPosts.accountId, accountId), eq(trendPosts.keyword, keyword),
+      gte(trendPosts.postedAt, from), lt(trendPosts.postedAt, to),
+    ));
+  return Number(rows[0]?.c ?? 0);
+}
+
+/**
+ * 保存期間を過ぎた収集投稿を消す。
+ * 利用者が「保存」した投稿と、原稿の参照元になった分析は残す。
+ */
+export async function pruneTrendPosts(accountId: number, retentionDays: number) {
+  const db = await getDb();
+  if (!db) return;
+  const cutoff = new Date(Date.now() - retentionDays * 86_400_000);
+  await db.delete(trendPosts).where(and(
+    eq(trendPosts.accountId, accountId),
+    lt(trendPosts.fetchedAt, cutoff),
+    inArray(trendPosts.status, ["active", "excluded", "deleted"]),
+  ));
+}
+
+export async function createTrendAnalysis(accountId: number, period: string, result: unknown, postCount: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const [r] = await db.insert(trendAnalyses).values({
+    accountId, period, result: JSON.stringify(result), postCount,
+  });
+  return r.insertId;
+}
+
+export async function getLatestTrendAnalysis(accountId: number, period: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(trendAnalyses)
+    .where(and(eq(trendAnalyses.accountId, accountId), eq(trendAnalyses.period, period)))
+    .orderBy(desc(trendAnalyses.createdAt)).limit(1);
+  return rows[0];
+}
+
+export async function getOwnedTrendAnalysis(id: number, accountId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(trendAnalyses)
+    .where(and(eq(trendAnalyses.id, id), eq(trendAnalyses.accountId, accountId))).limit(1);
+  return rows[0];
+}
+
+/** 今日のAI分析回数（1日の上限判定用） */
+export async function countTrendAnalysesToday(accountId: number, since: Date): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const rows = await db.select({ c: sql<number>`count(*)` }).from(trendAnalyses)
+    .where(and(eq(trendAnalyses.accountId, accountId), gte(trendAnalyses.createdAt, since)));
+  return Number(rows[0]?.c ?? 0);
+}
+
+/**
+ * 学習サイクル用: 期間内に投稿した原稿ごとの成果。
+ * トレンドを参照した原稿（trendAnalysisId あり）と未参照の原稿を、同じ条件で並べて返す。
+ * アカウントの絞り込みは post_logs 側のスコープで行う。
+ */
+export async function listPostOutcomes(scope: AccountScope, since: Date) {
+  const db = await getDb();
+  if (!db) return [];
+  const logs = await db.select().from(postLogs).where(and(
+    eq(postLogs.status, "posted"),
+    gte(postLogs.postedAt, since),
+    ownedBy(postLogs.accountId, scope),
+  ));
+  if (logs.length === 0) return [];
+  const byLog = await analyticsByLogId(logs.map((l) => l.id));
+  const postIds = logs.map((l) => l.postId).filter((id): id is number => id !== null);
+  const postRows = postIds.length
+    ? await db.select({ id: posts.id, trendAnalysisId: posts.trendAnalysisId, trendMeta: posts.trendMeta })
+        .from(posts).where(inArray(posts.id, postIds))
+    : [];
+  const postById = new Map(postRows.map((p) => [p.id, p]));
+  return logs.map((l) => {
+    const a = byLog.get(l.id);
+    const p = l.postId !== null ? postById.get(l.postId) : undefined;
+    const likes = a?.likes ?? null, replies = a?.replies ?? null, reposts = a?.reposts ?? null, views = a?.views ?? null;
+    return {
+      logId: l.id, postId: l.postId, content: l.content, postedAt: l.postedAt,
+      usedTrend: !!p?.trendAnalysisId,
+      trendMeta: p?.trendMeta ?? null,
+      likes, replies, reposts, views,
+      /** 分析値が1件も無い投稿は「未取得」として率を出さない */
+      hasAnalytics: !!a,
+    };
+  });
 }

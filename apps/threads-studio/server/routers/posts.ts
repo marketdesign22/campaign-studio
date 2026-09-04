@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import {
   bulkCreatePosts, createPost, deletePost, deletePostsByIds, filterOwnedPostIds,
-  getAccountById, getAccountSettings, getNextPendingPostAny, getOwnedPost,
+  getAccountById, getAccountSettings, getNextPendingPostAny, getOwnedPost, getOwnedTrendAnalysis,
   listPosts, saveAsEvergreen, updatePost,
 } from "../db";
 import { getLocalParts } from "../scheduler";
@@ -83,8 +83,20 @@ export const postsRouter = router({
       scheduledDate: z.string().nullable().optional(),
       imageUrl: z.string().max(512).nullable().optional(),
       sortOrder: z.number().int().default(0),
+      /** 参照したトレンド分析（学習サイクルで成果を比較するため）。自アカウントのもののみ */
+      trendAnalysisId: z.number().int().nullable().optional(),
+      trendMeta: z.object({
+        angle: z.string().max(200).nullable().optional(),
+        referencedTrends: z.array(z.string().max(200)).max(4).optional(),
+      }).nullable().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
+      let trendAnalysisId: number | null = null;
+      if (input.trendAnalysisId) {
+        const owned = await getOwnedTrendAnalysis(input.trendAnalysisId, ctx.account.id);
+        if (!owned) throw new TRPCError({ code: "NOT_FOUND", message: "トレンド分析が見つかりません。" });
+        trendAnalysisId = owned.id;
+      }
       const id = await createPost({
         content: input.content, slotIndex: input.slotIndex,
         categoryId: input.categoryId ?? null,
@@ -93,6 +105,8 @@ export const postsRouter = router({
         scheduledDate: input.scheduledDate ?? null, imageUrl: input.imageUrl ?? null,
         sortOrder: input.sortOrder,
         status: "pending", approvalStatus: await initialApprovalStatus(ctx.account.id),
+        trendAnalysisId,
+        trendMeta: trendAnalysisId && input.trendMeta ? JSON.stringify(input.trendMeta) : null,
       });
       return { ok: true, id };
     }),

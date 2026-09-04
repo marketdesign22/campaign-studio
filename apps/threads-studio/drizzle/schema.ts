@@ -185,6 +185,10 @@ export const posts = mysqlTable("posts", {
   lastRecycledAt: timestamp("lastRecycledAt"),
   /** 再投稿として配信した回数 */
   recycleCount: int("recycleCount").default(0).notNull(),
+  /** 参照したトレンド分析。null = トレンドを使っていない原稿（学習サイクルの比較群） */
+  trendAnalysisId: int("trendAnalysisId"),
+  /** 参照した傾向のメモ JSON（テーマ・冒頭の型など。他人の本文は入れない） */
+  trendMeta: text("trendMeta"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -242,3 +246,88 @@ export const followerSnapshots = mysqlTable("follower_snapshots", {
 });
 
 export type FollowerSnapshot = typeof followerSnapshots.$inferSelect;
+
+// ── トレンドリサーチ ─────────────────────────────────────────────────────────
+
+/** アカウントごとのトレンド収集設定 */
+export const trendSettings = mysqlTable("trend_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull().unique(),
+  /** 監視キーワード JSON string[] */
+  keywords: text("keywords"),
+  /** 除外キーワード JSON string[] */
+  excludeKeywords: text("excludeKeywords"),
+  /** 参考アカウント JSON string[]（@なしのユーザー名） */
+  refAccounts: text("refAccounts"),
+  language: varchar("language", { length: 8 }).default("ja").notNull(),
+  /** JP / US / OTHER */
+  region: varchar("region", { length: 8 }).default("JP").notNull(),
+  industry: varchar("industry", { length: 64 }),
+  /** 取得時刻 JSON [{hour,minute}]。既定は朝9時・夕18時（アカウントの基準タイムゾーン） */
+  fetchTimes: text("fetchTimes"),
+  autoFetch: boolean("autoFetch").default(true).notNull(),
+  retentionDays: int("retentionDays").default(30).notNull(),
+  /** 1日あたりのAI分析回数の上限 */
+  aiDailyLimit: int("aiDailyLimit").default(20).notNull(),
+  /** 直近に自動取得した枠 "YYYY-MM-DD/index"（同じ枠を二度取らないためのロック） */
+  lastFetchKey: varchar("lastFetchKey", { length: 24 }),
+  lastFetchAt: timestamp("lastFetchAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TrendSettings = typeof trendSettings.$inferSelect;
+
+/**
+ * 収集した投稿。本文は要約（先頭140文字）だけ持ち、全文は保存しない。
+ * 反応数は取得できたものだけ入り、取れなければ NULL のまま（0にしない）。
+ */
+export const trendPosts = mysqlTable("trend_posts", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull(),
+  platform: mysqlEnum("platform", ["threads", "instagram"]).notNull(),
+  /** keyword = API検索, manual = 利用者がURLを登録 */
+  source: mysqlEnum("source", ["keyword", "manual"]).default("keyword").notNull(),
+  keyword: varchar("keyword", { length: 64 }),
+  /** プラットフォーム側のID。重複排除のキー */
+  externalId: varchar("externalId", { length: 128 }).notNull(),
+  permalink: varchar("permalink", { length: 512 }),
+  username: varchar("username", { length: 64 }),
+  postedAt: timestamp("postedAt"),
+  mediaType: varchar("mediaType", { length: 24 }),
+  summary: varchar("summary", { length: 255 }).notNull(),
+  hasReplies: boolean("hasReplies"),
+  likes: int("likes"),
+  replies: int("replies"),
+  reposts: int("reposts"),
+  views: int("views"),
+  saves: int("saves"),
+  score: int("score").default(0).notNull(),
+  /** 内訳 JSON（ScoreComponent[]） */
+  scoreBreakdown: text("scoreBreakdown"),
+  isRising: boolean("isRising").default(false).notNull(),
+  status: mysqlEnum("status", ["active", "saved", "excluded", "deleted"]).default("active").notNull(),
+  /** AIによる「伸びた理由」 */
+  aiReason: text("aiReason"),
+  /** AIによる活用案 JSON string[] */
+  aiIdeas: text("aiIdeas"),
+  firstSeenAt: timestamp("firstSeenAt").defaultNow().notNull(),
+  fetchedAt: timestamp("fetchedAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TrendPost = typeof trendPosts.$inferSelect;
+
+/** AIによる傾向分析の結果（期間ごと） */
+export const trendAnalyses = mysqlTable("trend_analyses", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull(),
+  /** 24h / 7d / 30d */
+  period: varchar("period", { length: 8 }).notNull(),
+  /** 分析結果 JSON（TrendAnalysis） */
+  result: text("result").notNull(),
+  postCount: int("postCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type TrendAnalysis = typeof trendAnalyses.$inferSelect;
