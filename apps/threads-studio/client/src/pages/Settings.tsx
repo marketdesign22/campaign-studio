@@ -311,7 +311,7 @@ export default function Settings() {
           </div>
           {!aiStatus?.configured && (
             <p className="text-xs text-muted-foreground">
-              {t("Renderの環境変数に ANTHROPIC_API_KEY を設定してください。ANTHROPIC_MODEL でモデルを変更できます。")}
+              {t("Renderの環境変数に OPENAI_API_KEY を設定してください。OPENAI_MODEL でモデルを変更できます。")}
             </p>
           )}
           <Button
