@@ -1,0 +1,84 @@
+name: CI
+
+# Threads Studio の型・テスト・ビルドをPRごとに自動で確認します。
+# これが緑にならない変更は本番（Render）へ入れないでください。
+
+on:
+  pull_request:
+    paths:
+      - "apps/threads-studio/**"
+      - ".github/workflows/ci.yml"
+  push:
+    branches:
+      - claude/fix-issue-th8edz
+    paths:
+      - "apps/threads-studio/**"
+      - ".github/workflows/ci.yml"
+  workflow_dispatch:
+
+# 同じPRへ連続でpushしたときは古い実行を止める
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/threads-studio
+    steps:
+      - uses: actions/checkout@v4
+
+      # package.json の packageManager 欄のバージョンをそのまま使う
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: apps/threads-studio/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm check
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build
+
+  # 秘密情報がコードへ混入していないかの簡易チェック。
+  # 本物の値をリポジトリへ入れないための最後の網であり、これが全てではありません。
+  secret-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan added lines for credential-looking strings
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          head="${{ github.event.pull_request.head.sha }}"
+          if [ -z "$base" ]; then base=$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD); fi
+          if [ -z "$head" ]; then head=$(git rev-parse HEAD); fi
+          added=$(git diff "$base".."$head" -U0 | grep '^+' | grep -v '^+++' || true)
+          # NEVER-LEAK を含む文字列はテスト用のダミー（本物ではない）ので除外する
+          hits=$(printf '%s\n' "$added" \
+            | grep -v 'NEVER-LEAK' \
+            | grep -inE 'sk-ant-[a-zA-Z0-9_-]{20,}|sk-[a-zA-Z0-9]{32,}|AIza[0-9A-Za-z_-]{30,}|gh[pous]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,}|xox[baprs]-[A-Za-z0-9-]{20,}|EAA[A-Za-z0-9]{60,}|AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|(postgres(ql)?|mysql|mongodb\+srv)://[^ "'"'"']*:[^ @"'"'"']+@' || true)
+          if [ -n "$hits" ]; then
+            echo "::error::追加された行に秘密情報らしい文字列があります。値を取り消して環境変数へ移してください。"
+            printf '%s\n' "$hits" | cut -c1-120
+            exit 1
+          fi
+          echo "秘密情報らしい文字列は見つかりませんでした。"
