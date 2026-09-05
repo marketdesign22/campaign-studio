@@ -13,7 +13,10 @@
 | 予約カレンダー | ドラッグ&ドロップで投稿日を変更。**予約日が来ていない原稿は投稿されません** |
 | 複数アカウント | 左上の切り替えUIで運用先を選択。原稿・予約・履歴・分析・レポート・設定・トークンがアカウント単位で完全に分離される（[docs/multi-account.md](docs/multi-account.md)） |
 | 承認フロー | 有効化すると新規原稿は「下書き」になり、承認済みのみ自動投稿 |
-| AIアシスト | 過去投稿の文体を学習した下書き生成・リライト（Anthropic API・日英対応） |
+| AIアシスト | 過去投稿の文体を学習した下書き生成・リライト（OpenAI API・日英対応） |
+| クライアント情報読み取り | 公式サイトと連携済みThreadsから、出典・信頼度付きのプロフィール候補と検索条件を作成（[docs/client-profile-reading.md](docs/client-profile-reading.md)） |
+| トレンドリサーチ | Threads公式キーワード検索、Instagram参考URL、AI分析、3案生成、成果学習（[docs/trend-research.md](docs/trend-research.md)） |
+| コンテンツ運用OS | 成果計測、7日間戦略、週間振り返り、投稿前品質チェック（[docs/content-operations-os.md](docs/content-operations-os.md)） |
 | 分析 | Threads Insights APIから いいね/返信/リポスト/ビュー を日次自動取得 |
 | 月次レポート | クライアント報告用サマリー。印刷でPDF保存 |
 | トークン自動更新 | 長期トークン（60日で失効）を7日ごとに自動リフレッシュ。失敗時はメール通知 |
@@ -118,7 +121,7 @@ pnpm build    # 本番ビルド
 - `server/threadsApi.ts` — Threads Graph API クライアント（投稿・トークン更新・Insights）
 - `server/_core/oauth.ts` — Google OAuth（認可コードフロー＋IDトークン検証）
 - `server/_core/sdk.ts` — セッションJWTの発行・検証
-- `server/_core/llm.ts` — Anthropic API クライアント（AIアシスト）
+- `server/_core/llm.ts` — OpenAI API クライアント（AIアシスト）
 - `server/_core/notification.ts` — Resend メール通知
 - `server/routers/` — tRPC ルーター（accounts / posts / ai / analytics / settings ...）
 - `server/scripts/upgradeDb.ts` — 冪等なDBアップグレード（information_schema検査方式）

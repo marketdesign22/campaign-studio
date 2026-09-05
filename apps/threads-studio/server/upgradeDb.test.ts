@@ -38,7 +38,7 @@ function applyDdl(sql: string) {
   }
   m = sql.match(/ALTER TABLE `(\w+)` ADD COLUMN `(\w+)`/);
   if (m) { ensure(m[1]).columns.add(m[2]); return; }
-  m = sql.match(/CREATE INDEX `(\w+)` ON `(\w+)`/);
+  m = sql.match(/CREATE (?:UNIQUE )?INDEX `(\w+)` ON `(\w+)`/);
   if (m) { ensure(m[2]).indexes.add(m[1]); return; }
   throw new Error(`unexpected statement in test: ${sql.slice(0, 80)}`);
 }

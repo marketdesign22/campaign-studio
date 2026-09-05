@@ -1,8 +1,10 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { invokeLLM } from "../_core/llm";
-import { getAccountSettings, getOwnedTrendAnalysis, getTrendSettings, listPostLogs } from "../db";
+import { getAccountSettings, getClientProfile, getOwnedTrendAnalysis, getTrendSettings, listConversionEvents, listPostLogs, listPostOutcomes } from "../db";
 import type { TrendAnalysisResult } from "../trends";
+import { parseStoredProfile } from "../clientProfile";
+import { selectReferencePosts } from "@shared/referenceSelection";
 import { ENV } from "../_core/env";
 import {
   AI_GUARDRAILS, aiError, createRateLimiter, MAX_POST_LENGTH,
@@ -50,12 +52,16 @@ function requireConfigured() {
  * 直近の成功投稿をスタイル参照として集める。
  * 参照するのは選択中アカウントの投稿だけ（他クライアントの文面を学習させない）。
  */
-async function getStyleExamples(scope: AccountScope, limit = 8): Promise<string[]> {
-  const logs = await listPostLogs(50, scope);
-  return logs
-    .filter((l) => l.status === "posted")
-    .slice(0, limit)
-    .map((l) => l.content);
+async function getStyleExamples(scope: AccountScope, topic = "", limit = 8): Promise<string[]> {
+  const since = new Date(Date.now() - 365 * 86_400_000);
+  const [outcomes, events] = await Promise.all([listPostOutcomes(scope, since), listConversionEvents(scope.accountId, since, new Date(Date.now() + 1))]);
+  const selected = selectReferencePosts(outcomes.filter((x): x is typeof x & { postId: number } => x.postId !== null).map((x) => ({
+    id: x.postId, content: x.content, postedAt: x.postedAt, views: x.views, likes: x.likes, replies: x.replies, reposts: x.reposts,
+    clicks: events.filter((e) => e.postId === x.postId && e.eventType === "link_click").reduce((n, e) => n + e.quantity, 0),
+    conversions: events.filter((e) => e.postId === x.postId && e.eventType !== "link_click").reduce((n, e) => n + e.quantity, 0),
+  })), topic).slice(0, limit);
+  if (selected.length) return selected.map((x) => `[${x.reason}] ${x.content}`);
+  const logs = await listPostLogs(50, scope); return logs.filter((l) => l.status === "posted").slice(0, limit).map((l) => `[style] ${l.content}`);
 }
 
 export const aiRouter = router({
@@ -112,7 +118,28 @@ export const aiRouter = router({
     .mutation(async ({ input, ctx }) => {
       requireConfigured();
       requireQuota(ctx.user.id);
-      const examples = await getStyleExamples(ctx.scope);
+      const examples = await getStyleExamples(ctx.scope, input.topic);
+      const approvedProfile = parseStoredProfile((await getClientProfile(ctx.account.id))?.profile);
+      const profileValue = (key: keyof NonNullable<typeof approvedProfile>) => {
+        const value = approvedProfile?.[key].value;
+        return Array.isArray(value) ? value.join(" / ") : value ?? "";
+      };
+      const approvedProfileBlock = approvedProfile ? [
+        "## 利用者が承認したクライアント情報",
+        `ブランド: ${profileValue("brandName")}`,
+        `商品・サービス: ${profileValue("productsServices")}`,
+        `強み: ${profileValue("strengths")}`,
+        `対象顧客: ${profileValue("targetCustomers")}`,
+        `顧客の悩み: ${profileValue("customerProblems")}`,
+        `地域: ${profileValue("regions")}`,
+        `語調: ${profileValue("brandTone")}`,
+        `よく使う言葉: ${profileValue("commonWords")}`,
+        `投稿テーマ: ${profileValue("postThemes")}`,
+        `投稿目的: ${profileValue("marketingGoals")}`,
+        `問い合わせ・購入導線: ${profileValue("conversionPaths")}`,
+        `禁止表現: ${profileValue("avoidExpressions")}`,
+        "公式サイトやSNSの文章を複製せず、承認済みの事実だけを維持して独自表現で書く。",
+      ].join("\n") : "";
 
       // トレンド反映: 分析は選択中アカウントのものだけ参照できる
       let trendBlock = "";
@@ -178,6 +205,7 @@ export const aiRouter = router({
           ? `\n参考として、このアカウントの過去投稿の文体・語彙に合わせてください:\n${examples.map((e, i) => `${i + 1}. ${e}`).join("\n")}`
           : "",
         trendBlock,
+        approvedProfileBlock,
       ].filter(Boolean).join("\n");
 
       const user = isEn
@@ -210,7 +238,15 @@ export const aiRouter = router({
               })
               .filter((v): v is NonNullable<typeof v> => v !== null && v.content.trim().length > 0)
           : [];
-        if (variants.length === 0) throw new Error("empty drafts");
+        if (input.trend) {
+          const uniqueContents = new Set(variants.map((v) => v.content.trim()));
+          const uniqueAngles = new Set(variants.map((v) => v.angle?.trim()).filter(Boolean));
+          if (variants.length !== 3 || uniqueContents.size !== 3 || uniqueAngles.size !== 3) {
+            throw new Error("invalid trend drafts: exactly three distinct variants are required");
+          }
+        } else if (variants.length === 0) {
+          throw new Error("empty drafts");
+        }
         return {
           drafts: variants.map((v) => v.content),
           variants,

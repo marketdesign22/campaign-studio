@@ -258,6 +258,11 @@ export function parseTrendAnalysis(raw: string): TrendAnalysisResult {
   };
 }
 
+export function isMeaningfulTrendAnalysis(result: TrendAnalysisResult): boolean {
+  return result.themes.length > 0 || result.hooks.length > 0 || result.structures.length > 0 ||
+    result.angles.length > 0 || result.perPost.some((post) => !!post.reason.trim() || post.ideas.length > 0);
+}
+
 export function periodSince(period: "24h" | "7d" | "30d", now = new Date()): Date {
   const h = period === "24h" ? 24 : period === "7d" ? 24 * 7 : 24 * 30;
   return new Date(now.getTime() - h * 3_600_000);
@@ -305,6 +310,9 @@ export async function analyzeTrends(
   });
   const text = res.choices[0]?.message?.content ?? "";
   const result = parseTrendAnalysis(text);
+  if (!isMeaningfulTrendAnalysis(result)) {
+    throw new Error("invalid AI response: no usable trend analysis");
+  }
 
   const analysisId = await createTrendAnalysis(account.id, period, result, items.length);
   // 各投稿の「伸びた理由」「活用案」を保存（自アカウントの行にだけ書く）

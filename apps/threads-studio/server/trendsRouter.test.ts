@@ -16,6 +16,7 @@ vi.mock("./db", () => ({
   getAccountSettings: vi.fn(),
   getOwnedTrendAnalysis: vi.fn(),
   getTrendSettings: vi.fn(),
+  getClientProfile: vi.fn(),
   upsertTrendSettings: vi.fn(),
   getLatestTrendAnalysis: vi.fn(),
   getOwnedTrendPost: vi.fn(),
@@ -23,6 +24,7 @@ vi.mock("./db", () => ({
   setTrendPostStatus: vi.fn(),
   upsertTrendPost: vi.fn(),
   listPostOutcomes: vi.fn(),
+  listConversionEvents: vi.fn(),
   createPost: vi.fn(),
 }));
 vi.mock("./trends", () => ({
@@ -53,6 +55,13 @@ function ctx(accountId = 1, role: "admin" | "user" = "admin") {
 function llmReply(content: string) {
   return { id: "m", model: "gpt", choices: [{ index: 0, message: { role: "assistant", content }, finish_reason: "stop" }] };
 }
+function trendDrafts(first = "案1") {
+  return JSON.stringify({ drafts: [
+    { content: first, angle: "体験談" },
+    { content: "案2", angle: "事実" },
+    { content: "案3", angle: "問いかけ" },
+  ] });
+}
 const SETTINGS = {
   keywords: ["留学"], excludeKeywords: ["詐欺"], refAccounts: [], language: "ja", region: "JP", industry: "教育",
   fetchTimes: [{ hour: 9, minute: 0 }, { hour: 18, minute: 0 }], autoFetch: true, retentionDays: 30, aiDailyLimit: 20,
@@ -71,9 +80,11 @@ beforeEach(async () => {
   vi.mocked(d.listPostLogs).mockResolvedValue([] as never);
   vi.mocked(d.getAccountSettings).mockResolvedValue({ brandName: "SCSU" } as never);
   vi.mocked(d.getTrendSettings).mockResolvedValue(SETTINGS as never);
+  vi.mocked(d.getClientProfile).mockResolvedValue(undefined);
   vi.mocked(d.upsertTrendSettings).mockResolvedValue(undefined);
   vi.mocked(d.listTrendPosts).mockResolvedValue([] as never);
   vi.mocked(d.listPostOutcomes).mockResolvedValue([] as never);
+  vi.mocked(d.listConversionEvents).mockResolvedValue([] as never);
   vi.mocked(d.getLatestTrendAnalysis).mockResolvedValue(undefined);
   delete process.env.OPENAI_API_KEY;
 });
@@ -86,6 +97,7 @@ describe("トレンド反映の原稿生成 (ai.generateDrafts)", () => {
     vi.mocked(d.listAccounts).mockResolvedValue([SCSU, CREAW] as never);
     vi.mocked(d.getAccountSettings).mockResolvedValue({ brandName: "SCSU" } as never);
     vi.mocked(d.getTrendSettings).mockResolvedValue(SETTINGS as never);
+    vi.mocked(d.getClientProfile).mockResolvedValue(undefined);
     // 過去投稿は12件あるが、参照は8件まで
     vi.mocked(d.listPostLogs).mockResolvedValue(
       Array.from({ length: 12 }, (_, i) => ({ id: i, status: "posted", content: `過去投稿${i}` })) as never
@@ -118,7 +130,7 @@ describe("トレンド反映の原稿生成 (ai.generateDrafts)", () => {
 
   it("プロンプトに過去投稿は8件まで、禁止表現・傾向・複製禁止を含み、Secretは含まない", async () => {
     const l = await import("./_core/llm");
-    vi.mocked(l.invokeLLM).mockResolvedValue(llmReply(JSON.stringify({ drafts: [{ content: "案" }] })) as never);
+    vi.mocked(l.invokeLLM).mockResolvedValue(llmReply(trendDrafts("案")) as never);
     const { aiRouter } = await import("./routers/ai");
     await aiRouter.createCaller(ctx(1)).generateDrafts({ topic: "留学準備", trend: { analysisId: 5 } });
     const sent = JSON.stringify(vi.mocked(l.invokeLLM).mock.calls[0][0]);
@@ -141,10 +153,20 @@ describe("トレンド反映の原稿生成 (ai.generateDrafts)", () => {
 
   it("500文字を超える案は切り詰める", async () => {
     const l = await import("./_core/llm");
-    vi.mocked(l.invokeLLM).mockResolvedValue(llmReply(JSON.stringify({ drafts: [{ content: "あ".repeat(700) }] })) as never);
+    vi.mocked(l.invokeLLM).mockResolvedValue(llmReply(trendDrafts("あ".repeat(700))) as never);
     const { aiRouter } = await import("./routers/ai");
     const r = await aiRouter.createCaller(ctx(1)).generateDrafts({ topic: "x", trend: { analysisId: 5 } });
     expect(Array.from(r.variants[0].content).length).toBe(500);
+  });
+
+  it("トレンド生成は3案未満や重複案を成功扱いしない", async () => {
+    const l = await import("./_core/llm");
+    vi.mocked(l.invokeLLM).mockResolvedValue(llmReply(JSON.stringify({
+      drafts: [{ content: "同じ", angle: "同じ" }, { content: "同じ", angle: "同じ" }],
+    })) as never);
+    const { aiRouter } = await import("./routers/ai");
+    await expect(aiRouter.createCaller(ctx(1)).generateDrafts({ topic: "x", trend: { analysisId: 5 } }))
+      .rejects.toThrow(/AI処理に失敗/);
   });
 });
 

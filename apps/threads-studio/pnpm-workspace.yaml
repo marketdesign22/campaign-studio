@@ -1,0 +1,18 @@
+packages:
+  - "."
+
+# pnpm 10 reads these settings from the workspace file. Keep them aligned with
+# package.json for older pnpm releases used by existing deployments.
+overrides:
+  "tailwindcss>nanoid": "3.3.7"
+
+patchedDependencies:
+  "wouter@3.7.1": "patches/wouter@3.7.1.patch"
+
+onlyBuiltDependencies:
+  - "@tailwindcss/oxide"
+  - "esbuild"
+
+allowBuilds:
+  '@tailwindcss/oxide': set this to true or false
+  esbuild: set this to true or false

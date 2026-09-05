@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
-  AtSign, CheckCircle, Compass, Copy, KeyRound, Link2, LucideIcon, Palette, Plus, RefreshCw,
+  AlertTriangle, AtSign, CheckCircle, Compass, Copy, ExternalLink, KeyRound, Link2, LucideIcon, Palette, Plus, RefreshCw,
   ShieldCheck, Sparkles, Trash2, Users,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +18,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { TZ_OPTIONS, useI18n } from "@/i18n";
 import { MAX_SLOTS, PostingSlot, SlotTimezone } from "@shared/postingSlots";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PROFILE_FIELD_KEYS, type ProfileFieldKey } from "@shared/clientProfile";
+import { ContentOsSettingsCard } from "@/components/ContentOsSettingsCard";
 
 type AccountRow = {
   id: number;
@@ -215,6 +217,147 @@ function AccountCard({ account }: { account: AccountRow }) {
 /** 改行・カンマ区切りの入力を配列にする */
 function splitList(text: string): string[] {
   return Array.from(new Set(text.split(/[\n,、]/).map((s) => s.trim()).filter(Boolean)));
+}
+
+const PROFILE_LABELS: Record<ProfileFieldKey, string> = {
+  clientName: "クライアント名", brandName: "ブランド名", industry: "業種", industryDetail: "業種の細分類",
+  productsServices: "主な商品・サービス", strengths: "特徴・強み", achievements: "実績", targetCustomers: "想定顧客",
+  customerProblems: "顧客の悩み", useCases: "利用場面", regions: "対象地域・商圏", languages: "対応言語", priceRange: "価格帯",
+  marketingGoals: "集客目的", conversionPaths: "問い合わせ・購入導線", brandTone: "ブランドの語調", commonWords: "よく使う言葉",
+  avoidExpressions: "避けるべき表現", postThemes: "投稿テーマ", regionKeywords: "地域キーワード", industryKeywords: "業界キーワード",
+  problemKeywords: "顧客課題キーワード", productKeywords: "商品キーワード", seasonalKeywords: "季節キーワード", referenceAccounts: "競合・参考アカウント候補",
+};
+
+function ClientProfileReaderCard() {
+  const { t } = useI18n();
+  const utils = trpc.useUtils();
+  const profileQ = trpc.clientProfile.get.useQuery();
+  const [homepageUrl, setHomepageUrl] = useState("");
+  const [threadsUrl, setThreadsUrl] = useState("");
+  const [instagramUrl, setInstagramUrl] = useState("");
+  const [instagramBio, setInstagramBio] = useState("");
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [selected, setSelected] = useState<ProfileFieldKey[]>([]);
+  const [edits, setEdits] = useState<Partial<Record<ProfileFieldKey, string>>>({});
+  const [keywordEnabled, setKeywordEnabled] = useState<Record<string, boolean>>({});
+  const draft = profileQ.data?.draft;
+
+  useEffect(() => {
+    if (!draft) return;
+    setSelected(PROFILE_FIELD_KEYS.filter((key) => draft.profile[key].status !== "missing" && !draft.profile[key].conflict));
+    setEdits({});
+    setKeywordEnabled(Object.fromEntries(draft.keywords.map((keyword) => [keyword.keyword, keyword.enabled])));
+  }, [draft?.id]);
+
+  const scanMut = trpc.clientProfile.scan.useMutation({
+    onSuccess: async () => {
+      await utils.clientProfile.get.invalidate();
+      setReviewOpen(true);
+      toast.success(t("AIが候補を作成しました。確認するまで設定は変更されません。"));
+    },
+    onError: (error) => toast.error(error.message),
+  });
+  const approveMut = trpc.clientProfile.approve.useMutation({
+    onSuccess: async () => {
+      await Promise.all([utils.clientProfile.get.invalidate(), utils.trends.getSettings.invalidate()]);
+      setReviewOpen(false);
+      toast.success(t("承認したクライアント情報と検索候補を反映しました。"));
+    },
+    onError: (error) => toast.error(error.message),
+  });
+  const improveMut = trpc.clientProfile.improveKeywords.useMutation({
+    onSuccess: async () => {
+      await utils.clientProfile.get.invalidate();
+      setReviewOpen(true);
+      toast.success(t("検索成果をもとにAIが改善候補を作成しました。"));
+    },
+    onError: (error) => toast.error(error.message),
+  });
+  const approve = (fields: ProfileFieldKey[], enableAllKeywords = false) => {
+    if (!draft) return;
+    approveMut.mutate({
+      draftId: draft.id,
+      selectedFields: fields,
+      edits: Object.fromEntries(Object.entries(edits).map(([key, value]) => [
+        key, Array.isArray(draft.profile[key as ProfileFieldKey].value) ? splitList(value) : value,
+      ])) as Partial<Record<ProfileFieldKey, string | string[] | null>>,
+      keywords: draft.keywords.map((keyword) => ({
+        ...keyword, enabled: enableAllKeywords || (keywordEnabled[keyword.keyword] ?? false),
+      })),
+    });
+  };
+
+  return <>
+    <Card className="border shadow-none">
+      <CardHeader className="pb-3">
+        <CardTitle className="font-display text-base font-semibold flex items-center gap-2"><Sparkles className="h-4 w-4" />{t("クライアント情報のAI自動取得")}</CardTitle>
+        <CardDescription>{t("公式サイトと連携済みThreadsから候補を作ります。InstagramはURLと貼り付けた紹介文だけを使用し、スクレイピングしません。")}</CardDescription>
+      </CardHeader>
+      <Separator />
+      <CardContent className="pt-5 space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5"><Label htmlFor="clientHomepage">{t("公式ホームページURL")}</Label><Input id="clientHomepage" type="url" value={homepageUrl} onChange={(e) => setHomepageUrl(e.target.value)} placeholder="https://example.com" /></div>
+          <div className="space-y-1.5"><Label htmlFor="clientThreads">Threads</Label><Input id="clientThreads" value={threadsUrl} onChange={(e) => setThreadsUrl(e.target.value)} placeholder="https://www.threads.net/@account" /></div>
+          <div className="space-y-1.5"><Label htmlFor="clientInstagram">Instagram</Label><Input id="clientInstagram" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} placeholder="https://www.instagram.com/account" /></div>
+          <div className="space-y-1.5"><Label htmlFor="clientInstagramBio">{t("Instagram紹介文（任意）")}</Label><Textarea id="clientInstagramBio" rows={2} maxLength={2000} value={instagramBio} onChange={(e) => setInstagramBio(e.target.value)} /></div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button disabled={scanMut.isPending || (!homepageUrl.trim() && !threadsUrl.trim() && !instagramUrl.trim() && !instagramBio.trim())} onClick={() => scanMut.mutate({
+            homepageUrl: homepageUrl.trim() || undefined, threadsUrl: threadsUrl.trim() || undefined,
+            instagramUrl: instagramUrl.trim() || undefined, instagramBio: instagramBio.trim() || undefined,
+          })}><Sparkles className="h-4 w-4 mr-1.5" />{scanMut.isPending ? t("安全に読み取り中...") : t("AIでクライアント情報を読み取る")}</Button>
+          {draft && <Button variant="outline" onClick={() => setReviewOpen(true)}>{t("前回の読み取り結果を確認")}</Button>}
+          {profileQ.data?.current && <Button variant="outline" disabled={improveMut.isPending} onClick={() => improveMut.mutate()}>
+            {improveMut.isPending ? t("改善案を作成中...") : t("AIで検索キーワードを改善")}
+          </Button>}
+        </div>
+        <p className="text-xs text-muted-foreground">{t("最大8ページ・合計12万文字まで。robots.txtとアクセス制限を尊重し、JavaScript・Cookie・ログイン情報は使用しません。")}</p>
+      </CardContent>
+    </Card>
+
+    <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader><DialogTitle>{t("AIが読み取ったクライアント情報")}</DialogTitle></DialogHeader>
+        {!draft ? <p className="text-sm text-muted-foreground">{t("確認できる候補はありません。")}</p> : <div className="space-y-5">
+          {draft.warnings.length > 0 && <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900"><AlertTriangle className="inline h-4 w-4 mr-1" />{draft.warnings.join(" / ")}</div>}
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" variant="outline" onClick={() => setSelected([...PROFILE_FIELD_KEYS])}>{t("すべての項目を選択")}</Button>
+            <Button type="button" size="sm" variant="ghost" onClick={() => setSelected([])}>{t("すべての選択を解除")}</Button>
+          </div>
+          <div className="space-y-3">
+            {PROFILE_FIELD_KEYS.map((key) => {
+              const field = draft.profile[key];
+              const shown = edits[key] ?? (Array.isArray(field.value) ? field.value.join("\n") : field.value ?? "");
+              const currentValue = profileQ.data?.current?.[key]?.value;
+              const differs = currentValue !== undefined && JSON.stringify(currentValue) !== JSON.stringify(field.value);
+              return <div key={key} className="rounded-lg border p-3 space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <input type="checkbox" aria-label={`${PROFILE_LABELS[key]}を採用`} checked={selected.includes(key)} onChange={(e) => setSelected(e.target.checked ? [...selected, key] : selected.filter((item) => item !== key))} />
+                  <span className="font-medium text-sm">{t(PROFILE_LABELS[key])}</span>
+                  <span className="text-xs rounded-full border px-2 py-0.5">{field.status === "verified" ? t("確認済み") : field.status === "inferred" ? t("推定") : field.status === "user_edited" ? t("ユーザー修正済み") : t("未取得")}</span>
+                  <span className="text-xs text-muted-foreground">{t("信頼度")} {Math.round(field.confidence * 100)}%</span>
+                </div>
+                <Textarea rows={Array.isArray(field.value) ? 3 : 2} value={shown} onChange={(e) => setEdits({ ...edits, [key]: e.target.value })} />
+                {differs && <p className="text-xs text-muted-foreground">{t("現在の設定")}: {Array.isArray(currentValue) ? currentValue.join(" / ") : currentValue || t("未設定")}</p>}
+                {field.conflict && <p className="text-xs text-destructive">{t("情報が一致しません")}: {field.conflict}</p>}
+                {field.sources.length > 0 && <div className="flex flex-wrap gap-2">{field.sources.map((source) => <a key={`${key}-${source.url}`} href={source.url} target="_blank" rel="noreferrer" className="text-xs underline inline-flex items-center gap-1" title={source.excerpt}>{source.pageTitle || t("出典")}<ExternalLink className="h-3 w-3" /></a>)}</div>}
+              </div>;
+            })}
+          </div>
+          <div className="space-y-2"><h3 className="font-semibold">{t("トレンド検索キーワード候補")}</h3>
+            <div className="grid gap-2 sm:grid-cols-2">{draft.keywords.map((keyword) => <label key={keyword.keyword} className="rounded-lg border p-3 flex gap-2 text-sm"><input type="checkbox" checked={keywordEnabled[keyword.keyword] ?? false} onChange={(e) => setKeywordEnabled({ ...keywordEnabled, [keyword.keyword]: e.target.checked })} /><span><span className="font-medium">{keyword.keyword}</span><span className="block text-xs text-muted-foreground">{keyword.category} / {t("優先度")} {keyword.priority} — {keyword.reason}</span></span></label>)}</div>
+          </div>
+        </div>}
+        <DialogFooter className="gap-2">
+          <Button variant="outline" onClick={() => setReviewOpen(false)}>{t("後で確認")}</Button>
+          {draft && <Button variant="secondary" disabled={approveMut.isPending} onClick={() => approve(
+            PROFILE_FIELD_KEYS.filter((key) => draft.profile[key].status !== "missing" && !draft.profile[key].conflict), true,
+          )}>{t("すべて承認")}</Button>}
+          {draft && <Button disabled={approveMut.isPending} onClick={() => approve(selected)}>{approveMut.isPending ? t("反映中...") : t("選択した項目と検索条件を承認")}</Button>}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </>;
 }
 
 /**
@@ -698,6 +841,8 @@ export default function Settings() {
       </Card>
 
       {/* Brand */}
+      {hasAccounts && <ContentOsSettingsCard />}
+
       <Card className="border shadow-none">
         <CardHeader className="pb-3">
           <CardTitle className="font-display text-base font-semibold flex items-center gap-2">
@@ -737,6 +882,7 @@ export default function Settings() {
       </Card>
 
       {/* Trend research (per account) */}
+      {hasAccounts && <ClientProfileReaderCard />}
       {hasAccounts && <TrendSettingsCard />}
 
       {/* Reply auto-suggest templates (per account) */}

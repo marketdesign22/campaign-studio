@@ -37,7 +37,8 @@ TLSはアプリ側で自動的に有効になる（`server/dbConfig.ts`。localh
    - `DATABASE_URL` — 手順1で組み立てた文字列
    - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` — 手順3で取得
    - `CRON_SECRET` — `openssl rand -hex 24` などで生成した適当な長い文字列
-   - `ANTHROPIC_API_KEY` — AIアシストを使うなら（後からでも可）
+   - `OPENAI_API_KEY` — AIアシストを使うなら（後からでも可）
+   - `CONVERSION_WEBHOOK_SECRET` — 成果Webhookを使う場合のみ
 4. デプロイ完了後、`https://threads-studio-xxxx.onrender.com` のようなURLが発行される
 
 ## 3. Google OAuth — 10分
@@ -77,4 +78,4 @@ TLSはアプリ側で自動的に有効になる（`server/dbConfig.ts`。localh
 | Render | 750時間/月・スリープあり | このアプリでは実質超えない |
 | TiDB Serverless | 5GiB・月50億RU | このアプリでは実質超えない |
 | GitHub Actions | プライベートリポジトリ2,000分/月 | 現在の設定で約900〜1,800分/月。不安なら実行間隔を45分に |
-| Anthropic API | 従量課金（無料枠なし） | 週1回の下書き生成で月数十円。使わなければ$0 |
+| OpenAI API | 従量課金 | 利用モデルと生成回数に応じる。使わなければ$0 |

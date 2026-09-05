@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { purposeRatiosSchema } from "@shared/contentStrategy";
 import {
   getAccountSettings, getSettings, upsertAccountSettings,
 } from "../db";
@@ -57,9 +58,23 @@ export const settingsRouter = router({
       recycleRewrite: z.boolean().optional(),
       recycleCooldownDays: z.number().int().min(1).max(365).optional(),
       postsPerDay: z.number().int().min(1).max(10).optional(),
+      weeklyPostCount: z.number().int().min(1).max(42).optional(),
+      purposeRatios: purposeRatiosSchema.nullable().optional(),
+      defaultCta: z.string().max(300).nullable().optional(),
+      forbiddenTopics: z.string().max(4_000).nullable().optional(),
+      qualityStrictness: z.enum(["standard", "strict"]).optional(),
+      strategyAiDailyLimit: z.number().int().min(0).max(100).optional(),
+      autoWeeklyStrategy: z.boolean().optional(),
+      weeklyReviewEnabled: z.boolean().optional(),
+      conversionTrackingEnabled: z.boolean().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      await upsertAccountSettings(ctx.account.id, input);
+      await upsertAccountSettings(ctx.account.id, {
+        ...input,
+        purposeRatios: input.purposeRatios === undefined
+          ? undefined
+          : input.purposeRatios === null ? null : JSON.stringify(input.purposeRatios),
+      });
       return { ok: true };
     }),
 });

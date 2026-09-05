@@ -5,6 +5,9 @@
  */
 
 const THREADS_API_BASE = "https://graph.threads.net/v1.0";
+const THREADS_API_ORIGIN = new URL(THREADS_API_BASE).origin;
+const KEYWORD_SEARCH_TIMEOUT_MS = 12_000;
+const KEYWORD_SEARCH_MAX_PAGES = 3;
 
 
 /**
@@ -148,6 +151,35 @@ export async function getThreadsProfile(
 /** Verify token and return Threads user ID */
 export async function getThreadsUserId(accessToken: string): Promise<string> {
   return (await getThreadsProfile(accessToken)).id;
+}
+
+/** 連携済み本人アカウントの公式APIで取得できるプロフィールと直近投稿。 */
+export async function getOwnThreadsProfileContent(accessToken: string): Promise<{
+  profile: { id: string; username: string | null };
+  posts: Array<{ id: string; text: string; permalink: string | null; timestamp: string | null }>;
+}> {
+  const profile = await getThreadsProfile(accessToken);
+  const url = new URL(`${THREADS_API_BASE}/me/threads`);
+  url.searchParams.set("fields", "id,text,permalink,timestamp");
+  url.searchParams.set("limit", "12");
+  url.searchParams.set("access_token", accessToken);
+  const response = await fetch(url, { signal: AbortSignal.timeout(12_000) });
+  if (!response.ok) throw new Error(`Threads profile posts failed (${response.status})`);
+  const payload: unknown = await response.json();
+  const rows = payload && typeof payload === "object" && Array.isArray((payload as { data?: unknown }).data)
+    ? (payload as { data: unknown[] }).data : [];
+  const posts = rows.flatMap((row) => {
+    if (!row || typeof row !== "object") return [];
+    const value = row as Record<string, unknown>;
+    if (typeof value.id !== "string" || typeof value.text !== "string") return [];
+    return [{
+      id: value.id,
+      text: Array.from(value.text).slice(0, 500).join(""),
+      permalink: typeof value.permalink === "string" ? value.permalink : null,
+      timestamp: typeof value.timestamp === "string" ? value.timestamp : null,
+    }];
+  });
+  return { profile: { id: profile.id, username: profile.username ?? null }, posts };
 }
 
 /**
@@ -297,16 +329,48 @@ export async function searchThreadsKeyword(
   );
   url.searchParams.set("limit", String(limit));
   url.searchParams.set("access_token", accessToken);
-  const res = await fetch(url.toString());
-  if (!res.ok) {
-    // 本文は分類に使うだけなので先頭だけ持つ（ログや画面にはこのメッセージを出さない）
-    const body = (await res.text()).slice(0, 300);
-    throw new Error(`Threads keyword search failed (${res.status}): ${body}`);
+  const output: ThreadsSearchResult[] = [];
+  const seen = new Set<string>();
+  let next: string | null = url.toString();
+
+  for (let page = 0; next && page < KEYWORD_SEARCH_MAX_PAGES; page++) {
+    const pageUrl = new URL(next);
+    // Metaの応答に含まれる paging.next を追う際に、トークンを別ホストへ送らない。
+    if (pageUrl.origin !== THREADS_API_ORIGIN || !pageUrl.pathname.startsWith("/v1.0/")) {
+      throw new Error("Threads keyword search invalid response: unsafe paging URL");
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), KEYWORD_SEARCH_TIMEOUT_MS);
+    let res: Response;
+    try {
+      res = await fetch(pageUrl.toString(), { signal: controller.signal });
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error("Threads keyword search timed out");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
+    if (!res.ok) {
+      const body = (await res.text()).slice(0, 500);
+      throw new Error(`Threads keyword search failed (${res.status}): ${body}`);
+    }
+    const data: unknown = await res.json();
+    if (!data || typeof data !== "object" || !Array.isArray((data as { data?: unknown }).data)) {
+      throw new Error("Threads keyword search invalid response: data is not an array");
+    }
+    for (const raw of (data as { data: Record<string, unknown>[] }).data) {
+      const item = normalizeSearchItem(raw);
+      if (item && !seen.has(item.id)) {
+        seen.add(item.id);
+        output.push(item);
+      }
+    }
+    const candidate = (data as { paging?: { next?: unknown } }).paging?.next;
+    next = typeof candidate === "string" && candidate.length > 0 ? candidate : null;
   }
-  const data = (await res.json()) as { data?: Record<string, unknown>[] };
-  return (data.data ?? [])
-    .map(normalizeSearchItem)
-    .filter((x): x is ThreadsSearchResult => x !== null);
+  return output;
 }
 
 /**

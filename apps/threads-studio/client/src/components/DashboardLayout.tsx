@@ -23,7 +23,7 @@ import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
 import { useI18n } from "@/i18n";
-import { AtSign, BarChart3, CalendarDays, Check, ChevronsUpDown, Clock, FileBarChart, FileText, Languages, LayoutDashboard, LogOut, MessageCircle, PanelLeft, Settings, Compass } from "lucide-react";
+import { AtSign, BarChart3, CalendarDays, Check, ChevronsUpDown, Clock, Compass, FileBarChart, FileText, Languages, LayoutDashboard, Lightbulb, LogOut, MessageCircle, PanelLeft, Settings } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { AccountProvider, useAccount } from "@/contexts/AccountContext";
@@ -38,6 +38,7 @@ const menuItemsV2 = [
   { icon: Clock, label: "投稿履歴", path: "/history" },
   { icon: BarChart3, label: "分析", path: "/analytics" },
   { icon: Compass, label: "トレンド", path: "/trends" },
+  { icon: Lightbulb, label: "コンテンツ戦略", path: "/strategy" },
   { icon: FileBarChart, label: "月次レポート", path: "/report" },
   { icon: Settings, label: "設定", path: "/settings" },
 ];
