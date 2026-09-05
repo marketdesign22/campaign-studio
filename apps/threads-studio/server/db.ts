@@ -5,7 +5,7 @@ import { buildDbConfig } from "./dbConfig";
 import type { AnyMySqlColumn } from "drizzle-orm/mysql-core";
 import {
   InsertAccount, InsertAccountSettings, InsertPost, InsertUser,
-  accountSettings, accounts, categories, followerSnapshots, media, postAnalytics, postLogs, posts,
+  accountSettings, accounts, categories, engagementComments, followerSnapshots, media, postAnalytics, postLogs, posts,
   replyTemplates, settings, threadReplies, trendAnalyses, trendPosts, trendSettings, users,
 } from "../drizzle/schema";
 import type { AccountScope } from "./accountScope";
@@ -1197,4 +1197,43 @@ export async function deleteReplyTemplate(id: number, accountId: number) {
   const db = await getDb();
   if (!db) return;
   await db.delete(replyTemplates).where(and(eq(replyTemplates.id, id), eq(replyTemplates.accountId, accountId)));
+}
+
+// ── エンゲージメント（他アカウントの投稿へのコメント） ──────────────────────
+
+export type InsertEngagementComment = {
+  accountId: number;
+  targetExternalId: string;
+  targetType: "post" | "reply";
+  trendPostId: number | null;
+  targetUsername: string | null;
+  targetPermalink: string | null;
+  targetSummary: string | null;
+  content: string;
+  threadsCommentId: string | null;
+};
+
+/** コメント送信の成功後に呼ぶ。監査用の記録で、送信操作自体はここでは行わない */
+export async function createEngagementComment(row: InsertEngagementComment) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(engagementComments).values(row);
+}
+
+/** 直近のコメント送信履歴。新しい順 */
+export async function listEngagementComments(accountId: number, limit = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(engagementComments)
+    .where(eq(engagementComments.accountId, accountId))
+    .orderBy(desc(engagementComments.sentAt)).limit(limit);
+}
+
+/** 同じ対象へ既にコメント済みかの目安（重複送信の注意表示にだけ使う。ブロックはしない） */
+export async function countEngagementCommentsForTarget(accountId: number, targetExternalId: string): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const rows = await db.select({ c: sql<number>`count(*)` }).from(engagementComments)
+    .where(and(eq(engagementComments.accountId, accountId), eq(engagementComments.targetExternalId, targetExternalId)));
+  return Number(rows[0]?.c ?? 0);
 }

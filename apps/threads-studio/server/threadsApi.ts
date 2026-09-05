@@ -385,3 +385,29 @@ export async function fetchAccountReplies(
   const data = (await res.json()) as { data?: Record<string, unknown>[] };
   return (data.data ?? []).map(normalizeReply).filter((x): x is ThreadsReply => x !== null);
 }
+
+/**
+ * 指定した投稿についた返信の一覧（エンゲージメント機能で「返信への返信」を選ぶために使う）。
+ * 自社投稿以外（トレンドで収集した他アカウントの投稿）に対しては、Threads側の権限モデルにより
+ * 取得できない場合がある。その場合は例外を投げるので、呼び出し側で失敗として分類し、
+ * 「この投稿への直接コメント」にフォールバックできるようにする。
+ * 必要権限: threads_read_replies
+ */
+export async function fetchPostReplies(
+  accessToken: string,
+  mediaId: string,
+  limit = 25
+): Promise<ThreadsReply[]> {
+  const url = new URL(`${THREADS_API_BASE}/${mediaId}/replies`);
+  url.searchParams.set("fields", "id,text,username,permalink,timestamp,root_post,hide_status");
+  url.searchParams.set("limit", String(limit));
+  url.searchParams.set("access_token", accessToken);
+  const res = await fetch(url.toString());
+  if (!res.ok) {
+    // 本文は分類に使うだけなので先頭だけ持つ（ログや画面にはこのメッセージを出さない）
+    const body = (await res.text()).slice(0, 300);
+    throw new Error(`Threads post replies fetch failed (${res.status}): ${body}`);
+  }
+  const data = (await res.json()) as { data?: Record<string, unknown>[] };
+  return (data.data ?? []).map(normalizeReply).filter((x): x is ThreadsReply => x !== null);
+}

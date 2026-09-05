@@ -455,6 +455,22 @@ async function main() {
     )
   `);
 
+  await createTable("engagement_comments", `
+    CREATE TABLE \`engagement_comments\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`accountId\` int NOT NULL,
+      \`targetExternalId\` varchar(128) NOT NULL,
+      \`targetType\` enum('post','reply') NOT NULL DEFAULT 'post',
+      \`trendPostId\` int NULL,
+      \`targetUsername\` varchar(64) NULL,
+      \`targetPermalink\` varchar(512) NULL,
+      \`targetSummary\` varchar(255) NULL,
+      \`content\` varchar(500) NOT NULL,
+      \`threadsCommentId\` varchar(128) NULL,
+      \`sentAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // アカウント単位の絞り込みが常に索引に乗るようにする
   await addIndex("posts", "idx_posts_account", "`accountId`");
   await addIndex("posts", "idx_posts_account_date", "`accountId`, `scheduledDate`");
@@ -469,6 +485,8 @@ async function main() {
   await addIndex("thread_replies", "idx_thread_replies_account_status", "`accountId`, `status`");
   await addIndex("thread_replies", "idx_thread_replies_account_posted", "`accountId`, `postedAt`");
   await addIndex("reply_templates", "idx_reply_templates_account", "`accountId`");
+  await addIndex("engagement_comments", "idx_engagement_comments_account_sent", "`accountId`, `sentAt`");
+  await addIndex("engagement_comments", "idx_engagement_comments_target", "`accountId`, `targetExternalId`");
 
   console.log("[upgrade] 完了");
   await conn.end();

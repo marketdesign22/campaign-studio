@@ -565,6 +565,21 @@ const en: Record<string, string> = {
   "この内容で送信": "Send as-is",
   "編集して送信": "Edit and send",
 
+  // ── Engagement (commenting on other accounts' posts) ────────────────────
+  "「コメントする」では他アカウントの投稿へ公開コメントを送れます。AIが作るのは下書きの案だけで、実際にThreadsへ送るのは「送信」を押した時だけです。":
+    "\"Comment\" sends a public comment on another account's post. AI only drafts a suggestion — it's sent to Threads only when you press Send.",
+  "コメントする": "Comment",
+  "この投稿についた返信を見て、返信にコメントする": "View replies on this post and comment on one",
+  "コメント先を選んでください": "Choose who to comment to",
+  "投稿本体にコメント": "Comment on the post itself",
+  "コメントを入力...": "Write a comment...",
+  "AIで下書きを作る": "Draft with AI",
+  "作成中...": "Drafting...",
+  "コメントを送信しました": "Comment sent",
+  "返信を取得できませんでした": "Couldn't load replies",
+  "この投稿には既に": "You've already sent ",
+  "件コメント済みです": " comment(s) to this post",
+
   // ── Timezones ───────────────────────────────────────────────────────────
   "太平洋時間 (PT)": "Pacific (PT)",
   "東部時間 (ET)": "Eastern (ET)",

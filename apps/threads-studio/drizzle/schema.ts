@@ -390,3 +390,28 @@ export const replyTemplates = mysqlTable("reply_templates", {
 });
 
 export type ReplyTemplate = typeof replyTemplates.$inferSelect;
+
+/**
+ * エンゲージメント: 他アカウントの投稿（トレンド収集済み）へこちらから送ったコメントの記録。
+ * 送信操作の監査・二重送信の目安表示にだけ使う。全文の複製は保存しない
+ * （targetSummary は表示用の短い要約。trend_posts.summary と同じ考え方）。
+ */
+export const engagementComments = mysqlTable("engagement_comments", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull(),
+  /** コメント先のThreadsメディアID。トレンド投稿本体、またはその配下の返信のいずれか */
+  targetExternalId: varchar("targetExternalId", { length: 128 }).notNull(),
+  targetType: mysqlEnum("targetType", ["post", "reply"]).default("post").notNull(),
+  /** 参照したトレンド投稿。行が削除されても記録は残すため外部キー制約は付けない */
+  trendPostId: int("trendPostId"),
+  targetUsername: varchar("targetUsername", { length: 64 }),
+  targetPermalink: varchar("targetPermalink", { length: 512 }),
+  targetSummary: varchar("targetSummary", { length: 255 }),
+  /** 送信したコメント本文（最大500文字。Threadsの返信と同じ制限） */
+  content: varchar("content", { length: 500 }).notNull(),
+  /** Threads側で発行されたコメントのID */
+  threadsCommentId: varchar("threadsCommentId", { length: 128 }),
+  sentAt: timestamp("sentAt").defaultNow().notNull(),
+});
+
+export type EngagementComment = typeof engagementComments.$inferSelect;
