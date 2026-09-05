@@ -591,7 +591,7 @@ const en: Record<string, string> = {
   "コンテンツ戦略": "Content Strategy",
   "選択中アカウントの実績とプロフィールから、次の7日間を計画します。投稿は自動公開されません。": "Plan the next seven days from the selected account's profile and results. Nothing is auto-published.",
   "開始日": "Start date", "終了日": "End date", "今週の集客目標（任意）": "This week's conversion goal (optional)",
-  "7日間戦略を作成": "Create 7-day strategy", "7日間戦略を作成しました": "7-day strategy created", "作成中...": "Creating...",
+  "7日間戦略を作成": "Create 7-day strategy", "7日間戦略を作成しました": "7-day strategy created",
   "まだ戦略がありません。データ不足の場合は仮説として表示します。": "No strategy yet. Data gaps will be clearly labeled as hypotheses.",
   "対象顧客": "Audience", "中心メッセージ": "Core message", "データ不足を含む仮説です": "This includes a hypothesis due to limited data",
   "投稿形式": "Format", "推奨時刻": "Recommended time", "使用トレンド": "Trend used", "期待する成果": "Expected outcome", "根拠": "Rationale",

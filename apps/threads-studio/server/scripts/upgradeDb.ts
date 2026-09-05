@@ -475,6 +475,10 @@ async function main() {
       \`content\` varchar(500) NOT NULL,
       \`threadsCommentId\` varchar(128) NULL,
       \`sentAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // ── クライアント情報のAI読み取り ──────────────────────────────────────────
   await createTable("client_profile_drafts", `
     CREATE TABLE \`client_profile_drafts\` (
       \`id\` int AUTO_INCREMENT PRIMARY KEY,
