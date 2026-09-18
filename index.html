@@ -3,18 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ロサンゼルス留学・大学進学 ｜ HEI（語学学校）× SCSU（大学）日本人向け</title>
-  <meta name="description" content="ロサンゼルスの語学学校HEIと認定大学SCSU。上部のボタンで切り替え。語学留学から学位取得・OPT就労まで、日本人スタッフがサポート。" />
+  <title>ロサンゼルス大学進学・学位取得 ｜ SCSU 認定大学（日本人向け）</title>
+  <meta name="description" content="ロサンゼルスの認定大学SCSU。語学留学から学位取得・OPT就労まで、日本人スタッフがサポート。" />
 
 <!-- OGP / share preview -->
 <meta property="og:type" content="website">
-<meta property="og:title" content="ロサンゼルス留学・大学進学｜HEI（語学学校）× SCSU（大学）">
-<meta property="og:description" content="語学留学から学位取得・OPT就労まで。日本人スタッフがビザ・転校をサポート。新ルール施行前の転校がスムーズです。">
+<meta property="og:title" content="ロサンゼルス大学進学・学位取得｜SCSU（大学・大学院）">
+<meta property="og:description" content="学位取得からOPT就労まで。日本人スタッフがビザ・転校をサポートします。">
 <meta property="og:url" content="https://marketdesign22.github.io/campaign-studio/">
 <meta property="og:image" content="https://marketdesign22.github.io/campaign-studio/images/og.jpg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:site_name" content="HEI × SCSU ロサンゼルス留学">
+<meta property="og:site_name" content="SCSU ロサンゼルス留学">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="canonical" href="https://marketdesign22.github.io/campaign-studio/">
 <link rel="icon" type="image/png" href="images/favicon.png">
@@ -37,160 +37,32 @@
     })(window, document, "clarity", "script", "xuxel65w5r");
 </script>
 
+<!--
+  HEI is paused here temporarily, not deleted: hei.html is untouched and still
+  live at its own URL (…/hei.html). This file used to show a tab switcher
+  between HEI and SCSU; to bring that back, restore it from git history
+  (the commit that replaced it with this SCSU-only version) instead of
+  rebuilding the switcher from scratch.
+-->
+
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html,body{height:100%}
-    body{font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:#fff;overflow:hidden}
-
-    /* ===== TOP CHROME (fixed, slides away on scroll-down) ===== */
-    #topchrome{position:fixed;top:0;left:0;right:0;z-index:1000;transition:transform .25s ease}
-    #topchrome.hide{transform:translateY(-100%)}
-
-    /* --- switch tabs --- */
-    .switch-bar{
-      display:flex;background:#fff;border-bottom:1px solid #d6d6d6;
-      box-shadow:0 2px 8px rgba(0,0,0,.08);
-    }
-    .switch-btn{
-      flex:1;border:none;cursor:pointer;position:relative;
-      display:flex;align-items:center;justify-content:center;gap:11px;
-      font-family:inherit;font-weight:700;padding:11px 14px;
-      border-bottom:5px solid transparent;transition:background .16s ease,opacity .16s ease;
-    }
-    /* light school-color fills + a clear divider between the two */
-    .switch-btn.hei{background:#fdeede;color:#b56a1e;border-right:2px solid #d6d6d6}
-    .switch-btn.scsu{background:#e6f0fa;color:#3a5f83}
-    .switch-btn:not(.active){opacity:.7}
-    .switch-btn:hover:not(.active){opacity:.9}
-    .switch-btn.hei.active{background:#fff6ec;color:#EC6A0E;border-bottom-color:#F99521;opacity:1}
-    .switch-btn.hei.active .sb{color:#c98a52}
-    .switch-btn.scsu.active{background:#f1f7fe;color:#1a3a5c;border-bottom-color:#2d6a9f;opacity:1}
-    .switch-btn.scsu.active .sb{color:#6f93b3}
-    .switch-btn .logo{height:40px;width:auto;max-width:150px;object-fit:contain;flex-shrink:0}
-    .switch-btn .tx{display:flex;flex-direction:column;text-align:left;line-height:1.2}
-    .switch-btn .nm{font-size:16px;font-weight:800}
-    .switch-btn .sb{font-size:10.5px;font-weight:500;color:#b3b3b3}
-
-    /* ===== FRAMES ===== */
-    .frame-wrap{position:fixed;top:64px;left:0;right:0;bottom:0;overflow:auto;-webkit-overflow-scrolling:touch;transition:top .25s ease}
-    /* iOS Safari: iframeの幅暴走/スクロール未描画対策（width:1px+min-width:100%＋親スクロール） */
-    .frame-wrap iframe{position:absolute;inset:0;width:1px;min-width:100%;height:100%;border:0;display:none}
-    .frame-wrap iframe.active{display:block}
-
-    @media (max-width:520px){
-      .switch-btn{padding:9px 10px;gap:8px}
-      .switch-btn .logo{height:32px}
-      .switch-btn .sb{display:none}
-      .switch-btn .nm{font-size:13.5px}
-    }
+    body{font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN','Noto Sans JP',sans-serif;background:#fff}
+    iframe{position:fixed;inset:0;width:100%;height:100%;border:0}
     .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 </style>
 </head>
 <body>
-<h1 class="sr-only">ロサンゼルス留学｜語学学校 HEI と認定大学 SCSU の日本人向け案内</h1>
+<h1 class="sr-only">ロサンゼルス留学｜認定大学 SCSU の日本人向け案内</h1>
 
-  <div id="topchrome">
-    <nav class="switch-bar" role="tablist" aria-label="学校切り替え">
-      <button class="switch-btn hei" id="btnHei" role="tab" aria-selected="false" onclick="showTab('hei')">
-        <img class="logo" src="images/logo-orange.png" alt="" aria-hidden="true">
-        <span class="tx"><span class="nm">語学学校 HEI</span><span class="sb">Hollywood Education Institute</span></span>
-      </button>
-      <button class="switch-btn scsu active" id="btnScsu" role="tab" aria-selected="true" onclick="showTab('scsu')">
-        <img class="logo" src="images/scsu-logo.png" alt="" aria-hidden="true">
-        <span class="tx"><span class="nm">大学・大学院 SCSU</span><span class="sb">Southern California State University</span></span>
-      </button>
-    </nav>
+<noscript>
+  <div style="max-width:640px;margin:0 auto;padding:24px 22px;font-size:15px;line-height:1.9">
+    <p>ロサンゼルスの認定大学 SCSU の日本人向け留学案内です。学位取得からOPT就労まで、日本人スタッフがビザや転校の手続きをサポートします。</p>
+    <p><a href="scsu.html">大学・大学院 SCSU（Southern California State University）の案内を見る</a></p>
   </div>
-
-
-  <noscript>
-    <div style="max-width:640px;margin:0 auto;padding:24px 22px;font-size:15px;line-height:1.9">
-      <p>ロサンゼルスの語学学校 HEI と、認定大学 SCSU の日本人向け留学案内です。語学留学から学位取得・OPT就労まで、日本人スタッフがビザや転校の手続きをサポートします。</p>
-      <ul style="margin:14px 0 0 1.2em">
-        <li><a href="hei.html">語学学校 HEI（Hollywood Education Institute）の案内を見る</a></li>
-        <li><a href="scsu.html">大学・大学院 SCSU（Southern California State University）の案内を見る</a></li>
-      </ul>
-    </div>
-  </noscript>
-  <div class="frame-wrap">
-    <iframe id="frameHei" data-src="hei.html" title="HEI 語学学校" loading="lazy"></iframe>
-    <iframe id="frameScsu" class="active" src="scsu.html" title="SCSU 大学・大学院" loading="eager"></iframe>
-  </div>
-
-  <script>
-    // keep the frames flush beneath the (variable-height) top chrome
-    var chromeEl = document.getElementById('topchrome');
-    var wrapEl = document.querySelector('.frame-wrap');
-    var chromeHidden = false;
-
-    function syncTop(){
-      if(chromeHidden) return;
-      wrapEl.style.top = chromeEl.offsetHeight + 'px';
-    }
-    function setChromeHidden(hidden){
-      if(hidden === chromeHidden) return;
-      chromeHidden = hidden;
-      chromeEl.classList.toggle('hide', hidden);
-      if(hidden){ wrapEl.style.top = '0px'; } else { syncTop(); }
-    }
-    window.addEventListener('resize', syncTop);
-    window.addEventListener('load', syncTop);
-    syncTop();
-
-    // hide the tab switcher on scroll-down, bring it back on scroll-up —
-    // it was eating screen space at every scroll position, not just at the top.
-    function watchScroll(getY){
-      var lastY = getY();
-      return function(){
-        var y = getY();
-        var delta = y - lastY;
-        if(Math.abs(delta) > 4){
-          if(y > 48 && delta > 0) setChromeHidden(true);
-          else if(delta < 0 || y <= 48) setChromeHidden(false);
-          lastY = y;
-        }
-      };
-    }
-    wrapEl.addEventListener('scroll', watchScroll(function(){ return wrapEl.scrollTop; }), {passive:true});
-    window.addEventListener('scroll', watchScroll(function(){ return window.scrollY || 0; }), {passive:true});
-    function hookFrameScroll(f){
-      function attach(){
-        try {
-          var win = f.contentWindow;
-          win.addEventListener('scroll', watchScroll(function(){ return win.scrollY || win.pageYOffset || 0; }), {passive:true});
-        } catch(e){}
-      }
-      f.addEventListener('load', attach);
-      // the eager SCSU frame can finish loading before this script runs, in which
-      // case the 'load' event above already fired and would never call attach()
-      try { if(f.contentDocument && f.contentDocument.readyState === 'complete') attach(); } catch(e){}
-    }
-    hookFrameScroll(document.getElementById('frameHei'));
-    hookFrameScroll(document.getElementById('frameScsu'));
-
-    function showTab(tab){
-      var isHei = tab === 'hei';
-      var fHei = document.getElementById('frameHei');
-      // lazy-load HEI on first open
-      if(isHei && !fHei.src){ fHei.src = fHei.getAttribute('data-src'); }
-
-      document.getElementById('btnHei').classList.toggle('active', isHei);
-      document.getElementById('btnScsu').classList.toggle('active', !isHei);
-      document.getElementById('btnHei').setAttribute('aria-selected', isHei);
-      document.getElementById('btnScsu').setAttribute('aria-selected', !isHei);
-      fHei.classList.toggle('active', isHei);
-      document.getElementById('frameScsu').classList.toggle('active', !isHei);
-      setChromeHidden(false);
-      document.title = isHei
-        ? 'ロサンゼルス語学留学 ｜ HEI 語学学校（日本人向け）'
-        : 'ロサンゼルス大学進学・学位取得 ｜ SCSU 認定大学（日本人向け）';
-      // reflect selection in the URL hash (shareable deep-link)
-      if(history.replaceState) history.replaceState(null, '', isHei ? '#hei' : '#scsu');
-      if(typeof gtag==='function') gtag('event','school_tab_switch',{school: isHei ? 'HEI' : 'SCSU'});
-    }
-    // SCSU opens by default; open HEI directly via #hei (e.g. from an ad link)
-    if(location.hash === '#hei'){ showTab('hei'); }
-  </script>
+</noscript>
+<iframe src="scsu.html" title="SCSU 大学・大学院"></iframe>
 
 </body>
 </html>
