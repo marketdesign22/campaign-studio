@@ -46,28 +46,6 @@
     #topchrome{position:fixed;top:0;left:0;right:0;z-index:1000;transition:transform .25s ease}
     #topchrome.hide{transform:translateY(-100%)}
 
-    /* --- visa alert --- */
-    .visa-alert{
-      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
-      background:#fff;color:#1c2b3a;
-      padding:16px 16px 18px;text-align:center;line-height:1.55;
-      font-weight:500;font-size:clamp(13.5px,3.5vw,18px);letter-spacing:.01em;
-      border-top:5px solid #d92638;border-bottom:1px solid #eadfe1;
-      box-shadow:0 2px 8px rgba(0,0,0,.08);
-    }
-    .visa-alert .va-row{display:flex;align-items:center;justify-content:center;gap:9px}
-    .visa-alert b{color:#d92638;white-space:nowrap;font-weight:800}
-    .visa-alert .va-ic{font-size:1.35em;flex:none;line-height:1;animation:vapulse 1.05s ease-in-out infinite}
-    @keyframes vapulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
-    .visa-alert .va-link{
-      display:inline-flex;align-items:center;gap:5px;
-      background:#d92638;color:#fff;font-weight:800;font-size:.86em;
-      padding:7px 16px;border-radius:999px;text-decoration:none;
-      box-shadow:0 2px 5px rgba(217,38,56,.35);transition:transform .12s,box-shadow .12s;
-    }
-    .visa-alert .va-link:hover{transform:translateY(-1px);box-shadow:0 4px 8px rgba(217,38,56,.4)}
-    .visa-alert .va-link svg{width:1em;height:1em;flex:none}
-
     /* --- switch tabs --- */
     .switch-bar{
       display:flex;background:#fff;border-bottom:1px solid #d6d6d6;
@@ -94,7 +72,7 @@
     .switch-btn .sb{font-size:10.5px;font-weight:500;color:#b3b3b3}
 
     /* ===== FRAMES ===== */
-    .frame-wrap{position:fixed;top:120px;left:0;right:0;bottom:0;overflow:auto;-webkit-overflow-scrolling:touch;transition:top .25s ease}
+    .frame-wrap{position:fixed;top:64px;left:0;right:0;bottom:0;overflow:auto;-webkit-overflow-scrolling:touch;transition:top .25s ease}
     /* iOS Safari: iframeの幅暴走/スクロール未描画対策（width:1px+min-width:100%＋親スクロール） */
     .frame-wrap iframe{position:absolute;inset:0;width:1px;min-width:100%;height:100%;border:0;display:none}
     .frame-wrap iframe.active{display:block}
@@ -112,23 +90,12 @@
 <h1 class="sr-only">ロサンゼルス留学｜語学学校 HEI と認定大学 SCSU の日本人向け案内</h1>
 
   <div id="topchrome">
-    <div class="visa-alert" role="alert">
-      <span class="va-row">
-        <span class="va-ic" aria-hidden="true">⚠️</span>
-        <span>アメリカ学生ビザ <b>新ルール 9月15日</b> 施行<b id="visaCnt"></b>。転校をお考えの方は <b>今すぐ手続きを！！</b></span>
-      </span>
-      <a class="va-link" href="https://www.scsuniversity.edu/f1-duration-of-status/" target="_blank" rel="noopener" onclick="if(typeof gtag==='function') gtag('event','visa_rule_link_click')">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 16v-5M12 8h.01"/></svg>
-        新ルールを詳しく見る →
-      </a>
-    </div>
-
     <nav class="switch-bar" role="tablist" aria-label="学校切り替え">
-      <button class="switch-btn hei active" id="btnHei" role="tab" aria-selected="true" onclick="showTab('hei')">
+      <button class="switch-btn hei" id="btnHei" role="tab" aria-selected="false" onclick="showTab('hei')">
         <img class="logo" src="images/logo-orange.png" alt="" aria-hidden="true">
         <span class="tx"><span class="nm">語学学校 HEI</span><span class="sb">Hollywood Education Institute</span></span>
       </button>
-      <button class="switch-btn scsu" id="btnScsu" role="tab" aria-selected="false" onclick="showTab('scsu')">
+      <button class="switch-btn scsu active" id="btnScsu" role="tab" aria-selected="true" onclick="showTab('scsu')">
         <img class="logo" src="images/scsu-logo.png" alt="" aria-hidden="true">
         <span class="tx"><span class="nm">大学・大学院 SCSU</span><span class="sb">Southern California State University</span></span>
       </button>
@@ -146,8 +113,8 @@
     </div>
   </noscript>
   <div class="frame-wrap">
-    <iframe id="frameHei"  class="active" src="hei.html" title="HEI 語学学校" loading="eager"></iframe>
-    <iframe id="frameScsu" data-src="scsu.html" title="SCSU 大学・大学院" loading="lazy"></iframe>
+    <iframe id="frameHei" data-src="hei.html" title="HEI 語学学校" loading="lazy"></iframe>
+    <iframe id="frameScsu" class="active" src="scsu.html" title="SCSU 大学・大学院" loading="eager"></iframe>
   </div>
 
   <script>
@@ -170,8 +137,8 @@
     window.addEventListener('load', syncTop);
     syncTop();
 
-    // hide the visa alert + tab switcher on scroll-down, bring it back on scroll-up —
-    // it was eating screen space on every scroll position, not just at the top.
+    // hide the tab switcher on scroll-down, bring it back on scroll-up —
+    // it was eating screen space at every scroll position, not just at the top.
     function watchScroll(getY){
       var lastY = getY();
       return function(){
@@ -194,7 +161,7 @@
         } catch(e){}
       }
       f.addEventListener('load', attach);
-      // the eager HEI frame can finish loading before this script runs, in which
+      // the eager SCSU frame can finish loading before this script runs, in which
       // case the 'load' event above already fired and would never call attach()
       try { if(f.contentDocument && f.contentDocument.readyState === 'complete') attach(); } catch(e){}
     }
@@ -203,16 +170,16 @@
 
     function showTab(tab){
       var isHei = tab === 'hei';
-      var fScsu = document.getElementById('frameScsu');
-      // lazy-load SCSU on first open
-      if(!isHei && !fScsu.src){ fScsu.src = fScsu.getAttribute('data-src'); }
+      var fHei = document.getElementById('frameHei');
+      // lazy-load HEI on first open
+      if(isHei && !fHei.src){ fHei.src = fHei.getAttribute('data-src'); }
 
       document.getElementById('btnHei').classList.toggle('active', isHei);
       document.getElementById('btnScsu').classList.toggle('active', !isHei);
       document.getElementById('btnHei').setAttribute('aria-selected', isHei);
       document.getElementById('btnScsu').setAttribute('aria-selected', !isHei);
-      document.getElementById('frameHei').classList.toggle('active', isHei);
-      fScsu.classList.toggle('active', !isHei);
+      fHei.classList.toggle('active', isHei);
+      document.getElementById('frameScsu').classList.toggle('active', !isHei);
       setChromeHidden(false);
       document.title = isHei
         ? 'ロサンゼルス語学留学 ｜ HEI 語学学校（日本人向け）'
@@ -221,14 +188,8 @@
       if(history.replaceState) history.replaceState(null, '', isHei ? '#hei' : '#scsu');
       if(typeof gtag==='function') gtag('event','school_tab_switch',{school: isHei ? 'HEI' : 'SCSU'});
     }
-    // visa-rule countdown
-    (function(){
-      var d = Math.ceil((new Date(2026,8,15) - new Date()) / 86400000);
-      var el = document.getElementById('visaCnt');
-      if(el && d > 0) el.textContent = '（あと' + d + '日）';
-    })();
-    // open SCSU directly via #scsu (e.g. from an ad link)
-    if(location.hash === '#scsu'){ showTab('scsu'); }
+    // SCSU opens by default; open HEI directly via #hei (e.g. from an ad link)
+    if(location.hash === '#hei'){ showTab('hei'); }
   </script>
 
 </body>
