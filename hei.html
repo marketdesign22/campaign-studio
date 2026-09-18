@@ -364,6 +364,13 @@
   .cform textarea{min-height:96px;resize:vertical}
   .cform input:focus,.cform select:focus,.cform textarea:focus{outline:none;box-shadow:3px 3px 0 var(--orange)}
   .cform .send{width:100%;background:var(--orange);color:#fff;border:var(--bd);border-radius:999px;padding:15px;font-weight:900;font-size:1.05rem;font-family:inherit;cursor:pointer;box-shadow:5px 5px 0 var(--ink);transition:transform .12s,box-shadow .12s}
+  .mid-cta{max-width:640px;margin:26px auto 0;background:#fff;border:var(--bd);border-radius:16px;padding:22px 24px;box-shadow:5px 5px 0 var(--ink);text-align:center}
+  .mid-cta p{font-weight:800;font-size:.98rem;margin-bottom:14px;line-height:1.7}
+  .mid-cta-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .mid-cta-btn{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:.88rem;text-decoration:none;padding:11px 20px;border-radius:999px;border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--ink);transition:transform .12s,box-shadow .12s}
+  .mid-cta-btn:hover{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+  .mid-cta-btn.form{background:var(--orange);color:#fff}
+  .mid-cta-btn.line{background:var(--line);color:#fff}
   .cform .send:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
   .cform .note{text-align:center;font-size:.8rem;color:#8a7558;font-weight:600;margin-top:10px}
   .form-step2{display:none;margin-top:16px}
@@ -737,6 +744,13 @@
       <div class="ocard step"><div class="badge"><span class="s">STEP</span><span class="n">02</span></div><h3 data-en="Apply">手続き</h3><div class="romaji">tetsuzuki</div><p data-en="Our Japanese staff handle admissions, your I-20 student visa, and transfers.">入学・学生ビザ(I-20)・転校手続きまで、日本人スタッフが丸ごとサポート。</p></div>
       <div class="ocard step"><div class="badge"><span class="s">STEP</span><span class="n">03</span></div><h3 data-en="Arrive &amp; start">渡米・開始</h3><div class="romaji">start</div><p data-en="Airport pickup &amp; dorm info included. Start class at the special price of <span class='pr'>$900</span>.">空港送迎・寮の案内も。到着したら、特別価格 <span class="pr">$900</span> で授業スタート。</p></div>
     </div>
+    <div class="mid-cta">
+      <p data-en="Not sure this is the right fit? Get a free, no-obligation consultation in Japanese before reading on.">自分に合うか迷ったら、この先を読む前に無料相談を。日本語でお気軽にどうぞ。</p>
+      <div class="mid-cta-btns">
+        <a class="mid-cta-btn form" href="#contact" data-en="Contact form (free)">お問い合わせフォームへ →</a>
+        <a class="mid-cta-btn line" data-line data-en="Chat on LINE">LINEで相談する</a>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -880,8 +894,8 @@
         </select>
               <input type="text" class="other-in" name="status_other" placeholder="例：ワーキングホリデーで滞在中" data-en-ph="e.g. here on a working holiday">
       </div>
-      <div class="fg"><label><span data-en="How did you hear about us?">当校をどこで知りましたか？</span><span class="req">*</span></label>
-        <select name="referral" required>
+      <div class="fg"><label data-en="How did you hear about us? (optional)">当校をどこで知りましたか？（任意）</label>
+        <select name="referral">
           <option value="" data-en="Please select">選択してください</option>
           <option data-en="Graduate / current student / acquaintance">卒業生・在校生・知り合いの紹介</option>
           <option data-en="Vivinavi">ビビナビ</option>

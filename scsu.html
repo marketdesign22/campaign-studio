@@ -568,6 +568,13 @@
   .fg textarea{min-height:96px;resize:vertical}
   .fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;box-shadow:3px 3px 0 var(--blue)}
   .form-submit{width:100%;background:var(--blue);color:#fff;border:var(--bd);border-radius:999px;padding:15px;font-weight:900;font-size:1.05rem;font-family:inherit;cursor:pointer;box-shadow:5px 5px 0 var(--ink);transition:transform .12s,box-shadow .12s}
+  .mid-cta{max-width:640px;margin:26px auto 0;background:#fff;border:var(--bd);border-radius:16px;padding:22px 24px;box-shadow:5px 5px 0 var(--ink);text-align:center}
+  .mid-cta p{font-weight:800;font-size:.98rem;margin-bottom:14px;line-height:1.7}
+  .mid-cta-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .mid-cta-btn{display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:.88rem;text-decoration:none;padding:11px 20px;border-radius:999px;border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--ink);transition:transform .12s,box-shadow .12s}
+  .mid-cta-btn:hover{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+  .mid-cta-btn.form{background:var(--blue);color:#fff}
+  .mid-cta-btn.line{background:var(--line);color:#fff}
   .form-submit:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
   .other-in{display:none;margin-top:8px}
   .form-note{text-align:center;font-size:.8rem;color:var(--muted);font-weight:600;margin-top:10px}
@@ -775,6 +782,13 @@
       <div class="pnode"><div class="s">GOAL</div><div class="n" data-en="Career">キャリア</div><div class="d" data-en="Global success">グローバル活躍</div></div>
     </div>
     <p class="path-note" data-en="SCSU offers a seamless path from Certificate through Bachelor, Master and Doctorate — all in one institution. Japanese-speaking staff are here, so you can consult in Japanese whenever you need help.">SCSUはサーティフィケートから学士・修士・博士まで、一つの大学で一貫したキャリアパス。日本人スタッフ在籍で困った時は日本語で相談できます。</p>
+    <div class="mid-cta">
+      <p data-en="Not sure which program fits you? Get a free, no-obligation consultation in Japanese before reading on.">どのプログラムが合うか迷ったら、この先を読む前に無料相談を。日本語でお気軽にどうぞ。</p>
+      <div class="mid-cta-btns">
+        <a class="mid-cta-btn form" href="#contact" data-en="Contact form (free)">お問い合わせフォームへ →</a>
+        <a class="mid-cta-btn line" data-line data-en="Chat on LINE">LINEで相談する</a>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -1076,8 +1090,8 @@
             </select>
               <input type="text" class="other-in" name="status_other" placeholder="例：ワーキングホリデーで滞在中" data-en-ph="e.g. here on a working holiday">
           </div>
-          <div class="fg"><label><span data-en="How did you hear about us?">当校をどこで知りましたか？</span><span class="req">*</span></label>
-            <select name="referral" required>
+          <div class="fg"><label data-en="How did you hear about us? (optional)">当校をどこで知りましたか？（任意）</label>
+            <select name="referral">
               <option value="" data-en="Please select">選択してください</option>
               <option data-en="Graduate / current student / acquaintance">卒業生・在校生・知り合いの紹介</option>
               <option data-en="Vivinavi">ビビナビ</option>
