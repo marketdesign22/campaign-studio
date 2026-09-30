@@ -13,6 +13,8 @@ import mysql from "mysql2/promise";
 import { buildDbConfig, describeDbTarget } from "../dbConfig";
 import { INTEGRATION_INDEXES, INTEGRATION_TABLES } from "../integration/schema";
 
+import { REPORT_TABLES } from "../reportMigration";
+
 async function main() {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error("DATABASE_URL is required");
@@ -580,6 +582,8 @@ async function main() {
   await addUniqueIndex("weekly_reviews", "uniq_weekly_review_strategy", "`accountId`, `strategyId`");
   await addIndex("post_quality_checks", "idx_quality_account_post", "`accountId`, `postId`, `createdAt`");
   await addIndex("post_quality_findings", "idx_quality_finding_check", "`accountId`, `qualityCheckId`");
+
+  for (const table of REPORT_TABLES) await createTable(table.table, table.ddl);
 
   console.log("[upgrade] 完了");
   await conn.end();

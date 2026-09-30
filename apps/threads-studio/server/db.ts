@@ -671,7 +671,8 @@ export async function upsertAnalytics(data: {
 }) {
   const db = await getDb();
   if (!db) return;
-  await db.insert(postAnalytics).values(data).onDuplicateKeyUpdate({ set: data });
+  const observed = { ...data, fetchedAt: new Date() };
+  await db.insert(postAnalytics).values(observed).onDuplicateKeyUpdate({ set: observed });
 }
 
 // ── Account settings ──────────────────────────────────────────────────────────

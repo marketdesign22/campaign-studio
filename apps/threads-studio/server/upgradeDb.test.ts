@@ -95,6 +95,10 @@ beforeEach(() => {
 });
 
 describe("db:upgrade", () => {
+  it("月次レポートの履歴・設定・保存テーブルを追加する", async () => {
+    await runUpgradeOnce();
+    for (const table of ["report_post_daily", "report_configs", "monthly_reports"]) expect(tables.has(table)).toBe(true);
+  });
   it("空のDBにトレンド関連のテーブル・列・索引・ユニーク制約を作る", async () => {
     await runUpgradeOnce();
     for (const t of ["trend_settings", "trend_posts", "trend_analyses"]) expect(tables.has(t)).toBe(true);
