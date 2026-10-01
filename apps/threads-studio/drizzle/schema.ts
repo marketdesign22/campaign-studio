@@ -248,11 +248,84 @@ export const postAnalytics = mysqlTable("post_analytics", {
   likes: int("likes").default(0).notNull(),
   replies: int("replies").default(0).notNull(),
   reposts: int("reposts").default(0).notNull(),
+  /** 引用・シェア（Threads Insights の quotes / shares）。追加前の行は 0 */
+  quotes: int("quotes").default(0).notNull(),
+  shares: int("shares").default(0).notNull(),
   views: bigint("views", { mode: "number" }).default(0).notNull(),
   fetchedAt: timestamp("fetchedAt").defaultNow().notNull(),
 });
 
 export type PostAnalytics = typeof postAnalytics.$inferSelect;
+
+/**
+ * 投稿ごとの反応数の日次スナップショット。post_analytics は最新値しか意味を持たないため、
+ * 「月内にどれだけ伸びたか」を後から追えるように取得のたびに1行残す。
+ * (postLogId, capturedDate) で一意。同じ日に複数回取得したらその日の値を更新する。
+ */
+export const postAnalyticsDaily = mysqlTable("post_analytics_daily", {
+  id: int("id").autoincrement().primaryKey(),
+  postLogId: int("postLogId").notNull(),
+  accountId: int("accountId").notNull(),
+  /** アカウントのタイムゾーンでの取得日 YYYY-MM-DD */
+  capturedDate: varchar("capturedDate", { length: 10 }).notNull(),
+  likes: int("likes").default(0).notNull(),
+  replies: int("replies").default(0).notNull(),
+  reposts: int("reposts").default(0).notNull(),
+  quotes: int("quotes").default(0).notNull(),
+  shares: int("shares").default(0).notNull(),
+  views: bigint("views", { mode: "number" }).default(0).notNull(),
+  fetchedAt: timestamp("fetchedAt").defaultNow().notNull(),
+}, (table) => [uniqueIndex("uniq_post_analytics_daily").on(table.postLogId, table.capturedDate)]);
+
+export type PostAnalyticsDaily = typeof postAnalyticsDaily.$inferSelect;
+
+/**
+ * アカウント全体の日次インサイト（Threads `/{userId}/threads_insights?metric=views,clicks`）。
+ * 取れなかった指標は NULL のまま（0 にしない）。(accountId, date) で一意。
+ */
+export const accountInsightsDaily = mysqlTable("account_insights_daily", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull(),
+  date: varchar("date", { length: 10 }).notNull(),
+  views: bigint("views", { mode: "number" }),
+  clicks: int("clicks"),
+  fetchedAt: timestamp("fetchedAt").defaultNow().notNull(),
+}, (table) => [uniqueIndex("uniq_account_insights_daily").on(table.accountId, table.date)]);
+
+export type AccountInsightsDaily = typeof accountInsightsDaily.$inferSelect;
+
+/** 月次レポートの KPI 目標値。(accountId, yearMonth, metric) で一意 */
+export const kpiTargets = mysqlTable("kpi_targets", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull(),
+  yearMonth: varchar("yearMonth", { length: 7 }).notNull(),
+  metric: varchar("metric", { length: 32 }).notNull(),
+  target: bigint("target", { mode: "number" }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [uniqueIndex("uniq_kpi_target").on(table.accountId, table.yearMonth, table.metric)]);
+
+export type KpiTarget = typeof kpiTargets.$inferSelect;
+
+/**
+ * 保存済みの月次レポート。dataJson は集計結果（shared/report.ts の ReportData）、
+ * narrativeJson は総評などの文章（AI 下書きを人が編集したもの）。(accountId, yearMonth) で一意。
+ */
+export const reports = mysqlTable("reports", {
+  id: int("id").autoincrement().primaryKey(),
+  accountId: int("accountId").notNull(),
+  yearMonth: varchar("yearMonth", { length: 7 }).notNull(),
+  status: mysqlEnum("status", ["draft", "reviewed", "sent"]).default("draft").notNull(),
+  dataJson: mediumtext("dataJson").notNull(),
+  narrativeJson: text("narrativeJson"),
+  generatedAt: timestamp("generatedAt").defaultNow().notNull(),
+  reviewedAt: timestamp("reviewedAt"),
+  sentAt: timestamp("sentAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [uniqueIndex("uniq_report_account_month").on(table.accountId, table.yearMonth)]);
+
+export type Report = typeof reports.$inferSelect;
 
 /**
  * フォロワー数の日次スナップショット。

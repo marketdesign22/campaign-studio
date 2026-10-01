@@ -9,7 +9,7 @@ import {
   contentStrategies, contentStrategyItems, conversionEventRevisions, conversionEvents, conversionGoals,
   engagementComments, followerSnapshots, media, postAnalytics, postLogs, postQualityChecks, postQualityFindings,
   posts, replyTemplates, settings, threadReplies, trendAnalyses, trendPosts, trendSettings, users,
-  weeklyReviews,
+  weeklyReviews, accountInsightsDaily, kpiTargets, postAnalyticsDaily, reports,
 } from "../drizzle/schema";
 import type { AccountScope } from "./accountScope";
 import { ENV } from "./_core/env";
@@ -668,10 +668,149 @@ export async function upsertAnalytics(data: {
   replies: number;
   reposts: number;
   views: number;
+  /** 引用・シェア。省略時は 0（旧来の呼び出し元を壊さない） */
+  quotes?: number;
+  shares?: number;
 }) {
   const db = await getDb();
   if (!db) return;
-  await db.insert(postAnalytics).values(data).onDuplicateKeyUpdate({ set: data });
+  const row = { ...data, quotes: data.quotes ?? 0, shares: data.shares ?? 0 };
+  await db.insert(postAnalytics).values(row).onDuplicateKeyUpdate({ set: row });
+}
+
+// ── 月次レポート用の記録 ───────────────────────────────────────────────────
+
+export type AnalyticsDailyRow = {
+  postLogId: number; accountId: number; capturedDate: string;
+  likes: number; replies: number; reposts: number; quotes: number; shares: number; views: number;
+};
+
+/** 投稿ごとの反応数の日次スナップショット。同じ (postLogId, capturedDate) はその日の値を更新する */
+export async function upsertAnalyticsDaily(row: AnalyticsDailyRow) {
+  const db = await getDb();
+  if (!db) return;
+  const { postLogId, accountId, capturedDate, ...metrics } = row;
+  await db.insert(postAnalyticsDaily).values({ postLogId, accountId, capturedDate, ...metrics })
+    .onDuplicateKeyUpdate({ set: { ...metrics, fetchedAt: new Date() } });
+}
+
+/**
+ * アカウント全体の日次インサイト。渡した指標だけを書き、渡していない指標は既存値を保つ
+ * （views は取れたが clicks は権限不足、という日でも views を失わない）。
+ */
+export async function upsertAccountInsightsDaily(
+  accountId: number, date: string, values: { views?: number | null; clicks?: number | null }
+) {
+  const db = await getDb();
+  if (!db) return;
+  const set: Record<string, unknown> = { fetchedAt: new Date() };
+  if (values.views !== undefined) set.views = values.views;
+  if (values.clicks !== undefined) set.clicks = values.clicks;
+  await db.insert(accountInsightsDaily)
+    .values({ accountId, date, views: values.views ?? null, clicks: values.clicks ?? null })
+    .onDuplicateKeyUpdate({ set });
+}
+
+/** 期間（両端含む、YYYY-MM-DD）のアカウント日次インサイト。日付順 */
+export async function listAccountInsightsDaily(accountId: number, from: string, to: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(accountInsightsDaily)
+    .where(and(eq(accountInsightsDaily.accountId, accountId), gte(accountInsightsDaily.date, from), lte(accountInsightsDaily.date, to)))
+    .orderBy(accountInsightsDaily.date);
+}
+
+/** 期間（両端含む、YYYY-MM）の KPI 目標値 */
+export async function listKpiTargets(accountId: number, fromYearMonth: string, toYearMonth: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(kpiTargets)
+    .where(and(eq(kpiTargets.accountId, accountId), gte(kpiTargets.yearMonth, fromYearMonth), lte(kpiTargets.yearMonth, toYearMonth)));
+}
+
+/** 目標値の保存。null を渡した指標は削除（未設定に戻す） */
+export async function saveKpiTargets(accountId: number, yearMonth: string, targets: Record<string, number | null>) {
+  const db = await getDb();
+  if (!db) return;
+  for (const [metric, target] of Object.entries(targets)) {
+    const where = and(eq(kpiTargets.accountId, accountId), eq(kpiTargets.yearMonth, yearMonth), eq(kpiTargets.metric, metric));
+    if (target === null) {
+      await db.delete(kpiTargets).where(where);
+    } else {
+      await db.insert(kpiTargets).values({ accountId, yearMonth, metric, target })
+        .onDuplicateKeyUpdate({ set: { target } });
+    }
+  }
+}
+
+/** アカウントのキャンペーン一覧（名前の解決用） */
+export async function listCampaignsForAccount(accountId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(campaigns).where(eq(campaigns.accountId, accountId)).orderBy(campaigns.id);
+}
+
+/**
+ * レポート集計用: 期間内に公開された投稿と、その最新の反応数・カテゴリー・キャンペーン。
+ * 反応数が1件も取れていない投稿は analytics が null（0 と区別する）。
+ */
+export async function listReportPosts(scope: AccountScope, from: Date, to: Date) {
+  const db = await getDb();
+  if (!db) return [];
+  const logs = await db.select().from(postLogs).where(and(
+    eq(postLogs.status, "posted"),
+    gte(postLogs.postedAt, from),
+    lt(postLogs.postedAt, to),
+    ownedBy(postLogs.accountId, scope),
+  )).orderBy(postLogs.postedAt);
+  if (logs.length === 0) return [];
+  const byLog = await analyticsByLogId(logs.map((l) => l.id));
+  const postIds = logs.map((l) => l.postId).filter((id): id is number => id !== null);
+  const postRows = postIds.length
+    ? await db.select({ id: posts.id, campaignId: posts.campaignId, categoryId: posts.categoryId }).from(posts).where(inArray(posts.id, postIds))
+    : [];
+  const postById = new Map(postRows.map((p) => [p.id, p]));
+  return logs.map((l) => {
+    const a = byLog.get(l.id);
+    const p = l.postId !== null ? postById.get(l.postId) : undefined;
+    return {
+      logId: l.id,
+      content: l.content,
+      postedAt: l.postedAt,
+      categoryId: l.categoryId ?? p?.categoryId ?? null,
+      campaignId: p?.campaignId ?? null,
+      analytics: a ? { likes: a.likes, replies: a.replies, reposts: a.reposts, quotes: a.quotes, shares: a.shares, views: a.views } : null,
+    };
+  });
+}
+
+export type ReportPostRow = Awaited<ReturnType<typeof listReportPosts>>[number];
+
+export async function getReport(accountId: number, yearMonth: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const rows = await db.select().from(reports)
+    .where(and(eq(reports.accountId, accountId), eq(reports.yearMonth, yearMonth))).limit(1);
+  return rows[0];
+}
+
+/** 集計結果の保存。既存行があれば集計・文章を置き換え、状態は draft に戻す */
+export async function upsertReport(
+  accountId: number, yearMonth: string, dataJson: string, narrativeJson: string | null, generatedAt: Date
+) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(reports).values({ accountId, yearMonth, dataJson, narrativeJson, generatedAt, status: "draft" })
+    .onDuplicateKeyUpdate({ set: { dataJson, narrativeJson, generatedAt, status: "draft", reviewedAt: null, sentAt: null } });
+}
+
+export async function updateReport(
+  accountId: number, yearMonth: string,
+  patch: Partial<{ narrativeJson: string | null; status: "draft" | "reviewed" | "sent"; reviewedAt: Date | null; sentAt: Date | null }>
+) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(reports).set(patch).where(and(eq(reports.accountId, accountId), eq(reports.yearMonth, yearMonth)));
 }
 
 // ── Account settings ──────────────────────────────────────────────────────────

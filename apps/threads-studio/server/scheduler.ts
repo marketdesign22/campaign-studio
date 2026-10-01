@@ -27,6 +27,7 @@ import {
   updateAccount,
   updatePost,
   upsertAnalytics,
+  upsertAnalyticsDaily,
   upsertSettings,
 } from "./db";
 import { AccountScope, primaryAccountId, scopeOf } from "./accountScope";
@@ -42,53 +43,14 @@ import { markDeletedSavedPosts, runTrendFetchIfDue } from "./trends";
 import { fetchRepliesForAccounts } from "./replies";
 import { assertPublishableContent, parseForbiddenTopics } from "./quality";
 import { runStrategyMaintenance } from "./strategyService";
+import { fetchAccountInsights } from "./accountInsights";
+import { runMonthlyReportMaintenance } from "./reportMaintenance";
 
 // ── Timezone helpers (pure, unit-tested) ─────────────────────────────────────
-
-export type Tz = "LA" | "JP" | "ET" | "CT" | "MT";
-
-export const TZ_NAMES: Record<Tz, string> = {
-  LA: "America/Los_Angeles",
-  JP: "Asia/Tokyo",
-  ET: "America/New_York",
-  CT: "America/Chicago",
-  MT: "America/Denver",
-};
-
-export type LocalParts = { dateStr: string; hour: number; minute: number };
-
-/** アカウントのタイムゾーンでの現在日付・時刻 */
-export function getLocalParts(now: Date, tz: Tz): LocalParts {
-  const fmt = new Intl.DateTimeFormat("en-CA", {
-    timeZone: TZ_NAMES[tz],
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", hour12: false,
-  });
-  const parts = Object.fromEntries(fmt.formatToParts(now).map((p) => [p.type, p.value]));
-  return {
-    dateStr: `${parts.year}-${parts.month}-${parts.day}`,
-    // Intl may return "24" for midnight in some engines
-    hour: Number(parts.hour) % 24,
-    minute: Number(parts.minute),
-  };
-}
-
-/** ローカル日付 dateStr の 0:00〜24:00 に対応する UTC 範囲 */
-export function localDayUtcRange(dateStr: string, tz: Tz): { start: Date; end: Date } {
-  // Determine the UTC offset in effect on that local date by probing noon UTC
-  // (safe from DST transitions which happen in the early morning).
-  const probe = new Date(`${dateStr}T12:00:00Z`);
-  const local = getLocalParts(probe, tz);
-  // offsetMinutes = local time - UTC time at the probe instant
-  const probeMinutes = 12 * 60;
-  let localMinutes = local.hour * 60 + local.minute;
-  // local date may differ from probe date (JP is ahead)
-  if (local.dateStr > dateStr) localMinutes += 24 * 60;
-  else if (local.dateStr < dateStr) localMinutes -= 24 * 60;
-  const offsetMinutes = localMinutes - probeMinutes;
-  const startUtcMs = Date.parse(`${dateStr}T00:00:00Z`) - offsetMinutes * 60 * 1000;
-  return { start: new Date(startUtcMs), end: new Date(startUtcMs + 24 * 60 * 60 * 1000) };
-}
+// 本体は server/localTime.ts。既存の呼び出し元・テストのために同じ名前で再エクスポートする
+export { getLocalParts, localDayUtcRange, TZ_NAMES } from "./localTime";
+export type { LocalParts, Tz } from "./localTime";
+import { getLocalParts, localDayUtcRange, type LocalParts, type Tz } from "./localTime";
 
 /** スロットの発火判定: ローカル時刻が設定時刻を過ぎているか */
 export function slotIsDue(local: LocalParts, slotHour: number, slotMinute: number): boolean {
@@ -273,7 +235,10 @@ export async function refreshTokensIfNeeded(now: Date) {
   }
 }
 
-export async function fetchAnalyticsForRecentPosts() {
+/** 投稿インサイトを取得する対象期間（日）。月次レポートで前々月まで比較できるように 92 日 */
+export const ANALYTICS_LOOKBACK_DAYS = 92;
+
+export async function fetchAnalyticsForRecentPosts(now: Date = new Date()) {
   const all = await listAccounts();
   const accounts = all.filter((a) => a.active);
   if (accounts.length === 0) return;
@@ -281,7 +246,7 @@ export async function fetchAnalyticsForRecentPosts() {
   // accountId 未設定の旧ログは最初に作られたアカウントの投稿なので、そのトークンで引く
   const primaryId = primaryAccountId(all);
   const legacyOwner = primaryId !== null ? byId.get(primaryId) : undefined;
-  const logs = await listLogsForAnalytics(30);
+  const logs = await listLogsForAnalytics(ANALYTICS_LOOKBACK_DAYS);
   for (const log of logs) {
     // 所属アカウントが無効化・削除されているログは、他アカウントのトークンで
     // 引くと誤ったデータが入るため取得しない
@@ -293,7 +258,18 @@ export async function fetchAnalyticsForRecentPosts() {
       await upsertAnalytics({
         postLogId: log.id, threadsPostId: log.threadsPostId,
         likes: m.likes, replies: m.replies, reposts: m.reposts, views: m.views,
+        quotes: m.quotes, shares: m.shares,
       });
+      // 月次レポート用に、その日の値を1行残す（最新値とは別。失敗しても最新値の保存には影響させない）
+      try {
+        await upsertAnalyticsDaily({
+          postLogId: log.id, accountId: account.id,
+          capturedDate: getLocalParts(now, primaryTimezone(account)).dateStr,
+          likes: m.likes, replies: m.replies, reposts: m.reposts, quotes: m.quotes, shares: m.shares, views: m.views,
+        });
+      } catch (e) {
+        console.warn(`[scheduler] daily analytics snapshot failed for log ${log.id}: ${e instanceof Error ? e.name : "error"}`);
+      }
     } catch (e) {
       console.warn(`[scheduler] insights fetch failed for log ${log.id}:`, e instanceof Error ? e.message : e);
     }
@@ -335,8 +311,16 @@ async function runDailyMaintenance(now: Date) {
   if (cfg?.lastMaintenanceDate === today) return;
   await upsertSettings({ lastMaintenanceDate: today });
   await refreshTokensIfNeeded(now);
-  await fetchAnalyticsForRecentPosts();
+  await fetchAnalyticsForRecentPosts(now);
   await fetchFollowerCounts(now);
+  // 月次レポート用: アカウント全体の日次インサイト（閲覧・クリック）。権限不足などは警告のみ
+  await fetchAccountInsights(now).catch((e) =>
+    console.warn(`[scheduler] account insights failed: ${e instanceof Error ? e.name : "error"}`)
+  );
+  // 月次レポート用: 月が替わったら前月分を draft で自動生成する
+  await runMonthlyReportMaintenance(now).catch((e) =>
+    console.warn(`[scheduler] monthly report maintenance failed: ${e instanceof Error ? e.name : "error"}`)
+  );
   await runStrategyMaintenance(now).catch((e) =>
     console.warn(`[scheduler] strategy maintenance failed: ${e instanceof Error ? e.name : "error"}`)
   );

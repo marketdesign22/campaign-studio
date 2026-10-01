@@ -549,6 +549,69 @@ async function main() {
   await addColumn("account_settings", "weeklyReviewEnabled", "\`weeklyReviewEnabled\` boolean NOT NULL DEFAULT true");
   await addColumn("account_settings", "conversionTrackingEnabled", "\`conversionTrackingEnabled\` boolean NOT NULL DEFAULT true");
 
+  // ── 月次レポート（追加のみ。既存テーブル・列は変更しない） ───────────────
+  await addColumn("post_analytics", "quotes", "`quotes` int NOT NULL DEFAULT 0");
+  await addColumn("post_analytics", "shares", "`shares` int NOT NULL DEFAULT 0");
+
+  await createTable("post_analytics_daily", `
+    CREATE TABLE \`post_analytics_daily\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`postLogId\` int NOT NULL,
+      \`accountId\` int NOT NULL,
+      \`capturedDate\` varchar(10) NOT NULL,
+      \`likes\` int NOT NULL DEFAULT 0,
+      \`replies\` int NOT NULL DEFAULT 0,
+      \`reposts\` int NOT NULL DEFAULT 0,
+      \`quotes\` int NOT NULL DEFAULT 0,
+      \`shares\` int NOT NULL DEFAULT 0,
+      \`views\` bigint NOT NULL DEFAULT 0,
+      \`fetchedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY \`uniq_post_analytics_daily\` (\`postLogId\`, \`capturedDate\`)
+    )
+  `);
+
+  await createTable("account_insights_daily", `
+    CREATE TABLE \`account_insights_daily\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`accountId\` int NOT NULL,
+      \`date\` varchar(10) NOT NULL,
+      \`views\` bigint NULL,
+      \`clicks\` int NULL,
+      \`fetchedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY \`uniq_account_insights_daily\` (\`accountId\`, \`date\`)
+    )
+  `);
+
+  await createTable("kpi_targets", `
+    CREATE TABLE \`kpi_targets\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`accountId\` int NOT NULL,
+      \`yearMonth\` varchar(7) NOT NULL,
+      \`metric\` varchar(32) NOT NULL,
+      \`target\` bigint NOT NULL,
+      \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY \`uniq_kpi_target\` (\`accountId\`, \`yearMonth\`, \`metric\`)
+    )
+  `);
+
+  await createTable("reports", `
+    CREATE TABLE \`reports\` (
+      \`id\` int AUTO_INCREMENT PRIMARY KEY,
+      \`accountId\` int NOT NULL,
+      \`yearMonth\` varchar(7) NOT NULL,
+      \`status\` enum('draft','reviewed','sent') NOT NULL DEFAULT 'draft',
+      \`dataJson\` mediumtext NOT NULL,
+      \`narrativeJson\` text NULL,
+      \`generatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`reviewedAt\` timestamp NULL,
+      \`sentAt\` timestamp NULL,
+      \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY \`uniq_report_account_month\` (\`accountId\`, \`yearMonth\`)
+    )
+  `);
+
   // ── 大漁マーケットOS 統合（追加のみ。既存テーブルは変更しない） ────────────
   for (const t of INTEGRATION_TABLES) await createTable(t.table, t.ddl);
   for (const i of INTEGRATION_INDEXES) await addIndex(i.table, i.index, i.columns);
@@ -580,6 +643,8 @@ async function main() {
   await addUniqueIndex("weekly_reviews", "uniq_weekly_review_strategy", "`accountId`, `strategyId`");
   await addIndex("post_quality_checks", "idx_quality_account_post", "`accountId`, `postId`, `createdAt`");
   await addIndex("post_quality_findings", "idx_quality_finding_check", "`accountId`, `qualityCheckId`");
+  await addIndex("post_analytics_daily", "idx_post_analytics_daily_account", "`accountId`, `capturedDate`");
+  await addIndex("reports", "idx_reports_account", "`accountId`, `yearMonth`");
 
   console.log("[upgrade] 完了");
   await conn.end();

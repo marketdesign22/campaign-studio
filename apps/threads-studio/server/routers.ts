@@ -14,6 +14,7 @@ import { mediaRouter } from "./routers/media";
 import { trendsRouter } from "./routers/trends";
 import { repliesRouter } from "./routers/replies";
 import { engagementRouter } from "./routers/engagement";
+import { reportsRouter } from "./routers/reports";
 import { clientProfileRouter } from "./routers/clientProfile";
 import { conversionsRouter } from "./routers/conversions";
 import { strategiesRouter } from "./routers/strategies";
@@ -34,6 +35,7 @@ export const appRouter = router({
   trends: trendsRouter,
   replies: repliesRouter,
   engagement: engagementRouter,
+  reports: reportsRouter,
   clientProfile: clientProfileRouter,
   conversions: conversionsRouter,
   strategies: strategiesRouter,

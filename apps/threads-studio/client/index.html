@@ -15,6 +15,27 @@
 
   <body>
     <div id="root"></div>
+    <!-- JS本体が読み込めない（古いキャッシュ・通信不良）時に真っ白のままにしない保険。アプリが描画されたら自動で消える -->
+    <div id="boot-fallback" hidden style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;font-family:system-ui,sans-serif;color:#1f2937;background:#faf9f6;text-align:center;line-height:1.7">
+      <div>
+        <p style="margin:0 0 16px">アプリの読み込みに時間がかかっています。<br />通信を確認して再読み込みしてください。</p>
+        <button type="button" onclick="location.replace(location.pathname + '?r=' + Date.now())" style="padding:10px 20px;border:0;border-radius:8px;background:#1f4e79;color:#fff;font-size:15px">再読み込み</button>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var root = document.getElementById("root");
+        var fallback = document.getElementById("boot-fallback");
+        function show() { if (fallback && !root.hasChildNodes()) fallback.hidden = false; }
+        function hide() { if (fallback) fallback.hidden = true; }
+        // 描画されたら消す
+        new MutationObserver(function () { if (root.hasChildNodes()) hide(); }).observe(root, { childList: true });
+        // <script type="module"> の読み込み失敗（404 等）は window の capture で拾える
+        window.addEventListener("error", function (e) { if (e.target && e.target.tagName === "SCRIPT") show(); }, true);
+        // 読み込み自体が終わらない場合
+        setTimeout(show, 8000);
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 

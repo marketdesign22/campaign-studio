@@ -4,7 +4,7 @@
  * どちらの形でも取れることを確かめる。
  */
 import { describe, expect, it } from "vitest";
-import { readInsightMetric } from "./threadsApi";
+import { readDailyInsightSeries, readInsightMetric } from "./threadsApi";
 import { engagementRate } from "./db";
 
 describe("readInsightMetric", () => {
@@ -56,3 +56,58 @@ describe("エンゲージメント率", () => {
     expect(engagementRate({ totalLikes: 0, totalReplies: 0, totalReposts: 0, totalViews: 500 })).toBe(0);
   });
 });
+
+describe("readDailyInsightSeries", () => {
+  // Threads は太平洋時間の日付境界（07:00Z）を end_time に返す
+  const payload = {
+    data: [{
+      name: "views",
+      values: [
+        { value: 120, end_time: "2026-09-02T07:00:00+0000" },
+        { value: 95, end_time: "2026-09-03T07:00:00+0000" },
+      ],
+    }],
+  };
+
+  it("end_time の1秒前の日付をキーにする（UTC では end_time の日付と同じ）", () => {
+    expect(readDailyInsightSeries(payload, "views")).toEqual([
+      { date: "2026-09-02", value: 120 },
+      { date: "2026-09-03", value: 95 },
+    ]);
+  });
+
+  it("タイムゾーンを渡すとその地域の日付で切る（太平洋時間なら前日になる）", () => {
+    expect(readDailyInsightSeries(payload, "views", "America/Los_Angeles")).toEqual([
+      { date: "2026-09-01", value: 120 },
+      { date: "2026-09-02", value: 95 },
+    ]);
+    // 日本時間では 16:00 なので end_time と同じ日付
+    expect(readDailyInsightSeries(payload, "views", "Asia/Tokyo")[0].date).toBe("2026-09-02");
+  });
+
+  it("'+0000' 形式と ISO 形式の両方を解釈し、壊れた要素は捨てる", () => {
+    const mixed = { data: [{ name: "clicks", values: [
+      { value: 3, end_time: "2026-09-02T00:00:00Z" },
+      { value: "x", end_time: "2026-09-03T00:00:00Z" },
+      { value: 5 },
+      { value: 7, end_time: "not a date" },
+    ] }] };
+    expect(readDailyInsightSeries(mixed, "clicks")).toEqual([{ date: "2026-09-01", value: 3 }]);
+  });
+
+  it("指標が無い・total_value しか無い応答は空配列（0 で埋めない）", () => {
+    expect(readDailyInsightSeries(payload, "clicks")).toEqual([]);
+    expect(readDailyInsightSeries({ data: [{ name: "views", total_value: { value: 10 } } as never] }, "views")).toEqual([]);
+    expect(readDailyInsightSeries({}, "views")).toEqual([]);
+  });
+
+  it("同じ日付が重複したら後の値で上書きし、日付順に並べる", () => {
+    const dup = { data: [{ name: "views", values: [
+      { value: 9, end_time: "2026-09-03T00:00:00Z" },
+      { value: 1, end_time: "2026-09-02T00:00:00Z" },
+      { value: 2, end_time: "2026-09-02T00:00:00Z" },
+    ] }] };
+    expect(readDailyInsightSeries(dup, "views")).toEqual([{ date: "2026-09-01", value: 2 }, { date: "2026-09-02", value: 9 }]);
+  });
+});
+
