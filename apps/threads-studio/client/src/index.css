@@ -208,4 +208,30 @@
   .print-report .border {
     border-color: #ddd;
   }
+  /* 月次レポート: A4・余白14mm。表やカードは途中で切らず、文章パートは改ページから始める。
+     KPIカードの背景色は印刷でも出す */
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+  .print-report {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .print-report .report-table,
+  .print-report .report-card,
+  .print-report .report-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  .print-report .report-narrative {
+    break-before: page;
+    page-break-before: always;
+  }
+  .print-report .recharts-responsive-container {
+    break-inside: avoid;
+  }
+  .print-report .text-muted-foreground {
+    color: #555 !important;
+  }
 }

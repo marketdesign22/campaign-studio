@@ -132,6 +132,26 @@ describe("db:upgrade", () => {
     expect(tables.get("engagement_comments")!.indexes.has("idx_engagement_comments_target")).toBe(true);
   });
 
+  it("空のDBに月次レポート関連のテーブル・列・一意制約を作る", async () => {
+    await runUpgradeOnce();
+    expect(tables.get("post_analytics")!.columns.has("quotes")).toBe(true);
+    expect(tables.get("post_analytics")!.columns.has("shares")).toBe(true);
+    for (const t of ["post_analytics_daily", "account_insights_daily", "kpi_targets", "reports"]) expect(tables.has(t)).toBe(true);
+    expect(tables.get("post_analytics_daily")!.indexes.has("uniq_post_analytics_daily")).toBe(true);
+    expect(tables.get("account_insights_daily")!.indexes.has("uniq_account_insights_daily")).toBe(true);
+    expect(tables.get("kpi_targets")!.indexes.has("uniq_kpi_target")).toBe(true);
+    expect(tables.get("reports")!.indexes.has("uniq_report_account_month")).toBe(true);
+    expect(tables.get("reports")!.indexes.has("idx_reports_account")).toBe(true);
+  });
+
+  it("既存の post_analytics には quotes / shares 列だけを足す（テーブルは作り直さない）", async () => {
+    const pa = ensure("post_analytics");
+    for (const c of ["id", "postLogId", "threadsPostId", "likes", "replies", "reposts", "views", "fetchedAt"]) pa.columns.add(c);
+    await runUpgradeOnce();
+    expect(ddl.some((d) => /ALTER TABLE `post_analytics` ADD COLUMN `quotes`/.test(d))).toBe(true);
+    expect(ddl.some((d) => /CREATE TABLE `post_analytics`/.test(d))).toBe(false);
+  });
+
   it("2回目以降はDDLを1本も流さない（冪等）", async () => {
     await runUpgradeOnce();
     const first = ddl.length;

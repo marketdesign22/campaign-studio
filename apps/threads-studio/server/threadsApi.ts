@@ -205,6 +205,9 @@ export interface PostInsights {
   likes: number;
   replies: number;
   reposts: number;
+  /** 引用・シェア。古い投稿や取得できない場合は 0 */
+  quotes: number;
+  shares: number;
   views: number;
 }
 
@@ -258,7 +261,7 @@ export async function fetchPostInsights(
   mediaId: string
 ): Promise<PostInsights> {
   const res = await fetch(
-    `${THREADS_API_BASE}/${mediaId}/insights?metric=views,likes,replies,reposts&access_token=${encodeURIComponent(accessToken)}`
+    `${THREADS_API_BASE}/${mediaId}/insights?metric=views,likes,replies,reposts,quotes,shares&access_token=${encodeURIComponent(accessToken)}`
   );
   if (!res.ok) {
     const err = await res.text();
@@ -270,8 +273,70 @@ export async function fetchPostInsights(
     likes: metric("likes"),
     replies: metric("replies"),
     reposts: metric("reposts"),
+    quotes: metric("quotes"),
+    shares: metric("shares"),
     views: metric("views"),
   };
+}
+
+// ── アカウント全体の日次インサイト（月次レポート用） ─────────────────────────
+
+export type DailyInsightPoint = { date: string; value: number };
+
+/**
+ * since/until 付きの threads_insights 応答から日次の系列を取り出す（純粋関数）。
+ *
+ * `values[].end_time` は「その日の終わり」（例: 翌日 00:00 の瞬間）を指すため、
+ * 1秒戻した時点の日付をその日のキーにする。日付は `timeZone`（IANA 名）で切る。
+ * end_time が無い・数値でない要素は捨てる。total_value しか無い応答は空配列。
+ */
+export function readDailyInsightSeries(
+  payload: { data?: { name: string; values?: { value?: unknown; end_time?: unknown }[] }[] },
+  name: string,
+  timeZone = "UTC"
+): DailyInsightPoint[] {
+  const item = payload.data?.find((d) => d.name === name);
+  if (!item?.values) return [];
+  const fmt = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" });
+  const out: DailyInsightPoint[] = [];
+  for (const v of item.values) {
+    if (typeof v.value !== "number" || typeof v.end_time !== "string") continue;
+    // Threads は "+0000" 形式のオフセットを返すことがあり、Date.parse が解釈できないので ":" を補う
+    const ms = Date.parse(v.end_time.replace(/([+-]\d{2})(\d{2})$/, "$1:$2"));
+    if (Number.isNaN(ms)) continue;
+    const parts = Object.fromEntries(fmt.formatToParts(new Date(ms - 1000)).map((p) => [p.type, p.value]));
+    out.push({ date: `${parts.year}-${parts.month}-${parts.day}`, value: v.value });
+  }
+  // 同じ日付が複数あれば後勝ち（APIの境界ずれの保険）
+  const byDate = new Map(out.map((p) => [p.date, p.value]));
+  return Array.from(byDate.entries()).map(([date, value]) => ({ date, value })).sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/**
+ * アカウント全体の日次インサイト1指標を期間指定で取得する。
+ * 指標ごとに別リクエストにしているのは、片方（例: clicks）が権限不足や未対応で
+ * 400/403 になっても、もう片方（views）は保存できるようにするため。
+ * 失敗時はステータス付きの例外を投げる（本文は分類用。ログや画面には出さない）。
+ */
+export async function fetchAccountInsightDaily(
+  accessToken: string,
+  userId: string,
+  metric: "views" | "clicks",
+  since: Date,
+  until: Date,
+  timeZone = "UTC"
+): Promise<DailyInsightPoint[]> {
+  const url = new URL(`${THREADS_API_BASE}/${userId}/threads_insights`);
+  url.searchParams.set("metric", metric);
+  url.searchParams.set("since", String(Math.floor(since.getTime() / 1000)));
+  url.searchParams.set("until", String(Math.floor(until.getTime() / 1000)));
+  url.searchParams.set("access_token", accessToken);
+  const res = await fetch(url.toString());
+  if (!res.ok) {
+    const body = (await res.text()).slice(0, 300);
+    throw new Error(`Threads account insights fetch failed (${res.status}): ${body}`);
+  }
+  return readDailyInsightSeries(await res.json(), metric, timeZone);
 }
 
 // ── キーワード検索 ───────────────────────────────────────────────────────────

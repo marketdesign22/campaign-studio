@@ -18,6 +18,7 @@ vi.mock("./db", () => ({
   markPostRecycled: vi.fn(),
   listLogsForAnalytics: vi.fn(),
   upsertAnalytics: vi.fn(),
+  upsertAnalyticsDaily: vi.fn(),
   updateAccount: vi.fn(),
   getSettings: vi.fn(),
   upsertSettings: vi.fn(),
@@ -29,6 +30,8 @@ vi.mock("./threadsApi", () => ({
   refreshLongLivedToken: vi.fn(),
 }));
 vi.mock("./_core/notification", () => ({ notifyOwner: vi.fn() }));
+vi.mock("./accountInsights", () => ({ fetchAccountInsights: vi.fn().mockResolvedValue([]) }));
+vi.mock("./reportMaintenance", () => ({ runMonthlyReportMaintenance: vi.fn().mockResolvedValue([]) }));
 
 import * as db from "./db";
 import * as threadsApi from "./threadsApi";

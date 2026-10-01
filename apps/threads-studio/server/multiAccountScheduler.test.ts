@@ -19,6 +19,7 @@ vi.mock("./db", () => ({
   markPostRecycled: vi.fn(),
   listLogsForAnalytics: vi.fn(),
   upsertAnalytics: vi.fn(),
+  upsertAnalyticsDaily: vi.fn(),
   updateAccount: vi.fn(),
   getSettings: vi.fn(),
   upsertSettings: vi.fn(),
@@ -32,6 +33,8 @@ vi.mock("./threadsApi", () => ({
   fetchFollowerCount: vi.fn(),
 }));
 vi.mock("./_core/notification", () => ({ notifyOwner: vi.fn() }));
+vi.mock("./accountInsights", () => ({ fetchAccountInsights: vi.fn().mockResolvedValue([]) }));
+vi.mock("./reportMaintenance", () => ({ runMonthlyReportMaintenance: vi.fn().mockResolvedValue([]) }));
 vi.mock("./trends", () => ({
   runTrendFetchIfDue: vi.fn(),
   markDeletedSavedPosts: vi.fn(),
@@ -229,6 +232,24 @@ describe("分析データの取得", () => {
 
     expect(threadsApi.fetchPostInsights).toHaveBeenCalledWith("token-for-SCSU.Japan", "scsu-1");
     expect(threadsApi.fetchPostInsights).toHaveBeenCalledWith("token-for-creaw.usa", "creaw-1");
+  });
+
+  it("直近92日を対象にし、quotes/shares も含めて最新値と日次スナップショットを保存する", async () => {
+    vi.mocked(db.listLogsForAnalytics).mockResolvedValue([{ id: 1, accountId: 1, threadsPostId: "scsu-1" }] as never);
+    vi.mocked(threadsApi.fetchPostInsights).mockResolvedValue({ likes: 1, replies: 2, reposts: 3, quotes: 4, shares: 5, views: 60 });
+    await fetchAnalyticsForRecentPosts(new Date("2026-10-01T05:00:00Z")); // 太平洋時間（このアカウントのTZ）では 9/30 22:00
+    expect(db.listLogsForAnalytics).toHaveBeenCalledWith(92);
+    expect(db.upsertAnalytics).toHaveBeenCalledWith({ postLogId: 1, threadsPostId: "scsu-1", likes: 1, replies: 2, reposts: 3, quotes: 4, shares: 5, views: 60 });
+    expect(db.upsertAnalyticsDaily).toHaveBeenCalledWith({ postLogId: 1, accountId: 1, capturedDate: "2026-09-30", likes: 1, replies: 2, reposts: 3, quotes: 4, shares: 5, views: 60 });
+  });
+
+  it("日次スナップショットの保存に失敗しても最新値は保存済みのまま、他のログの取得も続く", async () => {
+    vi.mocked(db.listLogsForAnalytics).mockResolvedValue([{ id: 1, accountId: 1, threadsPostId: "scsu-1" }, { id: 2, accountId: 1, threadsPostId: "scsu-2" }] as never);
+    vi.mocked(threadsApi.fetchPostInsights).mockResolvedValue({ likes: 0, replies: 0, reposts: 0, quotes: 0, shares: 0, views: 0 });
+    vi.mocked(db.upsertAnalyticsDaily).mockRejectedValueOnce(new Error("table missing"));
+    await fetchAnalyticsForRecentPosts();
+    expect(db.upsertAnalytics).toHaveBeenCalledTimes(2);
+    expect(db.upsertAnalyticsDaily).toHaveBeenCalledTimes(2);
   });
 
   it("所属アカウントが消えたログは、他アカウントのトークンで取りに行かない", async () => {
