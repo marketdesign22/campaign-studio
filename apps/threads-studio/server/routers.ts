@@ -19,7 +19,10 @@ import { conversionsRouter } from "./routers/conversions";
 import { strategiesRouter } from "./routers/strategies";
 import { qualityRouter } from "./routers/quality";
 
+import { reportsRouter } from "./routers/reports";
+
 export const appRouter = router({
+  reports: reportsRouter,
     // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   settings: settingsRouter,

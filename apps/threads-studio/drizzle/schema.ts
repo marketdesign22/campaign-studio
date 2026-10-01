@@ -533,3 +533,20 @@ export const postQualityChecks = mysqlTable("post_quality_checks", {
 export const postQualityFindings = mysqlTable("post_quality_findings", {
   id: int("id").autoincrement().primaryKey(), accountId: int("accountId").notNull(), qualityCheckId: int("qualityCheckId").notNull(), code: varchar("code", { length: 60 }).notNull(), status: varchar("status", { length: 16 }).notNull(), message: varchar("message", { length: 500 }).notNull(), reason: varchar("reason", { length: 500 }).notNull(), evidence: varchar("evidence", { length: 500 }).notNull(), severity: int("severity").notNull(), suggestion: varchar("suggestion", { length: 500 }).notNull(), autoFixable: boolean("autoFixable").default(false).notNull(), humanReview: boolean("humanReview").default(false).notNull(), deterministic: boolean("deterministic").default(false).notNull(), createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => [index("idx_quality_finding_check").on(table.accountId, table.qualityCheckId)]);
+
+/** Explicit daily observations; values remain lifetime counters, not daily increments. */
+export const reportPostDaily = mysqlTable('report_post_daily', {
+  id: int('id').autoincrement().primaryKey(), accountId: int('accountId').notNull(), postLogId: int('postLogId').notNull(),
+  capturedDate: varchar('capturedDate', { length: 10 }).notNull(),
+  likes: int('likes').notNull(), replies: int('replies').notNull(), reposts: int('reposts').notNull(), views: bigint('views', { mode: 'number' }).notNull(),
+  fetchedAt: timestamp('fetchedAt').defaultNow().notNull(),
+}, t => [uniqueIndex('uniq_report_post_day').on(t.accountId,t.postLogId,t.capturedDate), index('idx_report_daily_account').on(t.accountId,t.capturedDate)]);
+export const reportConfigs = mysqlTable('report_configs', {
+  id: int('id').autoincrement().primaryKey(), accountId: int('accountId').notNull(), month: varchar('month',{length:7}).notNull(), configJson: text('configJson').notNull(),
+}, t => [uniqueIndex('uniq_report_config_month').on(t.accountId,t.month)]);
+export const monthlyReports = mysqlTable('monthly_reports', {
+  id: varchar('id',{length:36}).primaryKey(), accountId:int('accountId').notNull(), month:varchar('month',{length:7}).notNull(),
+  autoKey: varchar('autoKey',{length:80}), status:mysqlEnum('status',['draft','reviewed','sent']).default('draft').notNull(), revision:int('revision').default(1).notNull(),
+  dataJson:mediumtext('dataJson').notNull(), narrativeJson:text('narrativeJson').notNull(), narrativeSource:mysqlEnum('narrativeSource',['template','ai','edited']).default('template').notNull(),
+  createdBy:int('createdBy'), generatedAt:timestamp('generatedAt').defaultNow().notNull(), reviewedAt:timestamp('reviewedAt'), sentAt:timestamp('sentAt'),
+}, t => [uniqueIndex('uniq_report_auto').on(t.autoKey),index('idx_monthly_report_account').on(t.accountId,t.month)]);

@@ -258,14 +258,19 @@ export async function fetchPostInsights(
   mediaId: string
 ): Promise<PostInsights> {
   const res = await fetch(
-    `${THREADS_API_BASE}/${mediaId}/insights?metric=views,likes,replies,reposts&access_token=${encodeURIComponent(accessToken)}`
+    `${THREADS_API_BASE}/${mediaId}/insights?metric=views,likes,replies,reposts&access_token=${encodeURIComponent(accessToken)}`,
+    { signal: AbortSignal.timeout(15000) }
   );
   if (!res.ok) {
     const err = await res.text();
     throw new Error(`Threads insights fetch failed (${res.status}): ${err}`);
   }
   const data = await res.json();
-  const metric = (name: string): number => readInsightMetric(data, name) ?? 0;
+  const metric = (name: string): number => {
+    const value = readInsightMetric(data, name);
+    if (value === null || !Number.isFinite(value) || value < 0) throw new Error(`Threads insight ${name} unavailable`);
+    return value;
+  };
   return {
     likes: metric("likes"),
     replies: metric("replies"),

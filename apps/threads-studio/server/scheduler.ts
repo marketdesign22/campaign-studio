@@ -43,6 +43,9 @@ import { fetchRepliesForAccounts } from "./replies";
 import { assertPublishableContent, parseForbiddenTopics } from "./quality";
 import { runStrategyMaintenance } from "./strategyService";
 
+import { recordReportPostDaily } from "./reportStore";
+import { runMonthlyReportMaintenance } from "./reportService";
+
 // ── Timezone helpers (pure, unit-tested) ─────────────────────────────────────
 
 export type Tz = "LA" | "JP" | "ET" | "CT" | "MT";
@@ -281,12 +284,13 @@ export async function fetchAnalyticsForRecentPosts() {
   // accountId 未設定の旧ログは最初に作られたアカウントの投稿なので、そのトークンで引く
   const primaryId = primaryAccountId(all);
   const legacyOwner = primaryId !== null ? byId.get(primaryId) : undefined;
-  const logs = await listLogsForAnalytics(30);
+  const logs = await listLogsForAnalytics(90);
+  const rateLimitedAccounts = new Set<number>();
   for (const log of logs) {
     // 所属アカウントが無効化・削除されているログは、他アカウントのトークンで
     // 引くと誤ったデータが入るため取得しない
     const account = log.accountId ? byId.get(log.accountId) : legacyOwner;
-    if (!account) continue;
+    if (!account || rateLimitedAccounts.has(account.id)) continue;
     if (!log.threadsPostId) continue;
     try {
       const m = await fetchPostInsights(account.threadsAccessToken, log.threadsPostId);
@@ -294,8 +298,12 @@ export async function fetchAnalyticsForRecentPosts() {
         postLogId: log.id, threadsPostId: log.threadsPostId,
         likes: m.likes, replies: m.replies, reposts: m.reposts, views: m.views,
       });
+      const observedAt = new Date();
+      await recordReportPostDaily(account.id, log.id, getLocalParts(observedAt, primaryTimezone(account)).dateStr, m, observedAt);
     } catch (e) {
-      console.warn(`[scheduler] insights fetch failed for log ${log.id}:`, e instanceof Error ? e.message : e);
+      const message = e instanceof Error ? e.message : "insights unavailable";
+      if (message.includes("(429)") || /rate limit/i.test(message)) rateLimitedAccounts.add(account.id);
+      console.warn(`[scheduler] insights fetch failed for log ${log.id}`);
     }
   }
 }
@@ -337,6 +345,7 @@ async function runDailyMaintenance(now: Date) {
   await refreshTokensIfNeeded(now);
   await fetchAnalyticsForRecentPosts();
   await fetchFollowerCounts(now);
+  await runMonthlyReportMaintenance(now).catch(() => console.warn("[reports] maintenance unavailable"));
   await runStrategyMaintenance(now).catch((e) =>
     console.warn(`[scheduler] strategy maintenance failed: ${e instanceof Error ? e.name : "error"}`)
   );
