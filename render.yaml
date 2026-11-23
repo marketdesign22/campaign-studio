@@ -1,6 +1,6 @@
 # Render Blueprint — Threads Studio のデプロイ設定。
 # Render ダッシュボード → New → Blueprint → このリポジトリを選択すると読み込まれる。
-# 当面は無料枠（CREAW の試行期間中）。無料枠はアイドル15分でスリープし、起動に1分ほどかかる。
+# 当面は無料枠（1社目の試行期間中）。無料枠はアイドル15分でスリープし、起動に1分ほどかかる。
 # Threads の自動投稿は GitHub Actions（.github/workflows/threads-tick.yml）が起こすので機能する。
 # Instagram 公開はスリープ明けでも続きから進む設計だが、数分〜十数分遅れることがある。
 # 有料（starter）へ上げる条件は、大漁マーケットの docs/instagram-publishing.md を参照。

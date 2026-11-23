@@ -21,6 +21,9 @@ OS 側の設計と本番への出し方は、大漁マーケットのリポジ�
 `state` は `published` / `failed` / `in_progress`。知らない予約は返さない
 （OS 側は「次の回で聞き直す」）。
 
+対応している投稿は**画像のみ**（1枚、またはカルーセル2〜10枚）。リール（動画）は未対応で、
+動画のコンテナ作成・処理待ちの時間・失敗の扱いを、別の変更で実装とテストを足してから使う。
+
 ## 流れ
 
 ```
@@ -70,7 +73,7 @@ OS sync(5分ごと) ──status──▶ processing ──FINISHED──▶ pub
 | `INSTAGRAM_PUBLISH_ENABLED` | 未設定＝無効 | `"true"` のときだけ実際に公開する |
 | `INSTAGRAM_PUBLISH_DRY_RUN` | 未設定 | `"true"` なら全依頼を検証だけにする |
 | `INSTAGRAM_PUBLISH_WEBHOOK_SECRET` | 未設定＝受け取り口ごと閉じる | OS の `META_PUBLISH_WEBHOOK_SECRET` と同じ値 |
-| `INSTAGRAM_CLIENT_ID` | 未設定＝全部 403 | 公開してよい OS の `clients.id`（第1段階は CREAW の1件） |
+| `INSTAGRAM_CLIENT_ID` | 未設定＝全部 403 | 公開してよい OS の `clients.id`（第1段階は1社だけ） |
 | `INSTAGRAM_IG_USER_ID` | — | Instagram プロアカウントの ID |
 | `INSTAGRAM_ACCESS_TOKEN` | — | Graph API のアクセストークン（秘密） |
 | `INSTAGRAM_GRAPH_API_BASE` | なし | `https://<host>/<version>`。【要確認】推測で既定値を置かない |

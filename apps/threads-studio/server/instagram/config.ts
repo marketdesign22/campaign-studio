@@ -15,7 +15,7 @@ export type InstagramConfig = {
   dryRun: boolean;
   /** 大漁マーケットOS と共有する Bearer シークレット */
   webhookSecret: string;
-  /** 公開してよい大漁マーケットの clients.id（第1段階は CREAW の1件だけ） */
+  /** 公開してよい大漁マーケットの clients.id（第1段階は1社だけ） */
   allowedClientId: string;
   /** Instagram のプロアカウントの ID（Graph API の ig-user-id） */
   igUserId: string;
