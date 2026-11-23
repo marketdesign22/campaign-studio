@@ -13,6 +13,7 @@ import { createContext } from "./context";
 import { serveStatic } from "./static";
 import { eveningPostHandler, morningPostHandler, tickHandler } from "../scheduledHandlers";
 import { conversionWebhookHandler } from "../conversionWebhook";
+import { instagramPublishHandler } from "../instagram/route";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -55,6 +56,9 @@ async function startServer() {
   app.post("/api/scheduled/tick", tickHandler);
   app.post("/api/scheduled/morning-post", morningPostHandler);
   app.post("/api/scheduled/evening-post", eveningPostHandler);
+  // 大漁マーケットOS からの Instagram 公開依頼・結果の問い合わせ（Bearer 認証）。
+  // INSTAGRAM_PUBLISH_ENABLED が "true" でなければ実際の公開はしない。
+  app.post("/api/instagram/publish", instagramPublishHandler);
   // tRPC API
   app.use(
     "/api/trpc",

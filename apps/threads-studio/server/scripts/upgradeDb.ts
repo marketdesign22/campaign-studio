@@ -12,6 +12,7 @@ import "dotenv/config";
 import mysql from "mysql2/promise";
 import { buildDbConfig, describeDbTarget } from "../dbConfig";
 import { INTEGRATION_INDEXES, INTEGRATION_TABLES } from "../integration/schema";
+import { INSTAGRAM_INDEXES, INSTAGRAM_TABLES } from "../instagram/schema";
 
 async function main() {
   const url = process.env.DATABASE_URL;
@@ -615,6 +616,8 @@ async function main() {
   // ── 大漁マーケットOS 統合（追加のみ。既存テーブルは変更しない） ────────────
   for (const t of INTEGRATION_TABLES) await createTable(t.table, t.ddl);
   for (const i of INTEGRATION_INDEXES) await addIndex(i.table, i.index, i.columns);
+  for (const t of INSTAGRAM_TABLES) await createTable(t.table, t.ddl);
+  for (const i of INSTAGRAM_INDEXES) await addIndex(i.table, i.index, i.columns);
 
   // アカウント単位の絞り込みが常に索引に乗るようにする
   await addIndex("posts", "idx_posts_account", "`accountId`");
