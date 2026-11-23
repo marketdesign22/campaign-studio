@@ -1,17 +1,19 @@
 # Render Blueprint — Threads Studio のデプロイ設定。
 # Render ダッシュボード → New → Blueprint → このリポジトリを選択すると読み込まれる。
-# Instagram 公開は処理待ちに数分かかり、大漁マーケットOS からの呼び出しは15秒で打ち切るため、
-# スリープしない常時起動の有料プランで動かす（無料枠に戻すと Instagram 公開は使えない）。
+# 当面は無料枠（CREAW の試行期間中）。無料枠はアイドル15分でスリープし、起動に1分ほどかかる。
+# Threads の自動投稿は GitHub Actions（.github/workflows/threads-tick.yml）が起こすので機能する。
+# Instagram 公開はスリープ明けでも続きから進む設計だが、数分〜十数分遅れることがある。
+# 有料（starter）へ上げる条件は、大漁マーケットの docs/instagram-publishing.md を参照。
 # plan と branch は Render の画面の設定と同じ値にそろえる（Blueprint 同期で戻らないように）。
 services:
   - type: web
     name: threads-studio
     runtime: node
-    plan: starter # 【Kanna が決める】常時起動の有料プランの種別
+    plan: free
     branch: main
     rootDir: apps/threads-studio
     buildCommand: corepack enable pnpm && pnpm install --frozen-lockfile && pnpm build
-    # 起動時にマイグレーションを実行（冪等）
+    # 無料枠には preDeploy がないため、起動時にマイグレーションを実行（冪等）
     startCommand: pnpm db:upgrade && pnpm start
     healthCheckPath: /
     envVars:

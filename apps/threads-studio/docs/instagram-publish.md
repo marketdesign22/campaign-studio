@@ -14,7 +14,7 @@ OS 側の設計と本番への出し方は、大漁マーケットのリポジ�
 
 | action | 何をするか | 応答 |
 | --- | --- | --- |
-| `publish`（既定） | 依頼を記録し、コンテナ作成まで進める。**ここでは公開しない** | 202 `{status:"accepted", publication_id, container_id}` / 公開済みなら 200 `{status:"published", id, url}` / 失敗で終わっていれば 422 |
+| `publish`（既定） | 依頼を記録したら**すぐ**答え、コンテナ作成は応答のあとに進める。**ここでは公開しない** | 202 `{status:"accepted", publication_id, container_id}` / 公開済みなら 200 `{status:"published", id, url}` / 失敗で終わっていれば 422 |
 | `publish` + `dry_run: true` | 検証だけ。Graph API を呼ばず、何も保存しない | 200 `{status:"dry_run", checks}` |
 | `status` | `scheduled_post_ids` のそれぞれを一歩進め、結果を返す | 200 `{results:[{scheduled_post_id, state, id?, url?, error?}]}` |
 
@@ -24,15 +24,25 @@ OS 側の設計と本番への出し方は、大漁マーケットのリポジ�
 ## 流れ
 
 ```
-OS dispatch ──publish──▶ queued ──コンテナ作成──▶ processing
+OS dispatch ──publish──▶ queued ─(応答のあと)─▶ creating ──▶ processing
 OS sync(5分ごと) ──status──▶ processing ──FINISHED──▶ publishing ──公開──▶ published
                                           └─ERROR/EXPIRED──▶ failed（公開していない）
 ```
 
 - 背景のタイマーは使わない。進めるのは OS からの呼び出しだけ。
-  Render が眠っていても、起きた次の問い合わせで続きから進む。
 - 1依頼 = 1行（`instagram_publications`、主キーは OS の `scheduled_posts.id`）。
   `pnpm db:upgrade`（起動時に実行）が無ければ作る。既存テーブルは変えない。
+
+## 無料プラン（スリープ）でも安全な理由
+
+当面 Render は無料プランで動かす。15分アイドルでスリープし、起動に1分ほどかかる。
+
+| 心配 | どうしているか |
+| --- | --- |
+| 起動待ちで OS の待ち時間（15秒）を使い切る | 依頼は記録した時点ですぐ答える。Graph API の呼び出しは応答のあと。OS が打ち切っても、届いた依頼は記録され、OS の再送には前回の結果を返す |
+| 同じ予約を二重に処理する | 依頼は `scheduled_post_id` で一意。コンテナ作成は借用（`creating` + `leaseToken`）を持つ1つの呼び出しだけが進める。公開は `processing → publishing` の条件つき更新に勝った1つだけ |
+| 途中で落ちる（再起動・スリープ） | 状態はすべて台帳にある。カルーセルの子コンテナは1枚ごとに記録し、借用が切れたあと（3分）次の呼び出しが続きの枚から作る。一時的な失敗は作れた枚を残して `queued` に戻す。公開の呼び出し中に落ちたものは自動でやり直さない（下） |
+| 公開の依頼で公開してしまう | 公開は状態の問い合わせ（`status`）からだけ。`publish` は受付とコンテナ作成まで |
 
 ## 二重投稿を防ぐ仕組み
 
@@ -91,3 +101,5 @@ Graph API は呼ばない。
 確かめていること：フラグ既定オフ／dry-run で何も呼ばない・保存しない／他クライアント 403／
 再送で二重にしない／公開の失敗を failed にしない・自動で公開し直さない／
 エラー文・応答に URL・トークンを含めない／Bearer 認証。
+スリープ明け：すぐ受付を返し応答の時点では Graph API を呼ばない／OS が打ち切った依頼の再送で二重に作らない／
+同時の依頼でコンテナを作るのは片方だけ／カルーセルの途中で落ちても続きの枚から作る／借用を失った呼び出しは書き進めない。

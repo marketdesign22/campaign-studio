@@ -61,7 +61,17 @@ export function createInstagramPublishHandler(factories: Factories = {}) {
         body.action === "status"
           ? await handleStatus(deps, body)
           : await handlePublish(deps, body);
-      return res.status(result.status).json(result.body);
+      res.status(result.status).json(result.body);
+      // 応答のあとに続ける処理（コンテナ作成）。失敗しても行の状態に残り、
+      // 次の問い合わせで続きから進むので、ここでは記録だけする（中身は出さない）
+      if (result.afterResponse)
+        await result.afterResponse().catch(error => {
+          console.error(
+            "[instagram] container creation deferred:",
+            error instanceof Error ? error.name : "unknown"
+          );
+        });
+      return;
     } catch (error) {
       // DB に届かない等。中身（URL・本文）は出さない
       console.error(

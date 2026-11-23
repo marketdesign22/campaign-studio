@@ -2,7 +2,7 @@
  * Instagram 公開の流れ（大漁マーケットOS → Threads Studio → Meta）。
  *
  *   1. OS が予約時刻に「公開して」と送る（action: publish）
- *      → 依頼を記録し、できればコンテナ作成まで進めて accepted を返す。
+ *      → 依頼を記録したらすぐ accepted を返し、コンテナ作成は応答のあとに続ける。
  *        ここでは公開しない（Instagram は処理待ちに数分かかるため）。
  *   2. OS が5分ごとに「どうなった？」と聞く（action: status）
  *      → 聞かれた依頼をそれぞれ一歩ずつ進め（処理待ち → 公開）、結果を返す。
@@ -20,13 +20,14 @@
  *   - 素材の署名URLはコンテナを作り終えたら消す。ログ・応答に出さない
  *   - dry-run では Graph API を一切呼ばず、何も保存しない
  */
-import { createHash } from "crypto";
+import { createHash, randomUUID } from "crypto";
 
 import { GraphError, type InstagramGraph } from "./graph";
 import { missingLiveSettings, type InstagramConfig } from "./config";
 
 export type PublicationState =
   | "queued"
+  | "creating"
   | "processing"
   | "publishing"
   | "published"
@@ -51,23 +52,47 @@ export type PublicationRow = {
   publishAttempted: boolean;
   /** 同じ鍵で違う内容が来たことを見分ける（署名URLは毎回変わるので含めない） */
   requestDigest: string;
+  /**
+   * コンテナ作成中の借用（creating のときだけ）。持っている呼び出しだけが書き進める。
+   * 途中で落ちたら CREATE_LEASE_MS 後に別の呼び出しが引き継ぎ、作れた子コンテナの続きから作る。
+   */
+  leaseToken: string | null;
   updatedAt: Date;
 };
+
+/** 条件つき更新の条件。state だけ、または state と借用の組。 */
+export type Expected =
+  | PublicationState
+  | { state: PublicationState; leaseToken: string | null };
+
+/** 行が条件に合うか（台帳の実装で共通に使う）。 */
+export function matchesExpected(
+  row: Pick<PublicationRow, "state" | "leaseToken">,
+  expected: Expected
+): boolean {
+  if (typeof expected === "string") return row.state === expected;
+  return row.state === expected.state && row.leaseToken === expected.leaseToken;
+}
 
 export interface PublicationStore {
   get(scheduledPostId: string): Promise<PublicationRow | null>;
   /** 既にあれば false（一意制約に任せる）。 */
   insert(row: PublicationRow): Promise<boolean>;
-  /** state が expected のときだけ書き換える。書き換えたら true。 */
+  /** 行が expected に合うときだけ書き換える。書き換えたら true。 */
   update(
     scheduledPostId: string,
-    expected: PublicationState,
+    expected: Expected,
     patch: Partial<PublicationRow>
   ): Promise<boolean>;
 }
 
 /** コンテナ作成・公開の一時的な失敗を、これだけ繰り返したら諦める（公開前のみ）。 */
 export const MAX_ATTEMPTS = 8;
+/**
+ * コンテナ作成の借用の長さ。これより長く creating のまま動きが無ければ、
+ * 作成中に落ちたとみなして別の呼び出しが引き継ぐ（1回の作成は通常数十秒で終わる）。
+ */
+export const CREATE_LEASE_MS = 3 * 60 * 1000;
 
 /**
  * 【要確認】Instagram の上限。Meta 公式ドキュメントで確認すること。
@@ -79,7 +104,12 @@ export const LIMITS = {
   maxHashtags: 30,
 };
 
-export type HandlerResult = { status: number; body: Record<string, unknown> };
+export type HandlerResult = {
+  status: number;
+  body: Record<string, unknown>;
+  /** 応答を返したあとに続ける処理（コンテナ作成）。失敗しても次の呼び出しで続きから */
+  afterResponse?: () => Promise<void>;
+};
 
 type Deps = {
   store: PublicationStore;
@@ -274,49 +304,51 @@ function safeMessage(error: unknown): string {
  */
 export async function advance(
   deps: Deps,
-  row: PublicationRow
+  row: PublicationRow,
+  options: { publish?: boolean } = {}
 ): Promise<PublicationRow> {
   const { store, graph } = deps;
   const now = deps.now ?? (() => new Date());
   if (!graph) return row;
   const reload = async () => (await store.get(row.scheduledPostId)) ?? row;
 
-  // 一時的な失敗。公開前なら回数で諦める。公開後（publishAttempted）は諦めない。
-  const transient = async (
-    expected: PublicationState,
-    error: unknown
-  ): Promise<PublicationRow> => {
-    const attempts = row.attempts + 1;
-    const giveUp = !row.publishAttempted && attempts >= MAX_ATTEMPTS;
-    await store.update(row.scheduledPostId, expected, {
-      attempts,
-      error: safeMessage(error),
-      ...(giveUp ? { state: "failed", mediaUrls: null } : {}),
-      updatedAt: now(),
-    });
-    return reload();
-  };
-  const fail = async (expected: PublicationState, message: string) => {
+  const fail = async (expected: Expected, message: string) => {
     await store.update(row.scheduledPostId, expected, {
       state: "failed",
       error: message,
       mediaUrls: null,
+      leaseToken: null,
       updatedAt: now(),
     });
     return reload();
   };
 
   // 1) コンテナを作る
-  if (row.state === "queued") {
+  //    作成中（creating）は借用を持つ1つの呼び出しだけが書き進める。同時に来ても二重に作らない。
+  //    途中で落ちたら、借用が切れたあとの呼び出しが、記録済みの子コンテナの続きから作る。
+  const leaseExpired =
+    row.state === "creating" &&
+    now().getTime() - row.updatedAt.getTime() >= CREATE_LEASE_MS;
+  if (row.state === "creating" && !leaseExpired) return row;
+  if (row.state === "queued" || leaseExpired) {
+    const from = { state: row.state, leaseToken: row.leaseToken };
     const urls = row.mediaUrls ?? [];
     if (urls.length === 0)
       return fail(
-        "queued",
+        from,
         "素材のURLが残っていません。予約からやり直してください"
       );
+    const token = randomUUID();
+    const claimed = await store.update(row.scheduledPostId, from, {
+      state: "creating",
+      leaseToken: token,
+      updatedAt: now(),
+    });
+    if (!claimed) return reload();
+    const mine = { state: "creating" as const, leaseToken: token };
+    const children = [...row.childContainerIds];
     try {
       let creationId: string;
-      const children: string[] = [];
       if (urls.length === 1) {
         creationId = await graph.createImageContainer({
           igUserId: row.igUserId,
@@ -324,36 +356,61 @@ export async function advance(
           caption: row.caption,
         });
       } else {
-        for (const url of urls)
+        for (let i = children.length; i < urls.length; i += 1) {
           children.push(
             await graph.createImageContainer({
               igUserId: row.igUserId,
-              imageUrl: url,
+              imageUrl: urls[i],
               isCarouselItem: true,
             })
           );
+          // 1枚ごとに記録する。落ちても次は続きの枚から作る。
+          // 借用を失っていたら（引き継がれていたら）ここでやめる
+          const kept = await store.update(row.scheduledPostId, mine, {
+            childContainerIds: children,
+            updatedAt: now(),
+          });
+          if (!kept) return reload();
+        }
         creationId = await graph.createCarouselContainer({
           igUserId: row.igUserId,
           children,
           caption: row.caption,
         });
       }
-      // 取り合いに負けたら、作ったコンテナは使わない（公開されないまま期限切れになる）
-      await store.update(row.scheduledPostId, "queued", {
+      await store.update(row.scheduledPostId, mine, {
         state: "processing",
         creationId,
         childContainerIds: children,
         mediaUrls: null,
+        leaseToken: null,
         error: null,
         updatedAt: now(),
       });
       return reload();
     } catch (error) {
       if (error instanceof GraphError && !error.retryable)
-        return fail("queued", safeMessage(error));
-      return transient("queued", error);
+        return fail(mine, safeMessage(error));
+      // 一時的な失敗：作れた子コンテナは残して queued に戻す（次の呼び出しで続きから）。
+      // まだ何も公開していないので、回数で諦めても安全
+      const attempts = row.attempts + 1;
+      const giveUp = attempts >= MAX_ATTEMPTS;
+      await store.update(row.scheduledPostId, mine, {
+        state: giveUp ? "failed" : "queued",
+        attempts,
+        error: safeMessage(error),
+        childContainerIds: children,
+        leaseToken: null,
+        ...(giveUp ? { mediaUrls: null } : {}),
+        updatedAt: now(),
+      });
+      return reload();
     }
   }
+
+  // ここから先（処理待ちの確認・公開）は状態の問い合わせからだけ進める。
+  // 公開の依頼（publish）は受付とコンテナ作成までで、公開はしない
+  if (!options.publish) return row;
 
   // 2) 処理を待つ → 終わっていれば公開する
   if (row.state === "processing" && row.creationId) {
@@ -507,13 +564,14 @@ export async function handlePublish(
         mediaUrls: request.media.map(m => m.url),
         childContainerIds: [],
         creationId: null,
+        leaseToken: null,
         error: null,
         attempts: 0,
         updatedAt: now(),
       });
       const requeued =
         (await deps.store.get(existing.scheduledPostId)) ?? existing;
-      return publishResponse(await advance(deps, requeued));
+      return acceptNow(deps, requeued);
     }
     // まだ素材URLを使い切っていない（コンテナ未作成）なら、新しいURLに差し替える
     if (existing.state === "queued")
@@ -523,7 +581,7 @@ export async function handlePublish(
       });
     const current =
       (await deps.store.get(existing.scheduledPostId)) ?? existing;
-    return publishResponse(await advance(deps, current));
+    return acceptNow(deps, current);
   }
 
   const row: PublicationRow = {
@@ -541,13 +599,27 @@ export async function handlePublish(
     attempts: 0,
     publishAttempted: false,
     requestDigest: digest,
+    leaseToken: null,
     updatedAt: now(),
   };
   const inserted = await deps.store.insert(row);
   const current = inserted
     ? row
     : ((await deps.store.get(row.scheduledPostId)) ?? row);
-  return publishResponse(await advance(deps, current));
+  return acceptNow(deps, current);
+}
+
+/**
+ * 記録した時点ですぐ答える（スリープ明けで遅れていても、OS の待ち時間を使い切らない）。
+ * コンテナ作成は応答のあとに続ける。途中で落ちても、次の問い合わせで続きから進む。
+ */
+function acceptNow(deps: Deps, row: PublicationRow): HandlerResult {
+  const result = publishResponse(row);
+  if (row.state === "queued" || row.state === "creating")
+    result.afterResponse = async () => {
+      await advance(deps, row, { publish: false });
+    };
+  return result;
 }
 
 /** action: status */
@@ -576,7 +648,7 @@ export async function handleStatus(
     if (!row) continue;
     if (row.externalClientId !== deps.config.allowedClientId) continue;
     if (canAdvance && Date.now() - started < budgetMs)
-      row = await advance(deps, row);
+      row = await advance(deps, row, { publish: true });
     results.push(settlementOf(row));
   }
   return { status: 200, body: { results } };

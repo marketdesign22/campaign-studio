@@ -30,6 +30,8 @@ export const instagramPublications = mysqlTable("instagram_publications", {
   attempts: int("attempts").notNull().default(0),
   publishAttempted: boolean("publishAttempted").notNull().default(false),
   requestDigest: varchar("requestDigest", { length: 64 }).notNull(),
+  /** コンテナ作成中の借用（creating のときだけ） */
+  leaseToken: varchar("leaseToken", { length: 64 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull(),
 });
@@ -53,6 +55,7 @@ export const INSTAGRAM_TABLES: { table: string; ddl: string }[] = [
       \`attempts\` int NOT NULL DEFAULT 0,
       \`publishAttempted\` boolean NOT NULL DEFAULT false,
       \`requestDigest\` varchar(64) NOT NULL,
+      \`leaseToken\` varchar(64) NULL,
       \`createdAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
       \`updatedAt\` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
     )

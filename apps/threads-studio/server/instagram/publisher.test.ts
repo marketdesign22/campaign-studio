@@ -14,10 +14,13 @@ import {
   type InstagramGraph,
 } from "./graph";
 import {
+  CREATE_LEASE_MS,
   MAX_ATTEMPTS,
   buildCaption,
   handlePublish,
   handleStatus,
+  matchesExpected,
+  type Expected,
   type PublicationRow,
   type PublicationState,
   type PublicationStore,
@@ -53,13 +56,9 @@ class FakeStore implements PublicationStore {
     this.rows.set(row.scheduledPostId, structuredClone(row));
     return true;
   }
-  async update(
-    id: string,
-    expected: PublicationState,
-    patch: Partial<PublicationRow>
-  ) {
+  async update(id: string, expected: Expected, patch: Partial<PublicationRow>) {
     const row = this.rows.get(id);
-    if (!row || row.state !== expected) return false;
+    if (!row || !matchesExpected(row, expected)) return false;
     this.rows.set(id, { ...row, ...structuredClone(patch) });
     return true;
   }
@@ -127,6 +126,16 @@ function publishBody(over: Record<string, unknown> = {}) {
   };
 }
 
+/** 公開の依頼を送り、応答のあとの処理（コンテナ作成）まで済ませる。応答は送った時点のもの。 */
+async function publish(
+  deps: Parameters<typeof handlePublish>[0],
+  body: Record<string, unknown>
+) {
+  const result = await handlePublish(deps, body);
+  await result.afterResponse?.();
+  return result;
+}
+
 function setup(config: InstagramConfig = liveConfig()) {
   const store = new FakeStore();
   const graph = new FakeGraph();
@@ -149,15 +158,20 @@ describe("キャプション", () => {
 });
 
 describe("公開の依頼", () => {
-  it("受け付けて、コンテナを作るところまで進める（公開はしない）", async () => {
+  it("記録したらすぐ受付を返し、コンテナ作成は応答のあとに進める（公開はしない）", async () => {
     const { deps, graph, store } = setup();
     const result = await handlePublish(deps, publishBody());
+    // 応答の時点では Graph API をまだ呼んでいない（スリープ明けでも OS を待たせない）
     expect(result.status).toBe(202);
     expect(result.body).toMatchObject({
       status: "accepted",
       publication_id: POST_A,
-      container_id: "ct-1",
+      container_id: null,
     });
+    expect(graph.calls).toHaveLength(0);
+    expect(store.rows.get(POST_A)?.state).toBe("queued");
+
+    await result.afterResponse?.();
     expect(graph.count("createImage")).toBe(1);
     expect(graph.count("publish")).toBe(0);
     const row = store.rows.get(POST_A)!;
@@ -171,7 +185,7 @@ describe("公開の依頼", () => {
 
   it("応答に素材URL・トークンを含めない", async () => {
     const { deps } = setup();
-    const result = await handlePublish(deps, publishBody());
+    const result = await publish(deps, publishBody());
     const text = JSON.stringify(result.body);
     expect(text).not.toContain("zz-signed-token");
     expect(text).not.toContain("zz-access-token");
@@ -179,7 +193,7 @@ describe("公開の依頼", () => {
 
   it("複数枚はカルーセル（子コンテナ → 親コンテナ）にする", async () => {
     const { deps, graph } = setup();
-    await handlePublish(
+    await publish(
       deps,
       publishBody({
         creative: {
@@ -203,8 +217,8 @@ describe("公開の依頼", () => {
 
   it("同じ予約の再送では、コンテナを作り直さない（二重にしない）", async () => {
     const { deps, graph } = setup();
-    await handlePublish(deps, publishBody());
-    const again = await handlePublish(
+    await publish(deps, publishBody());
+    const again = await publish(
       deps,
       publishBody({
         creative: {
@@ -219,8 +233,8 @@ describe("公開の依頼", () => {
 
   it("同じ予約で中身が違えば 409", async () => {
     const { deps } = setup();
-    await handlePublish(deps, publishBody());
-    const changed = await handlePublish(
+    await publish(deps, publishBody());
+    const changed = await publish(
       deps,
       publishBody({
         creative: { ...publishBody().creative, caption: "別の本文" },
@@ -231,7 +245,7 @@ describe("公開の依頼", () => {
 
   it("許可していないクライアントは 403。Graph API を呼ばない", async () => {
     const { deps, graph, store } = setup();
-    const result = await handlePublish(
+    const result = await publish(
       deps,
       publishBody({ client_id: OTHER_CLIENT })
     );
@@ -285,7 +299,7 @@ describe("公開の依頼", () => {
     ["予約IDなし", { scheduled_post_id: "x", idempotency_key: "x" }],
   ])("検証に通らないもの（%s）は 400。何も呼ばない", async (_label, over) => {
     const { deps, graph, store } = setup();
-    const result = await handlePublish(deps, publishBody(over));
+    const result = await publish(deps, publishBody(over));
     expect(result.status).toBe(400);
     expect(JSON.stringify(result.body)).not.toContain("zz-");
     expect(graph.calls).toHaveLength(0);
@@ -296,7 +310,7 @@ describe("公開の依頼", () => {
 describe("フラグと dry-run", () => {
   it("dry_run: true は検証だけ。Graph API を呼ばず、何も保存しない", async () => {
     const { deps, graph, store } = setup();
-    const result = await handlePublish(deps, publishBody({ dry_run: true }));
+    const result = await publish(deps, publishBody({ dry_run: true }));
     expect(result.status).toBe(200);
     expect(result.body).toMatchObject({
       status: "dry_run",
@@ -308,7 +322,7 @@ describe("フラグと dry-run", () => {
 
   it("受け取り側の INSTAGRAM_PUBLISH_DRY_RUN でも検証だけになる", async () => {
     const { deps, graph } = setup(liveConfig({ dryRun: true }));
-    const result = await handlePublish(deps, publishBody());
+    const result = await publish(deps, publishBody());
     expect(result.body.status).toBe("dry_run");
     expect(graph.calls).toHaveLength(0);
   });
@@ -317,7 +331,7 @@ describe("フラグと dry-run", () => {
     const { deps, graph } = setup(
       liveConfig({ enabled: false, accessToken: "", graphApiBase: "" })
     );
-    const result = await handlePublish(deps, publishBody({ dry_run: true }));
+    const result = await publish(deps, publishBody({ dry_run: true }));
     expect(result.body).toMatchObject({
       status: "dry_run",
       checks: {
@@ -332,7 +346,7 @@ describe("フラグと dry-run", () => {
 
   it("無効（既定）なら公開の依頼は 503。何も呼ばず、何も保存しない", async () => {
     const { deps, graph, store } = setup(liveConfig({ enabled: false }));
-    const result = await handlePublish(deps, publishBody());
+    const result = await publish(deps, publishBody());
     expect(result.status).toBe(503);
     expect(graph.calls).toHaveLength(0);
     expect(store.rows.size).toBe(0);
@@ -340,7 +354,7 @@ describe("フラグと dry-run", () => {
 
   it("有効でも設定が足りなければ 503（推測で既定のホストへ送らない）", async () => {
     const { deps, graph } = setup(liveConfig({ graphApiBase: "" }));
-    const result = await handlePublish(deps, publishBody());
+    const result = await publish(deps, publishBody());
     expect(result.status).toBe(503);
     expect(result.body).toMatchObject({
       missing: ["INSTAGRAM_GRAPH_API_BASE"],
@@ -362,7 +376,7 @@ describe("フラグと dry-run", () => {
 describe("状態の問い合わせで進める", () => {
   it("処理中 → 終われば公開して published を返す", async () => {
     const { deps, graph } = setup();
-    await handlePublish(deps, publishBody());
+    await publish(deps, publishBody());
 
     const waiting = await handleStatus(deps, {
       action: "status",
@@ -393,26 +407,26 @@ describe("状態の問い合わせで進める", () => {
       action: "status",
       scheduled_post_ids: [POST_A],
     });
-    await handlePublish(deps, publishBody());
+    await publish(deps, publishBody());
     expect(graph.count("publish")).toBe(1);
   });
 
   it("公開済みの予約に再送されたら、公開済みとして答える", async () => {
     const { deps, graph } = setup();
-    await handlePublish(deps, publishBody());
+    await publish(deps, publishBody());
     graph.status = "FINISHED";
     await handleStatus(deps, {
       action: "status",
       scheduled_post_ids: [POST_A],
     });
-    const again = await handlePublish(deps, publishBody());
+    const again = await publish(deps, publishBody());
     expect(again.status).toBe(200);
     expect(again.body).toMatchObject({ status: "published", id: "ig-media-1" });
   });
 
   it("コンテナが ERROR なら failed（公開はしていない）", async () => {
     const { deps, graph } = setup();
-    await handlePublish(deps, publishBody());
+    await publish(deps, publishBody());
     graph.status = "ERROR";
     const result = await handleStatus(deps, {
       action: "status",
@@ -426,7 +440,7 @@ describe("状態の問い合わせで進める", () => {
 
   it("公開の呼び出しが失敗しても failed にしない（公開されたか分からない）", async () => {
     const { deps, graph, store } = setup();
-    await handlePublish(deps, publishBody());
+    await publish(deps, publishBody());
     graph.status = "FINISHED";
     graph.failPublish = new GraphError(
       "Graph API に接続できませんでした",
@@ -457,7 +471,7 @@ describe("状態の問い合わせで進める", () => {
 
   it("公開中で止まったものは、コンテナが PUBLISHED と確かめられたら published", async () => {
     const { deps, graph, store } = setup();
-    await handlePublish(deps, publishBody());
+    await publish(deps, publishBody());
     graph.status = "FINISHED";
     graph.failPublish = new GraphError("x", true);
     await handleStatus(deps, {
@@ -480,7 +494,7 @@ describe("状態の問い合わせで進める", () => {
 
   it("知らない予約・他クライアントの予約は答えない", async () => {
     const { deps, store } = setup();
-    await handlePublish(deps, publishBody());
+    await publish(deps, publishBody());
     store.rows.set(POST_B, {
       ...store.rows.get(POST_A)!,
       scheduledPostId: POST_B,
@@ -499,7 +513,7 @@ describe("状態の問い合わせで進める", () => {
 
   it("無効のときは状態を答えるだけで、Graph API を呼ばない", async () => {
     const { deps, graph } = setup();
-    await handlePublish(deps, publishBody());
+    await publish(deps, publishBody());
     graph.calls = [];
     graph.status = "FINISHED";
     const off = { ...deps, config: liveConfig({ enabled: false }) };
@@ -518,7 +532,7 @@ describe("コンテナ作成の失敗", () => {
   it("一時的な失敗は待って再試行し、上限で failed（公開前なので安全）", async () => {
     const { deps, graph, store } = setup();
     graph.failCreate = new GraphError("Graph API に接続できませんでした", true);
-    const first = await handlePublish(deps, publishBody());
+    const first = await publish(deps, publishBody());
     expect(first.status).toBe(202);
     expect(store.rows.get(POST_A)?.state).toBe("queued");
     for (let i = 1; i < MAX_ATTEMPTS; i += 1)
@@ -539,10 +553,18 @@ describe("コンテナ作成の失敗", () => {
       false,
       400
     );
-    const result = await handlePublish(deps, publishBody());
-    expect(result.status).toBe(422);
+    const result = await publish(deps, publishBody());
+    expect(result.status).toBe(202);
     const row = store.rows.get(POST_A)!;
     expect(row.state).toBe("failed");
+    // OS には状態の問い合わせで failed として伝わる
+    const status = await handleStatus(deps, {
+      action: "status",
+      scheduled_post_ids: [POST_A],
+    });
+    expect(status.body.results).toEqual([
+      expect.objectContaining({ scheduled_post_id: POST_A, state: "failed" }),
+    ]);
     expect(JSON.stringify(row)).not.toContain("zz-signed-token");
     expect(JSON.stringify(result.body)).not.toContain("zz-");
   });
@@ -550,11 +572,166 @@ describe("コンテナ作成の失敗", () => {
   it("公開前に失敗したものは、OS からの再送で新しいURLでやり直せる", async () => {
     const { deps, graph, store } = setup();
     graph.failCreate = new GraphError("x", false, 400);
-    await handlePublish(deps, publishBody());
+    await publish(deps, publishBody());
     graph.failCreate = null;
-    const retry = await handlePublish(deps, publishBody());
+    const retry = await publish(deps, publishBody());
     expect(retry.status).toBe(202);
     expect(store.rows.get(POST_A)?.state).toBe("processing");
+  });
+});
+
+describe("スリープ明け・途中で落ちたとき", () => {
+  const status = (deps: Parameters<typeof handleStatus>[0]) =>
+    handleStatus(deps, { action: "status", scheduled_post_ids: [POST_A] });
+
+  it("OS が待ちきれず打ち切った依頼の再送でも、二重に作らず最後まで公開する", async () => {
+    const { deps, graph, store } = setup();
+    // 1回目：OS は15秒で打ち切ったが、受け取り側は記録してコンテナ作成まで進めた
+    await publish(deps, publishBody());
+    // 10分後の再送（同じ予約）：新しい素材URLが来ても作り直さない
+    const again = await publish(
+      deps,
+      publishBody({
+        creative: {
+          ...publishBody().creative,
+          media: [{ slide_index: 1, image_url: SIGNED_2 }],
+        },
+      })
+    );
+    expect(again.status).toBe(202);
+    expect(again.body).toMatchObject({
+      status: "accepted",
+      container_id: "ct-1",
+    });
+    expect(graph.count("createImage")).toBe(1);
+    // 公開の依頼では公開しない（処理が終わっていても）
+    graph.status = "FINISHED";
+    await publish(deps, publishBody());
+    expect(graph.count("publish")).toBe(0);
+    // 問い合わせで公開。以後は何度聞かれても1回のまま
+    await status(deps);
+    await status(deps);
+    expect(graph.count("publish")).toBe(1);
+    expect(store.rows.get(POST_A)?.state).toBe("published");
+  });
+
+  it("同時に2つ届いても、コンテナを作るのは片方だけ", async () => {
+    const { deps, graph } = setup();
+    const first = await handlePublish(deps, publishBody());
+    const second = await handlePublish(deps, publishBody());
+    await Promise.all([first.afterResponse?.(), second.afterResponse?.()]);
+    expect(graph.count("createImage")).toBe(1);
+  });
+
+  it("作成中の借用が生きている間は、問い合わせが来ても手を出さない", async () => {
+    const { deps, graph, store } = setup();
+    await handlePublish(deps, publishBody()); // 応答のあとの処理は、まだ走っていない
+    store.rows.set(POST_A, {
+      ...store.rows.get(POST_A)!,
+      state: "creating",
+      leaseToken: "someone-else",
+      updatedAt: new Date(),
+    });
+    await status(deps);
+    expect(graph.calls).toHaveLength(0);
+    expect(store.rows.get(POST_A)?.state).toBe("creating");
+  });
+
+  it("カルーセルの途中で落ちたら、借用が切れたあと続きの枚から作る", async () => {
+    const urls = [
+      SIGNED,
+      SIGNED_2,
+      "https://storage.invalid/sign/three.png?token=zz-3",
+    ];
+    const body = publishBody({
+      creative: {
+        caption: "c",
+        hashtags: [],
+        cta: "",
+        media: urls.map((url, i) => ({ slide_index: i + 1, image_url: url })),
+      },
+    });
+    const { deps, graph, store } = setup();
+    await handlePublish(deps, body);
+    // 2枚目まで作って記録したところでプロセスが落ちた状態
+    store.rows.set(POST_A, {
+      ...store.rows.get(POST_A)!,
+      state: "creating",
+      leaseToken: "crashed",
+      childContainerIds: ["old-1", "old-2"],
+      updatedAt: new Date(Date.now() - CREATE_LEASE_MS - 1000),
+    });
+    await status(deps);
+    const images = graph.calls.filter(c => c.op === "createImage");
+    expect(images.map(c => c.args.imageUrl)).toEqual([urls[2]]);
+    expect(
+      graph.calls.find(c => c.op === "createCarousel")?.args.children
+    ).toEqual(["old-1", "old-2", "ct-1"]);
+    const row = store.rows.get(POST_A)!;
+    expect(row.state).toBe("processing");
+    expect(row.leaseToken).toBeNull();
+    expect(row.mediaUrls).toBeNull();
+  });
+
+  it("一時的な失敗で止まったら、作れた枚は残して次の呼び出しで続きから", async () => {
+    const urls = [SIGNED, SIGNED_2];
+    const body = publishBody({
+      creative: {
+        caption: "c",
+        hashtags: [],
+        cta: "",
+        media: urls.map((url, i) => ({ slide_index: i + 1, image_url: url })),
+      },
+    });
+    const { deps, graph, store } = setup();
+    let calls = 0;
+    const original = graph.createImageContainer.bind(graph);
+    graph.createImageContainer = async args => {
+      calls += 1;
+      if (calls === 2)
+        throw new GraphError("Graph API に接続できませんでした", true);
+      return original(args);
+    };
+    await publish(deps, body);
+    let row = store.rows.get(POST_A)!;
+    expect(row.state).toBe("queued");
+    expect(row.childContainerIds).toEqual(["ct-1"]);
+    expect(row.leaseToken).toBeNull();
+
+    await status(deps);
+    row = store.rows.get(POST_A)!;
+    expect(row.state).toBe("processing");
+    expect(row.childContainerIds).toEqual(["ct-1", "ct-2"]);
+    // 1枚目は作り直していない
+    expect(
+      graph.calls.filter(c => c.op === "createImage").map(c => c.args.imageUrl)
+    ).toEqual([SIGNED, SIGNED_2]);
+  });
+
+  it("借用を失った呼び出しは、書き進めずにやめる", async () => {
+    const urls = [SIGNED, SIGNED_2];
+    const body = publishBody({
+      creative: {
+        caption: "c",
+        hashtags: [],
+        cta: "",
+        media: urls.map((url, i) => ({ slide_index: i + 1, image_url: url })),
+      },
+    });
+    const { deps, graph, store } = setup();
+    const result = await handlePublish(deps, body);
+    const original = graph.createImageContainer.bind(graph);
+    graph.createImageContainer = async args => {
+      const id = await original(args);
+      // 1枚目を作っている間に、別の呼び出しが借用を引き継いだ
+      const row = store.rows.get(POST_A)!;
+      store.rows.set(POST_A, { ...row, leaseToken: "taken-over" });
+      return id;
+    };
+    await result.afterResponse?.();
+    expect(graph.count("createImage")).toBe(1);
+    expect(graph.count("createCarousel")).toBe(0);
+    expect(store.rows.get(POST_A)?.leaseToken).toBe("taken-over");
   });
 });
 

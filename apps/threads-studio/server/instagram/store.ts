@@ -6,9 +6,10 @@
  * mediaUrls には素材の署名URL（期限つき）が入る。コンテナを作り終えた時点、
  * または失敗で終わった時点で null にする。ログ・応答には出さない。
  */
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { getDb } from "../db";
 import type {
+  Expected,
   PublicationRow,
   PublicationState,
   PublicationStore,
@@ -45,6 +46,7 @@ function fromDb(row: Row): PublicationRow {
     attempts: row.attempts,
     publishAttempted: row.publishAttempted,
     requestDigest: row.requestDigest,
+    leaseToken: row.leaseToken,
     updatedAt: row.updatedAt,
   };
 }
@@ -66,6 +68,18 @@ function affectedRows(result: unknown): number {
   const value = (header as { affectedRows?: unknown } | undefined)
     ?.affectedRows;
   return typeof value === "number" ? value : 0;
+}
+
+/** 条件つき更新の WHERE（state、借用つきなら leaseToken も一致）。 */
+function expectedConditions(expected: Expected) {
+  if (typeof expected === "string")
+    return [eq(instagramPublications.state, expected)];
+  return [
+    eq(instagramPublications.state, expected.state),
+    expected.leaseToken === null
+      ? isNull(instagramPublications.leaseToken)
+      : eq(instagramPublications.leaseToken, expected.leaseToken),
+  ];
 }
 
 export function createDbPublicationStore(): PublicationStore {
@@ -102,7 +116,7 @@ export function createDbPublicationStore(): PublicationStore {
         .where(
           and(
             eq(instagramPublications.scheduledPostId, scheduledPostId),
-            eq(instagramPublications.state, expected)
+            ...expectedConditions(expected)
           )
         );
       return affectedRows(result) > 0;
