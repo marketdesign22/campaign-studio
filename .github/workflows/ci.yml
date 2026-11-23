@@ -10,6 +10,8 @@ on:
       - ".github/workflows/ci.yml"
   push:
     branches:
+      # 既定ブランチを main へ改名したあとも動くように両方を書く（改名前のマージでも動く）
+      - main
       - claude/fix-issue-th8edz
     paths:
       - "apps/threads-studio/**"
