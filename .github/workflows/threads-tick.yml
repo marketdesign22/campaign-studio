@@ -26,13 +26,24 @@ jobs:
       - name: Call scheduler tick
         if: ${{ env.TICK_URL != '' && env.CRON_SECRET != '' }}
         run: |
+          # 公開リポジトリなので Actions のログは誰でも読める。応答本文（アカウントID・
+          # 投稿ID・エラー文）はログに出さず、HTTPステータスと件数だけを表示する
+          summarize() {
+            jq -r '
+              (if (.fired | type) == "array" then .fired else [] end) as $f
+              | "fired=\($f | length) errors=\([$f[] | select(type == "object" and has("error"))] | length)"
+                + (if .skipped then " (skipped: another run in progress)" else "" end)
+            ' "$1" 2>/dev/null
+          }
           # 眠っているサーバーの起床に時間がかかるため、最大3回リトライする
           for i in 1 2 3; do
             code=$(curl -s -o /tmp/tick.json -w "%{http_code}" --max-time 90 \
               -X POST "$TICK_URL/api/scheduled/tick" \
               -H "Authorization: Bearer $CRON_SECRET" || echo 000)
             if [ "$code" = "200" ]; then
-              cat /tmp/tick.json
+              summary=$(summarize /tmp/tick.json) || summary=""
+              [ -n "$summary" ] || summary="(response was not valid JSON)"
+              echo "HTTP $code $summary"
               exit 0
             fi
             echo "attempt $i: HTTP $code — retrying in 45s"

@@ -1,0 +1,7 @@
+# DBバックアップ（apps/threads-studio の pnpm db:export・mysqldump の出力）。
+# Threads のアクセストークンを含むため、絶対にコミットしない（公開リポジトリ）。
+# apps/threads-studio/.gitignore にも同じ指定があるが、リポジトリ直下から
+# スクリプトを実行した場合の保険としてここにも書いておく
+/backups/
+/apps/threads-studio/backups/
+backup-*.sql

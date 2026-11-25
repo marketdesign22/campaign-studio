@@ -10,6 +10,13 @@
  * --confirm-restore を付けたときだけ実行される。
  * 本番の一次バックアップは mysqldump を推奨（docs/multi-account.md 参照）。
  * これはmysqldumpが使えない環境向けの代替と、移行前後の突き合わせ用。
+ *
+ * ⚠ 出力ファイルには accounts テーブルの Threads アクセストークンなど、
+ *   全テーブルの生データがそのまま入る。このリポジトリは公開されているので:
+ *   - 絶対にコミットしない（backups/ は .gitignore 済みだが、--out で別の場所に
+ *     出した場合は守られない）
+ *   - 作成後はリポジトリの外（暗号化されたストレージ等）へ移し、作業フォルダには残さない
+ *   - チャット・Issue・PR などに貼らない
  */
 import "dotenv/config";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -78,8 +85,10 @@ async function runExport() {
   const stamp = backup.exportedAt.replace(/[:.]/g, "-");
   const out = resolve(arg("out") ?? `backups/threads-studio-${stamp}.json`);
   mkdirSync(dirname(out), { recursive: true });
-  writeFileSync(out, JSON.stringify(backup, null, 2), "utf8");
+  // トークンを含むため、新規作成時は本人だけが読める権限にする
+  writeFileSync(out, JSON.stringify(backup, null, 2), { encoding: "utf8", mode: 0o600 });
   console.log(`\n[backup] 保存しました: ${out}`);
+  console.log("[backup] ⚠ このファイルには Threads のアクセストークンが含まれます。コミットせず、リポジトリの外に保管してください。");
   console.log("[backup] 復元は  pnpm db:import -- --file <path> --confirm-restore");
   await conn.end();
 }
