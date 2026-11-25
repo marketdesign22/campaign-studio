@@ -7,6 +7,8 @@ import { runTick } from "./scheduler";
  * runTick は post_logs ベースの冪等設計（アカウント×スロット×ローカル日付で
  * 1回だけ投稿）なので、再起動やタイミングのずれで多重投稿にはならない。
  * サーバーが止まっていた間のスロットも、復帰後最初のtickで遅れて投稿される。
+ * 外部cron（/api/scheduled/tick）と実行が重なった場合は、runTick 内の
+ * ロック（server/schedulerLock.ts）で後から来た側がスキップされる。
  */
 const TICK_INTERVAL_MS = 15 * 60 * 1000;
 const STARTUP_DELAY_MS = 20 * 1000;

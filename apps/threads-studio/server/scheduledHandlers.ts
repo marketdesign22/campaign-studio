@@ -3,6 +3,7 @@ import { ENV } from "./_core/env";
 import { getLocalParts, runSlotForAccount, runTick } from "./scheduler";
 import { listAccounts } from "./db";
 import { primaryAccountId, scopeOf } from "./accountScope";
+import { ALREADY_RUNNING, logSkipped, runExclusive } from "./schedulerLock";
 
 /**
  * 外部cron（Railway cron・GitHub Actions等）から叩く場合の認可。
@@ -34,6 +35,9 @@ async function requireCron(req: Request, res: Response): Promise<boolean> {
  * services (guarded by CRON_SECRET). Fires each account's morning/evening
  * slot at its configured local time, refreshes tokens, and pulls analytics
  * once a day.
+ *
+ * 別の実行が進行中のときは runTick が何もせず { skipped: "already_running" } を返す。
+ * 外部cronがリトライやエラー扱いしないよう、その場合も 200 で応答する。
  */
 export async function tickHandler(req: Request, res: Response) {
   if (!(await requireCron(req, res))) return;
@@ -48,6 +52,17 @@ export async function tickHandler(req: Request, res: Response) {
 
 /** Legacy fixed-time endpoints — kept so existing cron registrations still work. */
 async function runLegacySlot(slotIndex: number, res: Response) {
+  // tick と同じ枠に投稿するため、同じロックで排他する（実行中ならスキップして 200）。
+  // 例外は runLegacySlotUnlocked 内で 500 応答に変換される
+  const r = await runExclusive(`legacy slot ${slotIndex}`, () => runLegacySlotUnlocked(slotIndex, res));
+  if (!r.ran) {
+    logSkipped(`legacy slot ${slotIndex}`, r);
+    return res.status(200).json({ ok: true, skipped: ALREADY_RUNNING, fired: [] });
+  }
+  return r.value;
+}
+
+async function runLegacySlotUnlocked(slotIndex: number, res: Response) {
   try {
     const all = await listAccounts();
     const accounts = all.filter((a) => a.active);

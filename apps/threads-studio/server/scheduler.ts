@@ -7,6 +7,8 @@
  *     post (approved, scheduledDate <= today).
  * The "already fired today" check is log-based, so missed ticks self-heal
  * (a late server posts late rather than never) and never double-post.
+ * 確認→投稿→ログ記録の間に別の tick が割り込まないよう、runTick は
+ * server/schedulerLock.ts のプロセス内ロックで排他している（重なった側はスキップ）。
  *
  * Daily maintenance (piggy-backed on the first tick of each UTC day):
  *   - refreshes long-lived tokens older than 7 days (60-day expiry)
@@ -45,6 +47,7 @@ import { assertPublishableContent, parseForbiddenTopics } from "./quality";
 import { runStrategyMaintenance } from "./strategyService";
 import { fetchAccountInsights } from "./accountInsights";
 import { runMonthlyReportMaintenance } from "./reportMaintenance";
+import { ALREADY_RUNNING, logSkipped, runExclusive } from "./schedulerLock";
 
 // ── Timezone helpers (pure, unit-tested) ─────────────────────────────────────
 // 本体は server/localTime.ts。既存の呼び出し元・テストのために同じ名前で再エクスポートする
@@ -339,7 +342,27 @@ async function runDailyMaintenance(now: Date) {
 
 // ── Entry point ──────────────────────────────────────────────────────────────
 
-export async function runTick(now: Date = new Date()) {
+export type TickResult = {
+  fired: Record<string, unknown>[];
+  /** 別の実行（内蔵スケジューラ・外部cron・旧エンドポイント）が進行中のため何もしなかった */
+  skipped?: typeof ALREADY_RUNNING;
+};
+
+/**
+ * 1回分の tick。内蔵スケジューラと /api/scheduled/tick の両方から呼ばれるため、
+ * 同時に2つ走らないよう schedulerLock で排他する（重なった側はスキップ）。
+ * スキップ時も戻り値の形（fired 配列）は同じにしておく。
+ */
+export async function runTick(now: Date = new Date()): Promise<TickResult> {
+  const r = await runExclusive("tick", () => runTickUnlocked(now));
+  if (!r.ran) {
+    logSkipped("tick", r);
+    return { fired: [], skipped: ALREADY_RUNNING };
+  }
+  return r.value;
+}
+
+async function runTickUnlocked(now: Date): Promise<TickResult> {
   const results: Record<string, unknown>[] = [];
   const all = await listAccounts();
   const primaryId = primaryAccountId(all);
