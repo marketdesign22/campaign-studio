@@ -68,6 +68,10 @@ mysqldump --single-transaction --set-gtid-purged=OFF \
 pnpm db:export           # backups/threads-studio-<UTC時刻>.json に保存
 ```
 
+> ⚠ バックアップ（JSON・mysqldump とも）には Threads のアクセストークンを含む全データが入ります。
+> このリポジトリは公開されているため、**絶対にコミットしないでください**（`backups/` と `backup-*.sql` は .gitignore 済み）。
+> 作成後はリポジトリの外の安全な場所へ移して保管してください。
+
 **復元できることの確認**（本番とは別のDBに向けて実行してください）:
 
 ```bash
