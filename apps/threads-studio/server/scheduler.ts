@@ -133,6 +133,44 @@ export function resolveImageUrl(imageUrl: string | null | undefined): string | n
 }
 
 /**
+ * 枠の時刻が来たのに「出すものが無くて」見送ったことを、1行だけログに残す。
+ *
+ * 見送った枠は投稿ログ（post_logs）に何も書かないので、次の tick でも同じ判定になる。
+ * そのため同じ「アカウント×枠×その枠のローカル日付」はプロセス内で1回だけ出す
+ * （15分ごとに同じ行が並ばないように）。再起動後に1回出直すのは許容する。
+ * 原稿の本文・トークンは出さない。
+ */
+export type SlotSkipReason =
+  | "no_draft_autofill_off"
+  | "no_draft_no_recycle_candidate";
+
+const loggedSkips = new Set<string>();
+
+export function logSlotSkipped(
+  accountId: number,
+  slotIndex: number,
+  localDate: string,
+  reason: SlotSkipReason
+): void {
+  const key = `${accountId}:${slotIndex}:${localDate}`;
+  if (loggedSkips.has(key)) return;
+  if (loggedSkips.size > 1000) loggedSkips.clear();
+  loggedSkips.add(key);
+  const why =
+    reason === "no_draft_autofill_off"
+      ? "予約原稿が無く、自動再投稿がオフ"
+      : "予約原稿が無く、自動再投稿の候補も無い（間隔の設定などで使えるものが無い）";
+  console.log(
+    `[scheduler] slot skipped: account ${accountId} slot ${slotIndex} ${localDate} reason=${reason}（${why}）`
+  );
+}
+
+/** テスト用：見送りログの重複判定を消す */
+export function resetSlotSkipLogForTest(): void {
+  loggedSkips.clear();
+}
+
+/**
  * 1アカウント・1スロット分の投稿を試みる。発火しなかった場合は null。
  *
  * 判定はすべて **その枠自身のタイムゾーン** で行う。同じアカウントでも
@@ -163,9 +201,15 @@ export async function runSlotForAccount(
   } else {
     // 予約原稿が尽きたスロットを、再投稿コンテンツで埋める（設定で有効化した場合のみ）
     const cfg = await getAccountSettings(account.id);
-    if (!cfg.autoFillEvergreen) return null;
+    if (!cfg.autoFillEvergreen) {
+      logSlotSkipped(account.id, slotIndex, local.dateStr, "no_draft_autofill_off");
+      return null;
+    }
     const candidate = await getEvergreenCandidate(scope, cfg.recycleCooldownDays, now);
-    if (!candidate) return null;
+    if (!candidate) {
+      logSlotSkipped(account.id, slotIndex, local.dateStr, "no_draft_no_recycle_candidate");
+      return null;
+    }
     post = candidate;
     recycled = true;
     content = cfg.recycleRewrite ? await rewordForRecycle(candidate.content) : candidate.content;
